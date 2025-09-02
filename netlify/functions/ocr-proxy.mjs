@@ -1,72 +1,109 @@
-import fetch from 'node-fetch';
-import Jimp from 'jimp';
-import jsQR from 'jsqr';
+// netlify/functions/ocr-proxy.mjs
+import { Buffer } from "node:buffer";
+import Busboy from "busboy";
+import sharp from "sharp";
+import jsQR from "jsqr";
+import vision from "@google-cloud/vision";
 
-export default async (req, res) => {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+/* ---- utils ---- */
+function parseMultipart(event) {
+  return new Promise((resolve, reject) => {
+    const headers = event.headers || {};
+    const contentType = headers["content-type"] || headers["Content-Type"] || "";
+    const busboy = Busboy({ headers: { "content-type": contentType } });
+
+    let fileBuffer = Buffer.alloc(0);
+    let filename = "upload";
+
+    busboy.on("file", (_name, file, info) => {
+      if (info?.filename) filename = info.filename;
+      file.on("data", (d) => (fileBuffer = Buffer.concat([fileBuffer, d])));
+    });
+
+    busboy.on("error", reject);
+    busboy.on("finish", () => resolve({ fileBuffer, filename }));
+
+    const body = event.body || "";
+    busboy.end(Buffer.from(body, event.isBase64Encoded ? "base64" : "utf8"));
+  });
+}
+
+async function tryReadQR(fileBuffer) {
+  try {
+    const img = sharp(fileBuffer);
+    const { data, info } = await img
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const code = jsQR(
+      new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength),
+      info.width,
+      info.height
+    );
+    return code?.data || null;
+  } catch {
+    return null;
+  }
+}
+
+function createVisionClient() {
+  const json = process.env.GCP_KEY_JSON;
+  if (!json) throw new Error("Falta env GCP_KEY_JSON (Service Account JSON).");
+  const credentials = JSON.parse(json);
+  return new vision.ImageAnnotatorClient({ credentials });
+}
+
+/* ---- handler ---- */
+export const handler = async (event) => {
+  // CORS
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    };
   }
 
-  const { imageBase64, imageUrl, qrOnly = false } = req.body || {};
-  if (!imageBase64 && !imageUrl) {
-    return res.status(400).json({ error: 'Falta imageBase64 ou imageUrl' });
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "Usa POST com multipart/form-data (campo 'file')." };
   }
 
   try {
-    const buffer = await getImageBuffer(imageBase64, imageUrl);
-    let qr = null;
-    try {
-      qr = await decodeQR(buffer);
-    } catch (_) {}
-    if (!qrOnly) {
-      const ocr = await googleOCR(buffer);
-      return res.status(200).json({ ok: true, ocr, qr });
-    } else {
-      return res.status(200).json({ ok: true, qr });
+    const { fileBuffer, filename } = await parseMultipart(event);
+    if (!fileBuffer?.length) {
+      return { statusCode: 400, body: "Nenhum ficheiro recebido." };
     }
+
+    const qr = await tryReadQR(fileBuffer);
+    const qrOnly = /qrOnly=1/.test(event.rawUrl || "");
+
+    let text = "";
+    if (!qrOnly) {
+      const client = createVisionClient();
+      const [result] = await client.documentTextDetection({ image: { content: fileBuffer } });
+      text =
+        result?.fullTextAnnotation?.text ||
+        result?.textAnnotations?.[0]?.description ||
+        "";
+    }
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({ filename, text, qr }),
+    };
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    console.error("OCR error:", err);
+    return {
+      statusCode: 500,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: `Erro: ${err.message || err}`,
+    };
   }
 };
-
-async function getImageBuffer(imageBase64, imageUrl){
-  if (imageBase64 && imageBase64.startsWith('data:')) {
-    const base64 = imageBase64.split(',')[1];
-    return Buffer.from(base64, 'base64');
-  }
-  if (imageUrl) {
-    const r = await fetch(imageUrl);
-    if (!r.ok) throw new Error('Falha a obter imagem do URL');
-    return Buffer.from(await r.arrayBuffer());
-  }
-  throw new Error('Sem imagem');
-}
-
-async function googleOCR(buffer){
-  const apiKey = process.env.OCR_API_KEY;
-  if (!apiKey) throw new Error('OCR_API_KEY não definido');
-  const endpoint = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
-  const imgB64 = buffer.toString('base64');
-  const body = {
-    requests: [{ image: { content: imgB64 }, features: [{ type: 'DOCUMENT_TEXT_DETECTION' }] }]
-  };
-  const resp = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  const json = await resp.json();
-  if (json.error) throw new Error(json.error.message || 'Erro Vision API');
-  const fullText = json?.responses?.[0]?.fullTextAnnotation?.text || '';
-  const blocks = json?.responses?.[0]?.textAnnotations || [];
-  return { text: fullText, blocks };
-}
-
-async function decodeQR(buffer){
-  const img = await Jimp.read(buffer);
-  const { data, width, height } = img.bitmap;
-  const clamped = new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength);
-  const result = jsQR(clamped, width, height);
-  if (result) return { text: result.data, location: result.location };
-  return null;
-}
