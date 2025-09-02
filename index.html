@@ -1,37 +1,64 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Express OCR Demo</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>Express OCR</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>Express OCR + QR</h1>
-    <p class="sub">Google Vision (OCR) + QR decoder no servidor</p>
+  <!-- HEADER -->
+  <header class="header">
+    <h1>Express OCR</h1>
+    <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
-  <main class="container">
-    <section class="card">
-      <label class="filepicker">
-        <input type="file" id="fileInput" accept="image/*,.pdf" />
-        <span>Escolher imagem/PDF</span>
-      </label>
-      <div class="inputs">
-        <input id="imageUrl" placeholder="… ou cola aqui o URL da imagem" />
-        <button id="btnUrl">Usar URL</button>
-      </div>
-      <div class="actions">
-        <button id="btnRun">Executar OCR/QR</button>
-        <label class="chk"><input type="checkbox" id="qrOnly" /> QR apenas</label>
-      </div>
-      <div id="preview" class="preview"></div>
-      <pre id="output" class="output" aria-live="polite"></pre>
-    </section>
+
+  <!-- MOBILE VIEW: Título + Tirar Foto -->
+  <main id="mobileView" class="card mobile-only">
+    <p class="subtitle">Tira a foto do documento para leitura.</p>
+
+    <button id="btnCamera" class="btn primary">📷 Tirar foto</button>
+    <!-- input “invisível” que abre a câmara no telemóvel -->
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+
+    <div id="mobileStatus" class="status"></div>
+
+    <footer class="footnote">
+      <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
+    </footer>
   </main>
-  <footer class="foot">
-    <small>Feito para o Marco • Timezone: <code>Europe/Lisbon</code></small>
-  </footer>
-  <script src="script.js"></script>
+
+  <!-- DESKTOP VIEW: Tabela de Resultados -->
+  <section id="desktopView" class="card desktop-only">
+    <div class="toolbar">
+      <button id="btnUpload" class="btn">Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+      <button id="btnExport" class="btn">Exportar CSV</button>
+      <button id="btnClear" class="btn danger">Limpar Tabela</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Data/Hora</th>
+            <th>Ficheiro</th>
+            <th>Texto lido (OCR)</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody">
+          <!-- linhas renderizadas por JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="desktopStatus" class="status"></div>
+  </section>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
 </body>
 </html>
