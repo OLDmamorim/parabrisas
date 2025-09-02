@@ -1,11 +1,11 @@
 {
-  "name": "express-ocr-pack",
+  "name": "express-ocr",
   "private": true,
-  "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "jimp": "^0.22.12",
+    "@google-cloud/vision": "^4.3.2",
+    "busboy": "^1.6.0",
     "jsqr": "^1.4.0",
-    "node-fetch": "^3.3.2"
+    "sharp": "^0.33.4"
   }
 }
