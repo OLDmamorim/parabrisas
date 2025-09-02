@@ -1,13 +1,11 @@
-[build]
-  command = ""
-  publish = "."
-  functions = "netlify/functions"
-
-[build.environment]
-  OCR_API_KEY = "env:OCR_API_KEY"
-  DATABASE_URL = "env:DATABASE_URL"
-  TIMEZONE = "env:TIMEZONE"
-
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["jimp","jsqr"]
+  external_node_modules = ["@google-cloud/vision", "busboy", "sharp", "jsqr"]
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
