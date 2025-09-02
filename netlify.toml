@@ -1,0 +1,13 @@
+[build]
+  command = ""
+  publish = "."
+  functions = "netlify/functions"
+
+[build.environment]
+  OCR_API_KEY = "env:OCR_API_KEY"
+  DATABASE_URL = "env:DATABASE_URL"
+  TIMEZONE = "env:TIMEZONE"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["jimp","jsqr"]

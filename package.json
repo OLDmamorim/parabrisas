@@ -1,0 +1,11 @@
+{
+  "name": "express-ocr-pack",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "jimp": "^0.22.12",
+    "jsqr": "^1.4.0",
+    "node-fetch": "^3.3.2"
+  }
+}

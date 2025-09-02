@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Express OCR Demo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Express OCR + QR</h1>
+    <p class="sub">Google Vision (OCR) + QR decoder no servidor</p>
+  </header>
+  <main class="container">
+    <section class="card">
+      <label class="filepicker">
+        <input type="file" id="fileInput" accept="image/*,.pdf" />
+        <span>Escolher imagem/PDF</span>
+      </label>
+      <div class="inputs">
+        <input id="imageUrl" placeholder="… ou cola aqui o URL da imagem" />
+        <button id="btnUrl">Usar URL</button>
+      </div>
+      <div class="actions">
+        <button id="btnRun">Executar OCR/QR</button>
+        <label class="chk"><input type="checkbox" id="qrOnly" /> QR apenas</label>
+      </div>
+      <div id="preview" class="preview"></div>
+      <pre id="output" class="output" aria-live="polite"></pre>
+    </section>
+  </main>
+  <footer class="foot">
+    <small>Feito para o Marco • Timezone: <code>Europe/Lisbon</code></small>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
