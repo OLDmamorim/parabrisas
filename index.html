@@ -13,22 +13,18 @@
     <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- MOBILE VIEW: Título + Tirar Foto -->
+  <!-- MOBILE VIEW -->
   <main id="mobileView" class="card mobile-only">
     <p class="subtitle">Tira a foto do documento para leitura.</p>
-
     <button id="btnCamera" class="btn primary">📷 Tirar foto</button>
-    <!-- input “invisível” que abre a câmara no telemóvel -->
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
-
     <div id="mobileStatus" class="status"></div>
-
     <footer class="footnote">
       <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
     </footer>
   </main>
 
-  <!-- DESKTOP VIEW: Tabela de Resultados -->
+  <!-- DESKTOP VIEW -->
   <section id="desktopView" class="card desktop-only">
     <div class="toolbar">
       <button id="btnUpload" class="btn">Carregar imagem</button>
@@ -47,9 +43,7 @@
             <th>Texto lido (OCR)</th>
           </tr>
         </thead>
-        <tbody id="resultsBody">
-          <!-- linhas renderizadas por JS -->
-        </tbody>
+        <tbody id="resultsBody"></tbody>
       </table>
     </div>
 
