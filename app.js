@@ -1,6 +1,6 @@
 /* ===== CONFIG ===== */
-const OCR_ENDPOINT = "/.netlify/functions/ocr"; // quando tiveres backend
-const DEMO_MODE = true; // coloca false quando o endpoint estiver ativo
+const OCR_ENDPOINT = "/.netlify/functions/ocr-proxy"; // função Netlify: netlify/functions/ocr-proxy.mjs
+const DEMO_MODE = false; // true = simula OCR sem backend
 
 /* ===== Elements ===== */
 const isDesktop = window.matchMedia("(min-width: 900px)").matches;
@@ -21,8 +21,11 @@ const toast = document.getElementById("toast");
 
 /* ===== Storage ===== */
 const STORAGE_KEY = "express_ocr_results_v1";
-const loadResults = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-const saveResults = rows => localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+const loadResults = () => {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+  catch { return []; }
+};
+const saveResults = (rows) => localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
 
 /* ===== Render ===== */
 function renderTable(){
@@ -66,7 +69,7 @@ async function runOCR(file){
     const t = await res.text().catch(()=>res.statusText);
     throw new Error(`Falha no OCR: ${res.status} ${t}`);
   }
-  return await res.json(); // { text: "..." }
+  return await res.json(); // { text, qr, filename }
 }
 
 /* ===== Common handler ===== */
@@ -74,19 +77,21 @@ async function handleImage(file, origin="camera"){
   try{
     (isDesktop ? desktopStatus : mobileStatus).textContent = "A processar…";
     const data = await runOCR(file);
+
     const rows = loadResults();
     rows.unshift({
       ts: Date.now(),
       filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
-      text: data?.text || ""
+      text: data?.text || (data?.qr ? `QR: ${data.qr}` : "")
     });
     saveResults(rows);
+
     renderTable();
     showToast("✅ OCR concluído");
   }catch(err){
     console.error(err);
     (isDesktop ? desktopStatus : mobileStatus).textContent = "Erro: " + err.message;
-    if(!DEMO_MODE) showToast("Ativa DEMO_MODE para testar sem backend.");
+    if(!DEMO_MODE) showToast("Falha no OCR. Verifica o endpoint ou ativa DEMO_MODE para testar.");
   }finally{
     (isDesktop ? desktopStatus : mobileStatus).textContent = "";
   }
@@ -97,7 +102,7 @@ cameraBtn?.addEventListener("click", () => cameraInput.click());
 cameraInput?.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (file) handleImage(file, "camera");
-  cameraInput.value = "";
+  cameraInput.value = ""; // permite nova captura
 });
 
 /* ===== Desktop actions ===== */
@@ -113,16 +118,20 @@ exportBtn?.addEventListener("click", () => {
   const header = ["idx","timestamp","filename","text"];
   const lines = [header.join(",")].concat(
     rows.map((r,i)=>[
-      i+1, new Date(r.ts).toISOString(),
+      i+1,
+      new Date(r.ts).toISOString(),
       `"${(r.filename||"").replace(/"/g,'""')}"`,
       `"${(r.text||"").replace(/"/g,'""')}"`
     ].join(","))
   );
   const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href=url; a.download="express_ocr.csv"; a.click();
+  const a = document.createElement("a");
+  a.href = url; a.download = "express_ocr.csv"; a.click();
   URL.revokeObjectURL(url);
 });
 clearBtn?.addEventListener("click", ()=>{
-  if(confirm("Apagar todos os registos da tabela?")){ saveResults([]); renderTable(); showToast("Tabela limpa"); }
+  if(confirm("Apagar todos os registos da tabela?")){
+    saveResults([]); renderTable(); showToast("Tabela limpa");
+  }
 });
