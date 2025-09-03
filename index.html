@@ -10,26 +10,49 @@
   <!-- HEADER -->
   <header class="header">
     <div class="brand">
-      <h1 class="title">EXPRESSGLASS</h1>
+      <h1>EXPRESSGLASS</h1>
       <p class="subtitle">Receção material</p>
     </div>
-    <div class="view-badge" id="viewBadge">Mobile</div>
+
+    <div class="header-actions">
+      <button id="helpBtn" class="icon-btn" aria-label="Ajuda">❓</button>
+      <div class="view-badge" id="viewBadge">Mobile</div>
+    </div>
   </header>
+
+  <!-- AJUDA -->
+  <dialog id="helpDialog" class="dialog">
+    <h3>Como usar</h3>
+    <ol>
+      <li>Carrega em <strong>Tirar foto</strong> e aponta à etiqueta/descrição (ideal: boa luz, focado).</li>
+      <li>Confirma o texto lido; se falhar, usa <strong>Tentar novamente</strong>.</li>
+      <li>No Desktop, podes exportar CSV e apagar linhas.</li>
+    </ol>
+    <button id="closeHelp" class="btn">Ok, entendi</button>
+  </dialog>
 
   <!-- MOBILE VIEW -->
   <main id="mobileView" class="card mobile-only">
-    <div class="mobile-cta">
-      <button id="btnCamera" class="btn-square" aria-label="Tirar foto da etiqueta">
-        <span class="emoji">📷</span>
-      </button>
-      <p class="hint">
-        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
-        Se conseguires, inclui a <strong>descrição</strong> e o <strong>Eurocode</strong>.
-      </p>
+    <p class="hint">
+      Tira foto à <strong>etiqueta</strong>, <strong>descrição</strong> e, se possível, ao <strong>Eurocode</strong>.
+    </p>
+
+    <button id="btnCamera" class="btn primary big pulse" aria-label="Tirar foto">
+      📷 Tirar foto
+    </button>
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+
+    <div id="mobileStatus" class="status">
+      <!-- feedback/progresso entra aqui -->
     </div>
 
-    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
-    <div id="mobileStatus" class="status"></div>
+    <section class="history">
+      <div class="history-head">
+        <h4>Últimas capturas</h4>
+        <button id="clearHistory" class="icon-btn" title="Limpar histórico">🗑️</button>
+      </div>
+      <ul id="historyList" class="history-list"></ul>
+    </section>
 
     <footer class="footnote">
       <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
@@ -52,6 +75,7 @@
             <th style="width:60px">#</th>
             <th style="width:220px">Data/Hora</th>
             <th style="width:auto">Texto lido (OCR)</th>
+            <th style="width:80px">Ações</th>
           </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
