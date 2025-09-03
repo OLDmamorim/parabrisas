@@ -1,205 +1,100 @@
+/* ===== BASE ===== */
 :root{
-  --bgTop:#1f63ff;
-  --bgBottom:#0b45d9;
-  --card:#0f172a;
-  --cardBorder:#1f2937;
-  --text:#e5e7eb;
-  --muted:#a3aed0;
-  --accent:#22d3ee;
-  --danger:#ef4444;
-  --shadow:0 10px 25px rgba(0,0,0,.25);
+  --bg1:#3b82f6;      /* topo gradiente */
+  --bg2:#60a5fa;      /* base gradiente */
+  --ink:#0f172a;
+  --muted:#64748b;
+  --ok:#16a34a;
+
+  --card:#ffffff;
+  --r-pill:26px;
+  --r-card:28px;
+  --shadow-card:0 14px 32px rgba(15,23,42,.10);
+  --shadow-soft:0 8px 22px rgba(59,130,246,.16);
+  --border:#e6edf7;
 }
 
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
-  color:var(--text);
-  background: linear-gradient(180deg, var(--bgTop), var(--bgBottom));
+  font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial;
+  color:var(--ink);
+  background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  padding:18px 16px 28px;
 }
 
-/* HEADER */
-.header{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:24px 20px 8px;
-}
-.brand{display:flex; flex-direction:column; gap:4px}
-.title{
-  margin:0; letter-spacing:.08em; font-weight:800;
-  font-size: clamp(28px, 5vw, 44px);
-}
-.subtitle{
-  margin:0; color:var(--muted); font-weight:600;
-  font-size: clamp(12px, 2.4vw, 16px);
-  letter-spacing:.02em;
-}
-.view-badge{
-  background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.12);
-  padding:6px 10px; border-radius:999px; font-size:12px;
-}
-
-/* CARDS BASE */
-.card{
+/* ===== HEADER PILL ===== */
+.eg-header{max-width:440px; margin:0 auto}
+.eg-header-pill{
   position:relative;
-  background: var(--card);
-  border:1px solid var(--cardBorder);
-  border-radius:18px;
-  padding:20px;
-  box-shadow:var(--shadow);
+  background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  border-radius:var(--r-pill);
+  padding:22px;
+  box-shadow:0 10px 28px rgba(0,0,0,.08);
+}
+.eg-header-pill h1{
+  margin:0; color:#fff; font-weight:800; letter-spacing:.4px; font-size:30px;
+  text-shadow:0 1px 0 rgba(0,0,0,.06);
+}
+.eg-badge{
+  position:absolute; right:16px; top:14px;
+  background:#e9f1ff; color:#1f2937; font-weight:700; font-size:14px;
+  padding:6px 12px; border-radius:999px;
 }
 
-/* MOBILE CTA */
-.mobile-cta{
-  display:flex; flex-direction:column; align-items:center; gap:14px;
-  padding: 8px 6px 14px;
+/* ===== CARD BRANCO ===== */
+.eg-card{
+  max-width:440px; margin:10px auto 16px;
+  background:var(--card);
+  border-radius:var(--r-card);
+  box-shadow:var(--shadow-card);
+  padding:28px 22px;
 }
-.btn-square{
-  width:120px; height:120px;
+
+/* Câmara com glow */
+.eg-camera{
   display:grid; place-items:center;
-  border-radius:16px;
-  border:1px solid rgba(195,255,255,.12);
-  background:linear-gradient(180deg, #111827, #0b1220);
-  box-shadow:var(--shadow);
-  cursor:pointer;
-  transition: transform .08s ease, box-shadow .2s ease;
-}
-.btn-square:active{ transform:scale(.97) }
-.btn-square .emoji{ font-size:48px; line-height:1; }
-.hint{
-  margin:0; text-align:center; color:var(--muted);
-  font-size:14px; line-height:1.5;
+  width:144px; height:144px; margin:6px auto 12px;
+  border-radius:22px; border:2px solid var(--border); background:#fbfdff;
+  box-shadow:var(--shadow-soft), inset 0 0 0 2px rgba(48,106,255,.10);
+  cursor:pointer; border:0;
 }
 
-/* DESKTOP TOOLBAR */
-.toolbar{ display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap }
-.btn{
-  background:#111827; color:var(--text);
-  padding:10px 14px; border-radius:10px; border:1px solid var(--cardBorder);
-  cursor:pointer;
-}
-.btn:hover{ border-color:#334155 }
-.btn.danger{ background:#1a1111; border-color:#432; color:#fecaca }
-
-/* TABLE */
-.table-wrap{ overflow:auto; border:1px solid var(--cardBorder); border-radius:12px }
-table{ width:100%; border-collapse:separate; border-spacing:0 }
-th,td{ padding:12px 14px; border-bottom:1px solid #111827; vertical-align:top }
-thead th{ position:sticky; top:0; background:#0b1220; z-index:1 }
-tbody tr:nth-child(odd){ background:rgba(255,255,255,.02) }
-.status{ margin-top:10px; color:var(--muted); font-size:12px }
-
-/* OCR texto corrido */
-.ocr-text{ white-space: normal; overflow-wrap: anywhere; line-height:1.5 }
-
-/* TOAST */
-.toast{
-  position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-  background:#0b1220; border:1px solid #111827; color:var(--text);
-  padding:14px 16px; border-radius:12px; box-shadow:var(--shadow);
-  opacity:0; pointer-events:none; transition:.25s ease; font-weight:600;
-  max-width:min(92vw, 600px);
-}
-.toast.show{ opacity:1 }
-
-/* RESPONSIVE AREAS */
-.mobile-only{ display:block }
-.desktop-only{ display:none }
-@media (min-width: 900px){
-  .mobile-only{ display:none }
-  .desktop-only{ display:block }
+/* Tipografia do corpo */
+.eg-title{
+  margin:10px 0 6px; font-size:28px; line-height:1.08; font-weight:800; color:#0b1220;
 }
 
-/* Progress bar */
-.progress {
-  margin-top: 8px;
-  width: 100%;
-  height: 10px;
-  background: #1f2937;
-  border-radius: 999px;
-  overflow: hidden;
+/* Linha de sucesso */
+.eg-ok{
+  margin:12px 0 0; color:#134e3a; font-weight:700; font-size:18px; line-height:1.25;
+  display:flex; gap:12px; align-items:flex-start;
 }
-.progress > span {
-  display: block;
-  height: 100%;
-  width: 0%;
-  background: #3b82f6;
-  transition: width .25s ease;
+.eg-tick{
+  width:24px; height:24px; flex:0 0 24px; border-radius:999px; background:var(--ok);
+  position:relative; box-shadow:0 1px 0 rgba(0,0,0,.06) inset;
 }
-.status.error .progress { background: #7f1d1d; }
-.status.error .progress > span { background: #ef4444; }
-.retry-btn {
-  background: #b91c1c; color: #fff; border: 0;
-  padding: 6px 12px; border-radius: 6px; margin-top: 8px;
-}
-.retry-btn:active { transform: scale(.98); }
-
-/* ====== MOBILE MOCKUP STYLE ====== */
-#mobileView.card{
-  background:#ffffff;
-  color:#0f172a;
-  border:0;
-  border-radius:28px;
-  box-shadow:0 14px 32px rgba(15,23,42,.10);
-  padding:28px 22px 36px;
+.eg-tick::after{
+  content:""; position:absolute; left:6px; top:4px;
+  width:10px; height:14px; border:3px solid #fff; border-top:0; border-left:0; transform:rotate(45deg);
 }
 
-/* Botão da câmara com glow azul */
-#mobileView .btn-square{
-  width:144px; height:144px;
-  margin:8px auto 14px;
-  border-radius:22px;
-  border:2px solid #d7e5ff;
-  background:#fbfdff;
-  box-shadow:0 8px 22px rgba(59,130,246,.16), inset 0 0 0 2px rgba(59,130,246,.10);
+/* ===== HISTÓRICO OCR ===== */
+.eg-history h3{margin:0 0 10px; font-size:18px; font-weight:800; color:#0b1220}
+.eg-table-wrap{overflow:auto; border:1px solid #e2e8f0; border-radius:14px}
+.eg-table{width:100%; border-collapse:separate; border-spacing:0; font-size:14px; min-width:520px}
+.eg-table thead th{
+  text-align:left; padding:10px 12px; background:#f8fafc; color:#334155; font-weight:700; position:sticky; top:0;
 }
-#mobileView .btn-square .emoji{ font-size:56px; line-height:1; }
+.eg-table tbody td{ padding:10px 12px; border-top:1px solid #e2e8f0; vertical-align:top }
+.col-n{width:44px}
+.col-dt{width:160px}
+.col-texto{width:auto}
 
-/* Status no cartão mobile */
-#mobileView .status{ 
-  color:#134e3a; 
-  font-weight:700; 
-  font-size:18px; 
-  margin-top:12px;
-}
-#mobileView .status .progress{ height:8px; border-radius:999px; background:#e6edf7; }
-#mobileView .status .progress > span{ background:#3b82f6; }
-
-/* ===== HISTÓRICO MOBILE ===== */
-#mobileHistory{
-  margin-top:16px;
-  background:#ffffff;
-  color:#0f172a;
-  border:0;
-  border-radius:18px;
-  box-shadow:0 10px 24px rgba(15,23,42,.08);
-  padding:16px;
-}
-#mobileHistory .history-title{
-  margin:0 0 10px;
-  font-size:18px;
-  font-weight:700;
-  color:#111827;
-}
-#mobileHistory .table-wrap{
-  overflow-x:auto;
-  border:1px solid #e2e8f0;
-  border-radius:12px;
-}
-#mobileHistory table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  font-size:14px;
-}
-#mobileHistory th, 
-#mobileHistory td{
-  padding:8px 10px;
-  border-bottom:1px solid #e2e8f0;
-  text-align:left;
-}
-#mobileHistory thead th{
-  background:#f8fafc;
-  color:#334155;
-  font-weight:600;
+/* ===== MICRO-AJUSTES ===== */
+@media (max-width:390px){
+  .eg-header-pill h1{font-size:26px}
+  .eg-camera{width:136px; height:136px}
+  .eg-card{padding:24px 18px}
 }
