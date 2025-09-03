@@ -19,6 +19,18 @@ const desktopStatus = document.getElementById("desktopStatus");
 
 const toast = document.getElementById("toast");
 
+/* ===== (Opcional) injectar CSS para o texto OCR ficar em linha corrida ===== */
+(function injectOCRCss(){
+  const id = "ocr-text-style";
+  if (document.getElementById(id)) return;
+  const s = document.createElement("style");
+  s.id = id;
+  s.textContent = `
+    .ocr-text{ white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+  `;
+  document.head.appendChild(s);
+})();
+
 /* ===== Storage ===== */
 const STORAGE_KEY = "express_ocr_results_v1";
 const loadResults = () => {
@@ -33,11 +45,13 @@ function renderTable(){
   const rows = loadResults();
   resultsBody.innerHTML = "";
   rows.forEach((r,i)=>{
+    // compacta quebras de linha do OCR
+    const compactText = (r.text || "").replace(/\s*\n\s*/g, " ");
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
-      <td><pre>${r.text || ""}</pre></td>`;
+      <td><div class="ocr-text">${compactText}</div></td>`;
     resultsBody.appendChild(tr);
   });
   desktopStatus.textContent = rows.length ? `${rows.length} registo(s).` : "Sem registos ainda.";
