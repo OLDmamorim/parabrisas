@@ -3,62 +3,53 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>EXPRESSGLASS • Receção de Material</title>
+  <title>EXPRESSGLASS</title>
+
+  <!-- Fonte bonita -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- TOP STRIP GRADIENT -->
-  <div class="hero">
-    <div class="hero-inner">
-      <h1 class="brand">EXPRESSGLASS</h1>
-      <span id="viewBadge" class="view-badge">Mobile</span>
-    </div>
-  </div>
+  <!-- HEADER -->
+  <header class="header">
+    <h1>EXPRESSGLASS</h1>
+    <div class="view-badge" id="viewBadge">Mobile</div>
+  </header>
 
-  <!-- MOBILE CARD -->
-  <main id="mobileView" class="sheet card mobile-only">
-    <div class="sheet-head">
-      <span class="step">1 de 3</span>
+  <!-- MOBILE VIEW (mantém os IDs esperados pelo app.js) -->
+  <main id="mobileView" class="card mobile-only">
+    <div class="card-header">
+      <button id="helpBtn" class="help-btn">❓ Instruções</button>
     </div>
 
-    <!-- Camera button -->
-    <button id="btnCamera" class="cam-btn" aria-label="Tirar foto">
-      <!-- Camera icon (SVG) -->
-      <svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true">
-        <path d="M17 12h6l3 4h7a5 5 0 0 1 5 5v13a5 5 0 0 1-5 5H13a5 5 0 0 1-5-5V21a5 5 0 0 1 5-5h4z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="24" cy="28" r="7" fill="none" stroke="currentColor" stroke-width="2.5"/>
-      </svg>
-    </button>
-    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <section class="camera-area">
+      <button id="btnCamera" class="camera-btn" aria-label="Tirar foto">📷</button>
+      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+      <p class="subtitle">Receção de Material</p>
+      <p class="instructions">
+        Fotografa a <b>etiqueta</b>, a <b>descrição</b> e, se possível, o <b>Eurocode</b>.
+      </p>
+    </section>
 
-    <h2 class="sheet-title">Receção de Material</h2>
-    <p class="hint">
-      Fotografa a <strong>etiqueta</strong>, a <strong>descrição</strong> e, se possível, o <strong>Eurocode</strong>.
-    </p>
-
-    <div id="mobileStatus" class="status"></div>
-
-    <div class="sheet-foot">
-      <button id="helpBtn" class="fab">?</button>
-      <button id="toggleSwitch" class="toggle" aria-label="Opções"></button>
-    </div>
+    <div id="mobileStatus" class="status">Aguardando captura…</div>
 
     <section class="history">
       <div class="history-head">
-        <h4>Últimas capturas</h4>
-        <button id="clearHistory" class="ghost-btn" title="Limpar histórico">Limpar</button>
+        <h3>📑 Últimas capturas</h3>
+        <button id="btnClear" class="btn danger">Limpar</button>
       </div>
-      <ul id="historyList" class="history-list"></ul>
+      <div id="historyList" class="history-list">Sem histórico ainda.</div>
     </section>
   </main>
 
-  <!-- DESKTOP VIEW (mantém funcionalidades existentes) -->
-  <section id="desktopView" class="card desktop-only desktop-card">
-    <div class="desk-toolbar">
+  <!-- DESKTOP VIEW (inalterado funcionalmente) -->
+  <section id="desktopView" class="card desktop-only">
+    <div class="toolbar">
       <button id="btnUpload" class="btn">Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
       <button id="btnExport" class="btn">Exportar CSV</button>
-      <button id="btnClear" class="btn danger">Limpar Tabela</button>
+      <button id="btnClearDesktop" class="btn danger">Limpar Tabela</button>
     </div>
 
     <div class="table-wrap">
@@ -68,7 +59,7 @@
             <th style="width:60px">#</th>
             <th style="width:220px">Data/Hora</th>
             <th>Texto lido (OCR)</th>
-            <th style="width:80px">Ações</th>
+            <th style="width:110px">Ações</th>
           </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
@@ -78,19 +69,28 @@
     <div id="desktopStatus" class="status"></div>
   </section>
 
-  <!-- AJUDA -->
-  <dialog id="helpDialog" class="dialog">
-    <h3>Como usar</h3>
-    <ol>
-      <li>Toca em <strong>Tirar foto</strong> e aponta à etiqueta.</li>
-      <li>Confirma o texto lido; se falhar, usa <strong>Tentar novamente</strong>.</li>
-      <li>No Desktop, podes exportar CSV e apagar linhas.</li>
-    </ol>
-    <button id="closeHelp" class="btn">Ok, entendi</button>
-  </dialog>
-
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Dica rápida para o botão Instruções -->
+  <dialog id="helpDialog" class="help-dialog">
+    <h3>Instruções</h3>
+    <ol>
+      <li>Fotografa a <b>etiqueta</b> do material.</li>
+      <li>Inclui a <b>descrição</b> e, se possível, o <b>Eurocode</b>.</li>
+      <li>Evita reflexos e desfocagem; enche o ecrã com o texto.</li>
+    </ol>
+    <form method="dialog">
+      <button class="btn">Fechar</button>
+    </form>
+  </dialog>
+
+  <script>
+    // abre/fecha “Instruções” (não interfere com o teu app.js)
+    const helpBtn = document.getElementById('helpBtn');
+    const helpDialog = document.getElementById('helpDialog');
+    helpBtn?.addEventListener('click', () => helpDialog.showModal());
+  </script>
 
   <script src="app.js"></script>
 </body>
