@@ -1,8 +1,8 @@
 /* ===== CONFIG ===== */
-const OCR_ENDPOINT = "/api/ocr-proxy";     // Função Netlify do OCR
-const LIST_URL     = "/api/list-ocr";      // Lê do Neon
-const SAVE_URL     = "/api/save-ocr";      // Grava no Neon
-const DEMO_MODE    = false;                // true = simula OCR
+const OCR_ENDPOINT = "/api/ocr-proxy";  // Função Netlify do OCR
+const LIST_URL     = "/api/list-ocr";   // Lê do Neon
+const SAVE_URL     = "/api/save-ocr";   // Grava no Neon
+const DEMO_MODE    = false;             // true = simula OCR
 
 /* ===== Elements ===== */
 const isDesktop = window.matchMedia("(min-width: 900px)").matches;
