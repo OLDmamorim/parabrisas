@@ -31,13 +31,26 @@ const toast = document.getElementById("toast");
   document.head.appendChild(s);
 })();
 
-/* ===== Storage ===== */
+/* ===== Storage (local) ===== */
 const STORAGE_KEY = "express_ocr_results_v1";
 const loadResults = () => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
   catch { return []; }
 };
 const saveResults = (rows) => localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+
+/* ===== Persistência no Neon (API) ===== */
+async function persistToDB({ ts, text, filename, origin }) {
+  try {
+    await fetch('/api/save-ocr', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ts, text, filename, source: origin })
+    });
+  } catch (e) {
+    console.warn('Falha ao gravar no Neon (segue só local):', e.message);
+  }
+}
 
 /* ===== Render ===== */
 function renderTable(){
@@ -98,6 +111,14 @@ async function handleImage(file, origin="camera"){
       text: data?.text || (data?.qr ? `QR: ${data.qr}` : "")
     });
     saveResults(rows);
+
+    // NOVO: gravar também no Neon
+    await persistToDB({
+      ts: rows[0].ts,
+      text: rows[0].text,
+      filename: rows[0].filename,
+      origin
+    });
 
     renderTable();
     showToast("✅ OCR concluído");
