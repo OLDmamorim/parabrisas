@@ -2,8 +2,7 @@
 const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
-const DELETE_URL   = "/api/delete-ocr";
-const CLEAR_URL    = "/api/clear-ocr";   // <- opcional (se criares a função clear-ocr.mjs)
+const DELETE_URL   = "/api/delete-ocr"; // função para remover pelo id
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -16,28 +15,27 @@ const mobileStatus  = document.getElementById("mobileStatus");
 const uploadBtn     = document.getElementById("btnUpload");
 const fileInput     = document.getElementById("fileInput");
 const exportBtn     = document.getElementById("btnExport");
-const clearBtn      = document.getElementById("btnClear");     // limpa só a vista
-const clearDbBtn    = document.getElementById("btnClearDB");   // limpa DB Neon (opcional)
+const clearBtn      = document.getElementById("btnClear");
 const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== CSS extra (texto corrido, botões, barra progresso) ===== */
+/* ===== CSS runtime (texto OCR corrido) ===== */
 (function(){
-  const id = "ocr-extra-style";
+  const id = "ocr-text-style";
   if (document.getElementById(id)) return;
   const s = document.createElement("style");
   s.id = id;
   s.textContent = `
-    .ocr-text{ white-space:normal; overflow-wrap:anywhere; line-height:1.4 }
-    .progress{ margin-top:8px; width:100%; height:10px; background:#1f2937; border-radius:999px; overflow:hidden }
-    .progress>span{ display:block; height:100%; width:0%; background:#3b82f6; transition:width .25s ease }
-    .status.error .progress{ background:#7f1d1d } .status.error .progress>span{ background:#ef4444 }
-    .retry-btn{ background:#b91c1c; color:#fff; border:0; padding:6px 12px; border-radius:6px; margin-top:8px; cursor:pointer }
-    .retry-btn:active{ transform:scale(.98) }
-    .delBtn{ background:#111827; border:1px solid #432; color:#fecaca; padding:6px 10px; border-radius:8px; cursor:pointer }
-    .delBtn:hover{ background:#1a1111 }
-    @media (max-width: 899px){ .delBtn{ display:none } } /* só desktop */
+    .ocr-text{ white-space: normal; overflow-wrap:anywhere; line-height:1.4 }
+    .status.error{ background:#3b0f12; border-color:#c23; }
+    .status .progress{ width:100%; height:6px; background:#1f2937; border-radius:4px; overflow:hidden; margin-top:6px }
+    .status .progress > span{ display:block; height:100%; width:0% }
+    .status:not(.error) .progress > span{ background:#22c55e } /* verde */
+    .status.error .progress > span{ background:#ef4444 } /* vermelho */
+    .retry-btn{ margin-top:8px; padding:6px 10px; border-radius:8px }
+    .btn-icon{ background:transparent; border:1px solid #3b82f6; border-radius:10px; padding:6px 8px; cursor:pointer }
+    .btn-icon:hover{ filter:brightness(1.1) }
   `;
   document.head.appendChild(s);
 })();
@@ -47,8 +45,12 @@ let RESULTS = [];
 let lastFile = null;
 
 /* ===== Helpers UI ===== */
-function showToast(msg){ toast.textContent = msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"), 2200); }
-function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"), 2200);
+}
+const statusEl = () => (isDesktop ? desktopStatus : mobileStatus);
 function setStatus(html, opts={}) {
   const el = statusEl();
   el.classList.toggle("error", !!opts.error);
@@ -63,8 +65,7 @@ function showProgress(label, pct=0, asError=false){
   `;
 }
 function updateProgress(pct){
-  const el = statusEl();
-  const bar = el.querySelector(".progress > span");
+  const bar = statusEl().querySelector(".progress > span");
   if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
 }
 function showError(message){
@@ -78,25 +79,27 @@ function showError(message){
   document.getElementById("retryBtn")?.addEventListener("click", ()=> lastFile && handleImage(lastFile, "retry"));
 }
 
-/* ===== Header: garantir coluna Ações no Desktop ===== */
+/* ===== Cabeçalho seguro p/ Ações (não duplica) ===== */
 function ensureActionsHeader(){
   if(!isDesktop) return;
-  const thead = document.querySelector("#resultsTable thead tr");
-  if (!thead) return;
-  const ths = Array.from(thead.children);
-  const hasActions = ths.some(th => (th.textContent || "").toLowerCase().includes("ção"));
-  if (!hasActions) {
+  const row = document.querySelector("#resultsTable thead tr");
+  if (!row) return;
+  if (row.querySelector("th#col-actions-1")) return; // já existe
+  // 4 colunas “Ações” para manter layout que tens no HTML
+  for (let i=1; i<=4; i++){
     const th = document.createElement("th");
+    th.id = `col-actions-${i}`;
     th.textContent = "Ações";
     th.style.width = "80px";
-    thead.appendChild(th);
+    row.appendChild(th);
   }
 }
 
-/* ===== Tabela ===== */
+/* ===== Render Tabela ===== */
 function renderTable(){
   if(!isDesktop) return;
   ensureActionsHeader();
+
   resultsBody.innerHTML = "";
   RESULTS.forEach((r,i)=>{
     const txt = (r.text || "").replace(/\s*\n\s*/g, " ");
@@ -105,37 +108,15 @@ function renderTable(){
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
       <td><div class="ocr-text">${txt}</div></td>
-      <td><button class="delBtn" data-id="${r.id}">🗑️</button></td>`;
+      <td><button class="btn-icon delBtn" title="Apagar" data-id="${r.id}">🗑️</button></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    `;
     resultsBody.appendChild(tr);
   });
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
-
-/* Delegação: clicks nos botões de apagar (desktop) */
-resultsBody?.addEventListener("click", async (e)=>{
-  const btn = e.target.closest(".delBtn");
-  if(!btn) return;
-  const id = btn.getAttribute("data-id");
-  if(!id) return;
-  if(!confirm("Eliminar este registo?")) return;
-  try{
-    const resp = await fetch(DELETE_URL, {
-      method:"POST",
-      headers:{"content-type":"application/json"},
-      body: JSON.stringify({ id: Number(id) })
-    });
-    if(!resp.ok){
-      const t = await resp.text().catch(()=>resp.statusText);
-      throw new Error(t || ("HTTP " + resp.status));
-    }
-    RESULTS = RESULTS.filter(r => String(r.id) !== String(id));
-    renderTable();
-    showToast("Apagado ✔");
-  }catch(err){
-    console.error(err);
-    showToast("Erro ao apagar: " + err.message);
-  }
-});
 
 /* ===== Neon API ===== */
 async function fetchServerRows(){
@@ -143,7 +124,7 @@ async function fetchServerRows(){
   if(!r.ok) throw new Error('HTTP '+r.status);
   const { rows } = await r.json();
   return rows.map(x => ({
-    id: x.id,
+    id: x.id,                          // precisa existir na tua list-ocr
     ts: new Date(x.ts).getTime(),
     text: x.text || '',
     filename: x.filename || '',
@@ -159,6 +140,15 @@ async function persistToDB({ ts, text, filename, origin }) {
   const txt = await resp.text().catch(()=>resp.statusText);
   if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
 }
+async function deleteRowById(id){
+  const resp = await fetch(DELETE_URL, {
+    method: 'POST',
+    headers: { 'content-type':'application/json' },
+    body: JSON.stringify({ id })
+  });
+  const t = await resp.text().catch(()=>resp.statusText);
+  if(!resp.ok) throw new Error(t || ('HTTP '+resp.status));
+}
 
 /* ===== OCR ===== */
 async function optimizeImageForOCR(file){
@@ -171,7 +161,6 @@ async function optimizeImageForOCR(file){
   const out = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
   return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
 }
-
 async function runOCR(file){
   if (DEMO_MODE){
     await new Promise(r=>setTimeout(r, 500));
@@ -192,7 +181,7 @@ async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
     showProgress("A preparar imagem…", 10);
-    await new Promise(r=>setTimeout(r, 150));
+    await new Promise(r=>setTimeout(r, 120));
 
     showProgress("A otimizar…", 25);
     const prepped = await optimizeImageForOCR(file);
@@ -219,7 +208,7 @@ async function handleImage(file, origin="camera"){
     renderTable();
 
     showProgress("Concluído ✅", 100);
-    setTimeout(()=> setStatus(""), 400);
+    setTimeout(()=> setStatus(""), 500);
     showToast("OCR concluído");
   }catch(err){
     console.error(err);
@@ -271,17 +260,21 @@ clearBtn?.addEventListener("click", ()=>{
   showToast("Vista limpa (dados no Neon mantidos)");
 });
 
-/* ===== Limpar DB Neon (opcional) ===== */
-clearDbBtn?.addEventListener("click", async ()=>{
-  if(!confirm("⚠️ Apagar TODOS os registos do Neon?")) return;
+/* Apagar linha (delegação de eventos) */
+resultsBody?.addEventListener("click", async (e)=>{
+  const btn = e.target.closest(".delBtn");
+  if(!btn) return;
+  const id = btn.getAttribute("data-id");
+  if(!id) return showToast("Registo sem ID.");
+  if(!confirm("Apagar este registo da base de dados?")) return;
+
   try{
-    const resp = await fetch(CLEAR_URL, { method:"POST" });
-    if(!resp.ok) throw new Error("HTTP " + resp.status);
-    RESULTS = [];
+    await deleteRowById(id);
+    RESULTS = RESULTS.filter(r => String(r.id) !== String(id));
     renderTable();
-    showToast("DB Neon limpa ✔");
-  }catch(e){
-    console.error(e);
-    showToast("Erro ao limpar DB: " + e.message);
+    showToast("Registo apagado.");
+  }catch(err){
+    console.error(err);
+    showToast("Falha ao apagar: " + (err.message || "erro"));
   }
 });
