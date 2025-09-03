@@ -3,65 +3,58 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>EXPRESSGLASS • Receção material</title>
+  <title>EXPRESSGLASS • Receção de Material</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- HEADER -->
-  <header class="header">
-    <div class="brand">
-      <h1>EXPRESSGLASS</h1>
-      <p class="subtitle">Receção material</p>
+  <!-- TOP STRIP GRADIENT -->
+  <div class="hero">
+    <div class="hero-inner">
+      <h1 class="brand">EXPRESSGLASS</h1>
+      <span id="viewBadge" class="view-badge">Mobile</span>
+    </div>
+  </div>
+
+  <!-- MOBILE CARD -->
+  <main id="mobileView" class="sheet card mobile-only">
+    <div class="sheet-head">
+      <span class="step">1 de 3</span>
     </div>
 
-    <div class="header-actions">
-      <button id="helpBtn" class="icon-btn" aria-label="Ajuda">❓</button>
-      <div class="view-badge" id="viewBadge">Mobile</div>
-    </div>
-  </header>
-
-  <!-- AJUDA -->
-  <dialog id="helpDialog" class="dialog">
-    <h3>Como usar</h3>
-    <ol>
-      <li>Carrega em <strong>Tirar foto</strong> e aponta à etiqueta/descrição (ideal: boa luz, focado).</li>
-      <li>Confirma o texto lido; se falhar, usa <strong>Tentar novamente</strong>.</li>
-      <li>No Desktop, podes exportar CSV e apagar linhas.</li>
-    </ol>
-    <button id="closeHelp" class="btn">Ok, entendi</button>
-  </dialog>
-
-  <!-- MOBILE VIEW -->
-  <main id="mobileView" class="card mobile-only">
-    <p class="hint">
-      Tira foto à <strong>etiqueta</strong>, <strong>descrição</strong> e, se possível, ao <strong>Eurocode</strong>.
-    </p>
-
-    <button id="btnCamera" class="btn primary big pulse" aria-label="Tirar foto">
-      📷 Tirar foto
+    <!-- Camera button -->
+    <button id="btnCamera" class="cam-btn" aria-label="Tirar foto">
+      <!-- Camera icon (SVG) -->
+      <svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true">
+        <path d="M17 12h6l3 4h7a5 5 0 0 1 5 5v13a5 5 0 0 1-5 5H13a5 5 0 0 1-5-5V21a5 5 0 0 1 5-5h4z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="24" cy="28" r="7" fill="none" stroke="currentColor" stroke-width="2.5"/>
+      </svg>
     </button>
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
 
-    <div id="mobileStatus" class="status">
-      <!-- feedback/progresso entra aqui -->
+    <h2 class="sheet-title">Receção de Material</h2>
+    <p class="hint">
+      Fotografa a <strong>etiqueta</strong>, a <strong>descrição</strong> e, se possível, o <strong>Eurocode</strong>.
+    </p>
+
+    <div id="mobileStatus" class="status"></div>
+
+    <div class="sheet-foot">
+      <button id="helpBtn" class="fab">?</button>
+      <button id="toggleSwitch" class="toggle" aria-label="Opções"></button>
     </div>
 
     <section class="history">
       <div class="history-head">
         <h4>Últimas capturas</h4>
-        <button id="clearHistory" class="icon-btn" title="Limpar histórico">🗑️</button>
+        <button id="clearHistory" class="ghost-btn" title="Limpar histórico">Limpar</button>
       </div>
       <ul id="historyList" class="history-list"></ul>
     </section>
-
-    <footer class="footnote">
-      <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
-    </footer>
   </main>
 
-  <!-- DESKTOP VIEW -->
-  <section id="desktopView" class="card desktop-only">
-    <div class="toolbar">
+  <!-- DESKTOP VIEW (mantém funcionalidades existentes) -->
+  <section id="desktopView" class="card desktop-only desktop-card">
+    <div class="desk-toolbar">
       <button id="btnUpload" class="btn">Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
       <button id="btnExport" class="btn">Exportar CSV</button>
@@ -74,7 +67,7 @@
           <tr>
             <th style="width:60px">#</th>
             <th style="width:220px">Data/Hora</th>
-            <th style="width:auto">Texto lido (OCR)</th>
+            <th>Texto lido (OCR)</th>
             <th style="width:80px">Ações</th>
           </tr>
         </thead>
@@ -84,6 +77,17 @@
 
     <div id="desktopStatus" class="status"></div>
   </section>
+
+  <!-- AJUDA -->
+  <dialog id="helpDialog" class="dialog">
+    <h3>Como usar</h3>
+    <ol>
+      <li>Toca em <strong>Tirar foto</strong> e aponta à etiqueta.</li>
+      <li>Confirma o texto lido; se falhar, usa <strong>Tentar novamente</strong>.</li>
+      <li>No Desktop, podes exportar CSV e apagar linhas.</li>
+    </ol>
+    <button id="closeHelp" class="btn">Ok, entendi</button>
+  </dialog>
 
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
