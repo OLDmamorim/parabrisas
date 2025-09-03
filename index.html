@@ -5,6 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>Express OCR</title>
   <link rel="stylesheet" href="style.css" />
+
+  <!-- OVERRIDES: garantir 3ª coluna larga -->
+  <style>
+    /* Cartão mais largo em desktop */
+    @media (min-width: 900px){
+      #desktopView.card{ max-width:1200px; width:96vw; }
+    }
+
+    /* Tabela ocupa toda a largura e 3ª coluna leva o resto */
+    #resultsTable{ width:100%; table-layout:fixed; }
+    #resultsTable th, #resultsTable td{ vertical-align: top; }
+
+    #resultsTable th:nth-child(1),
+    #resultsTable td:nth-child(1){ width:8% !important; }
+
+    #resultsTable th:nth-child(2),
+    #resultsTable td:nth-child(2){ width:22% !important; }
+
+    #resultsTable th:nth-child(3),
+    #resultsTable td:nth-child(3){ width:70% !important; }
+
+    /* Se quiseres que o texto não respeite \n vindos do OCR, troca para normal */
+    #resultsTable td:nth-child(3){
+      white-space: normal;           /* antes: pre-wrap */
+      overflow-wrap: anywhere;
+    }
+
+    .table-wrap{ width:100%; overflow:auto; }
+  </style>
 </head>
 <body>
   <!-- HEADER -->
