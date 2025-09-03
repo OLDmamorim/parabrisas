@@ -92,3 +92,14 @@ td pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:ui-monosp
 
 /* Wrapper não limita */
 .table-wrap{ width:100%; overflow:auto; }
+#resultsTable{ width:100%; table-layout:fixed; }
+#resultsTable th, #resultsTable td{ vertical-align: top; }
+#resultsTable td:nth-child(3){
+  white-space: pre-wrap;
+  overflow-wrap: anywhere; /* quebra dentro de palavras se preciso */
+}
+
+/* Cartão mais largo em desktop (se quiseres mais espaço) */
+@media (min-width: 900px){
+  #desktopView.card{ max-width: 1200px; width: 96vw; }
+}
