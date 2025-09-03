@@ -15,9 +15,10 @@
     </div>
   </header>
 
-  <!-- CARTÃO BRANCO (igual ao mockup, sem ?/switch/instruções) -->
+  <!-- CARTÃO BRANCO (sem ?, sem switch, sem instruções) -->
   <main id="mobileView" class="eg-card">
-    <button id="btnCamera" class="eg-camera" aria-label="Capturar">
+    <!-- O “botão” é um LABEL ligado ao input; abre a câmara mesmo sem JS -->
+    <label id="btnCamera" class="eg-camera" for="cameraInput" aria-label="Capturar">
       <!-- ícone câmara SVG com contorno + glow -->
       <svg viewBox="0 0 64 64" width="76" height="76" aria-hidden="true">
         <defs>
@@ -27,10 +28,7 @@
           </linearGradient>
           <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="6" result="glow"/>
-            <feMerge>
-              <feMergeNode in="glow"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
+            <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
         <rect x="6" y="6" width="52" height="52" rx="18" fill="#f6faff" stroke="#d7e5ff" stroke-width="2" filter="url(#softGlow)"/>
@@ -39,11 +37,11 @@
         <circle cx="32" cy="38" r="10" fill="none" stroke="url(#camGrad)" stroke-width="2.5"/>
         <circle cx="32" cy="38" r="4" fill="url(#camGrad)"/>
       </svg>
-    </button>
+    </label>
 
     <h2 class="eg-title">Receção de Material</h2>
 
-    <!-- Mensagem de sucesso (o teu JS pode trocar este conteúdo conforme o estado) -->
+    <!-- Mensagem de sucesso (o teu JS pode trocar este conteúdo) -->
     <p id="mobileStatus" class="eg-ok">
       <span class="eg-tick"></span>
       A receção foi concluída<br/>com sucesso
@@ -70,6 +68,7 @@
     </div>
   </section>
 
+  <!-- O teu JS original -->
   <script src="app.js"></script>
 </body>
 </html>
