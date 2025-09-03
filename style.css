@@ -42,3 +42,23 @@ td pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:ui-monosp
 
 .mobile-only{display:block}.desktop-only{display:none}
 @media (min-width:900px){.mobile-only{display:none}.desktop-only{display:block}}
+/* ---- Larguras da tabela (3ª coluna ocupa o resto) ---- */
+#resultsTable { width: 100%; table-layout: auto; }
+
+#resultsTable th:nth-child(1),
+#resultsTable td:nth-child(1) { width: 64px; }
+
+#resultsTable th:nth-child(2),
+#resultsTable td:nth-child(2) { width: 220px; }
+
+#resultsTable th:nth-child(3),
+#resultsTable td:nth-child(3) { width: auto; }
+
+/* Texto do OCR deve poder quebrar e ocupar a linha toda */
+#resultsTable td:nth-child(3) {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Garantir que o wrapper não limita a largura da tabela */
+.table-wrap { width: 100%; overflow: auto; }
