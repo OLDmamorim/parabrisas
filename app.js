@@ -1,5 +1,5 @@
 /* ===== CONFIG ===== */
-const OCR_ENDPOINT = "/.netlify/functions/ocr-proxy"; // função Netlify: netlify/functions/ocr-proxy.mjs
+const OCR_ENDPOINT = "/api/ocr-proxy"; // função Netlify: netlify/functions/ocr-proxy.mjs
 const DEMO_MODE = false; // true = simula OCR sem backend
 
 /* ===== Elements ===== */
@@ -80,7 +80,6 @@ async function handleImage(file, origin="camera"){
     const rows = loadResults();
     rows.unshift({
       ts: Date.now(),
-      // Guardamos filename internamente caso um dia queiras voltar a mostrar/exportar
       filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
       text: data?.text || (data?.qr ? `QR: ${data.qr}` : "")
     });
@@ -115,7 +114,7 @@ fileInput?.addEventListener("change", (e) => {
 exportBtn?.addEventListener("click", () => {
   const rows = loadResults();
   if(!rows.length) return showToast("Nada para exportar");
-  const header = ["idx","timestamp","text"]; // removido filename
+  const header = ["idx","timestamp","text"];
   const lines = [header.join(",")].concat(
     rows.map((r,i)=>[
       i+1,
