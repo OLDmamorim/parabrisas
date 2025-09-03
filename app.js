@@ -42,13 +42,35 @@ const saveResults = (rows) => localStorage.setItem(STORAGE_KEY, JSON.stringify(r
 /* ===== Persistência no Neon (API) ===== */
 async function persistToDB({ ts, text, filename, origin }) {
   try {
-    await fetch('/api/save-ocr', {
+    const resp = await fetch('/api/save-ocr', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ts, text, filename, source: origin })
     });
+    const txt = await resp.text();
+    console.log('[save-ocr] status:', resp.status, 'body:', txt);
+    if (!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
   } catch (e) {
-    console.warn('Falha ao gravar no Neon (segue só local):', e.message);
+    console.warn('Falha ao gravar no Neon:', e.message);
+    try { toast && (toast.textContent = '⚠️ Neon: ' + e.message); toast && toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 2500); } catch {}
+  }
+}
+
+async function loadServerRows(){
+  try{
+    const r = await fetch('/api/list-ocr');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const { rows } = await r.json();
+    // normaliza para o formato usado localmente
+    return rows.map(x => ({
+      ts: new Date(x.ts).getTime(),
+      text: x.text || '',
+      filename: x.filename || '',
+      source: x.source || ''
+    }));
+  }catch(e){
+    console.warn('Sem Neon (uso local):', e.message);
+    return null;
   }
 }
 
@@ -58,7 +80,6 @@ function renderTable(){
   const rows = loadResults();
   resultsBody.innerHTML = "";
   rows.forEach((r,i)=>{
-    // compacta quebras de linha do OCR
     const compactText = (r.text || "").replace(/\s*\n\s*/g, " ");
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -69,7 +90,18 @@ function renderTable(){
   });
   desktopStatus.textContent = rows.length ? `${rows.length} registo(s).` : "Sem registos ainda.";
 }
-renderTable();
+
+/* ===== Bootstrap (carrega do Neon ao abrir) ===== */
+async function bootstrap(){
+  if(isDesktop){
+    const serverRows = await loadServerRows();
+    if (serverRows && serverRows.length){
+      saveResults(serverRows); // cache local para navegação rápida
+    }
+    renderTable();
+  }
+}
+bootstrap();
 
 /* ===== Toast ===== */
 function showToast(msg){
@@ -112,7 +144,7 @@ async function handleImage(file, origin="camera"){
     });
     saveResults(rows);
 
-    // NOVO: gravar também no Neon
+    // Gravar também no Neon
     await persistToDB({
       ts: rows[0].ts,
       text: rows[0].text,
