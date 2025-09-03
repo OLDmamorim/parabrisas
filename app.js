@@ -20,7 +20,7 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== (pequeno CSS para o texto ficar corrido) ===== */
+/* ===== (CSS para texto corrido) ===== */
 (function injectOCRCss(){
   const id = "ocr-text-style";
   if (document.getElementById(id)) return;
@@ -30,20 +30,18 @@ const toast         = document.getElementById("toast");
   document.head.appendChild(s);
 })();
 
-/* ===== Estado em memória (fonte única) ===== */
-let RESULTS = []; // <- Só dados vindos do Neon
+/* ===== Estado em memória (só Neon) ===== */
+let RESULTS = [];
 
-/* ===== Helpers UI ===== */
+/* ===== UI ===== */
 function showToast(msg){
   toast.textContent = msg;
   toast.classList.add("show");
   setTimeout(()=>toast.classList.remove("show"), 2200);
 }
-
 function renderTable(){
   if(!isDesktop) return;
   resultsBody.innerHTML = "";
-
   RESULTS.forEach((r,i)=>{
     const compactText = (r.text || "").replace(/\s*\n\s*/g, " ");
     const tr = document.createElement("tr");
@@ -53,10 +51,7 @@ function renderTable(){
       <td><div class="ocr-text">${compactText}</div></td>`;
     resultsBody.appendChild(tr);
   });
-
-  desktopStatus.textContent = RESULTS.length
-    ? `${RESULTS.length} registo(s).`
-    : "Sem registos ainda.";
+  desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
 
 /* ===== API (Neon) ===== */
@@ -64,7 +59,6 @@ async function fetchServerRows(){
   const r = await fetch(LIST_URL);
   if(!r.ok) throw new Error('HTTP '+r.status);
   const { rows } = await r.json();
-  // normaliza
   return rows.map(x => ({
     ts: new Date(x.ts).getTime(),
     text: x.text || '',
@@ -72,37 +66,48 @@ async function fetchServerRows(){
     source: x.source || ''
   }));
 }
-
 async function persistToDB({ ts, text, filename, origin }) {
   const resp = await fetch(SAVE_URL, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ ts, text, filename, source: origin })
   });
-  if(!resp.ok){
-    const txt = await resp.text().catch(()=>resp.statusText);
-    throw new Error(txt || ('HTTP ' + resp.status));
-  }
+  const txt = await resp.text().catch(()=>resp.statusText);
+  if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
 }
 
 /* ===== OCR ===== */
+/* Reduz a imagem no cliente para evitar 500s no backend (HEIC, fotos muito grandes, etc.) */
+async function optimizeImageForOCR(file){
+  const srcBlob = file instanceof Blob ? file : new Blob([file]);
+  const imgBitmap = await createImageBitmap(srcBlob);
+  const scale = Math.min(1600 / imgBitmap.width, 1600 / imgBitmap.height, 1);
+  const w = Math.round(imgBitmap.width * scale);
+  const h = Math.round(imgBitmap.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(imgBitmap, 0, 0, w, h);
+  const optimizedBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
+  return new File([optimizedBlob], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
+}
+
 async function runOCR(file){
   if (!file) throw new Error("Sem ficheiro");
 
   if (DEMO_MODE){
-    await new Promise(r=>setTimeout(r, 600));
-    return { text: "DEMO: Texto simulado de OCR\nLinha 2: 123 ABC\nLinha 3: EXP-GLS" };
+    await new Promise(r=>setTimeout(r, 500));
+    return { text: "DEMO: Texto simulado de OCR\nLinha 2: 123 ABC" };
   }
 
+  const optimizedFile = await optimizeImageForOCR(file);
   const fd = new FormData();
-  fd.append("file", file, file.name || "foto.jpg");
+  fd.append("file", optimizedFile, optimizedFile.name);
 
   const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
-  if(!res.ok){
-    const t = await res.text().catch(()=>res.statusText);
-    throw new Error(`Falha no OCR: ${res.status} ${t}`);
-  }
-  return await res.json(); // { text, qr, filename }
+  const t = await res.text().catch(()=>res.statusText);
+  if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
+  return JSON.parse(t); // { text, filename }
 }
 
 /* ===== Fluxo comum ===== */
@@ -123,7 +128,7 @@ async function handleImage(file, origin="camera"){
       ts: row.ts, text: row.text, filename: row.filename, origin
     });
 
-    // 3) Recarregar do Neon (fonte única)
+    // 3) Ler do Neon para manter tudo sincronizado
     RESULTS = await fetchServerRows();
     renderTable();
 
@@ -144,13 +149,13 @@ async function bootstrap(){
     RESULTS = await fetchServerRows();
   }catch(e){
     console.warn("Sem Neon (lista):", e.message);
-    RESULTS = []; // sem dados
+    RESULTS = [];
   }
   renderTable();
 }
 bootstrap();
 
-/* ===== Ações (mobile/desktop) ===== */
+/* ===== Ações ===== */
 cameraBtn?.addEventListener("click", () => cameraInput.click());
 cameraInput?.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
@@ -165,7 +170,6 @@ fileInput?.addEventListener("change", (e) => {
   fileInput.value = "";
 });
 
-/* Exporta CSV a partir do que está no Neon (RESULTS) */
 exportBtn?.addEventListener("click", () => {
   if(!RESULTS.length) return showToast("Nada para exportar");
   const header = ["idx","timestamp","text"];
@@ -183,8 +187,7 @@ exportBtn?.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-/* Botão "Limpar Tabela" agora só limpa a vista local (não apaga no Neon) */
-clearBtn?.addEventListener("click", async ()=>{
+clearBtn?.addEventListener("click", ()=>{
   RESULTS = [];
   renderTable();
   showToast("Vista limpa (dados no Neon mantidos)");
