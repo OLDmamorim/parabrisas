@@ -4,10 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>EXPRESSGLASS</title>
-
-  <!-- Fonte bonita -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -17,7 +14,7 @@
     <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- MOBILE VIEW (mantém os IDs esperados pelo app.js) -->
+  <!-- MOBILE VIEW -->
   <main id="mobileView" class="card mobile-only">
     <div class="card-header">
       <button id="helpBtn" class="help-btn">❓ Instruções</button>
@@ -27,9 +24,12 @@
       <button id="btnCamera" class="camera-btn" aria-label="Tirar foto">📷</button>
       <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
       <p class="subtitle">Receção de Material</p>
+
+      <!-- INSTRUÇÕES (removidas; manter comentado se quiseres voltar)
       <p class="instructions">
         Fotografa a <b>etiqueta</b>, a <b>descrição</b> e, se possível, o <b>Eurocode</b>.
       </p>
+      -->
     </section>
 
     <div id="mobileStatus" class="status">Aguardando captura…</div>
@@ -43,7 +43,7 @@
     </section>
   </main>
 
-  <!-- DESKTOP VIEW (inalterado funcionalmente) -->
+  <!-- DESKTOP VIEW -->
   <section id="desktopView" class="card desktop-only">
     <div class="toolbar">
       <button id="btnUpload" class="btn">Carregar imagem</button>
@@ -72,13 +72,13 @@
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- Dica rápida para o botão Instruções -->
+  <!-- DIALOG INSTRUÇÕES -->
   <dialog id="helpDialog" class="help-dialog">
     <h3>Instruções</h3>
     <ol>
       <li>Fotografa a <b>etiqueta</b> do material.</li>
       <li>Inclui a <b>descrição</b> e, se possível, o <b>Eurocode</b>.</li>
-      <li>Evita reflexos e desfocagem; enche o ecrã com o texto.</li>
+      <li>Evita reflexos e desfocagem.</li>
     </ol>
     <form method="dialog">
       <button class="btn">Fechar</button>
@@ -86,7 +86,7 @@
   </dialog>
 
   <script>
-    // abre/fecha “Instruções” (não interfere com o teu app.js)
+    // abrir/fechar instruções (não interfere com app.js)
     const helpBtn = document.getElementById('helpBtn');
     const helpDialog = document.getElementById('helpDialog');
     helpBtn?.addEventListener('click', () => helpDialog.showModal());
