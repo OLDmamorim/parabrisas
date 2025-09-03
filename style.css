@@ -62,3 +62,33 @@ td pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:ui-monosp
 
 /* Garantir que o wrapper não limita a largura da tabela */
 .table-wrap { width: 100%; overflow: auto; }
+/* Cartão mais largo em desktop */
+@media (min-width: 900px){
+  #desktopView.card{
+    max-width: 1200px;   /* antes devias ter ~900px */
+    width: 96vw;
+  }
+}
+
+/* Tabela ocupa toda a largura */
+#resultsTable{ width:100%; table-layout: fixed; }
+
+/* 1ª e 2ª mais estreitas; 3ª fica com o resto */
+#resultsTable th:nth-child(1),
+#resultsTable td:nth-child(1){ width: 6% !important; }
+
+#resultsTable th:nth-child(2),
+#resultsTable td:nth-child(2){ width: 20% !important; }
+
+/* 3ª coluna larga */
+#resultsTable th:nth-child(3),
+#resultsTable td:nth-child(3){ width: 74% !important; }
+
+/* Texto do OCR quebra bem e usa a linha toda */
+#resultsTable td:nth-child(3){
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Wrapper não limita */
+.table-wrap{ width:100%; overflow:auto; }
