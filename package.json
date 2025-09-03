@@ -6,6 +6,7 @@
     "@google-cloud/vision": "^4.3.2",
     "busboy": "^1.6.0",
     "jsqr": "^1.4.0",
-    "sharp": "^0.33.4"
+    "sharp": "^0.33.4",
+    "@neondatabase/serverless": "^0.10.0"
   }
 }
