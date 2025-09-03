@@ -3,6 +3,7 @@ const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
 const DELETE_URL   = "/api/delete-ocr";
+const CLEAR_URL    = "/api/clear-ocr";   // <- opcional (se criares a função clear-ocr.mjs)
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -15,7 +16,8 @@ const mobileStatus  = document.getElementById("mobileStatus");
 const uploadBtn     = document.getElementById("btnUpload");
 const fileInput     = document.getElementById("fileInput");
 const exportBtn     = document.getElementById("btnExport");
-const clearBtn      = document.getElementById("btnClear");
+const clearBtn      = document.getElementById("btnClear");     // limpa só a vista
+const clearDbBtn    = document.getElementById("btnClearDB");   // limpa DB Neon (opcional)
 const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
@@ -82,7 +84,7 @@ function ensureActionsHeader(){
   const thead = document.querySelector("#resultsTable thead tr");
   if (!thead) return;
   const ths = Array.from(thead.children);
-  const hasActions = ths.some(th => (th.textContent || "").toLowerCase().includes("ação"));
+  const hasActions = ths.some(th => (th.textContent || "").toLowerCase().includes("ção"));
   if (!hasActions) {
     const th = document.createElement("th");
     th.textContent = "Ações";
@@ -109,7 +111,7 @@ function renderTable(){
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
 
-/* Delegação: clicks nos botões de apagar */
+/* Delegação: clicks nos botões de apagar (desktop) */
 resultsBody?.addEventListener("click", async (e)=>{
   const btn = e.target.closest(".delBtn");
   if(!btn) return;
@@ -267,4 +269,19 @@ clearBtn?.addEventListener("click", ()=>{
   RESULTS = [];
   renderTable();
   showToast("Vista limpa (dados no Neon mantidos)");
+});
+
+/* ===== Limpar DB Neon (opcional) ===== */
+clearDbBtn?.addEventListener("click", async ()=>{
+  if(!confirm("⚠️ Apagar TODOS os registos do Neon?")) return;
+  try{
+    const resp = await fetch(CLEAR_URL, { method:"POST" });
+    if(!resp.ok) throw new Error("HTTP " + resp.status);
+    RESULTS = [];
+    renderTable();
+    showToast("DB Neon limpa ✔");
+  }catch(e){
+    console.error(e);
+    showToast("Erro ao limpar DB: " + e.message);
+  }
 });
