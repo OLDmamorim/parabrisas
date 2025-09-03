@@ -1,67 +1,69 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>ExpressGlass • Mobile</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <!-- HEADER -->
   <header class="header">
-    <div class="header-inner">
-      <h1>EXPRESSGLASS</h1>
-      <span class="badge">Mobile</span>
+    <div class="brand">
+      <h1 class="title">EXPRESSGLASS</h1>
+      <p class="subtitle">Receção material</p>
     </div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- CARD -->
-  <main class="wrap">
-    <section class="card">
-      <span class="step">1 de3</span>
-
-      <button class="camera" id="cameraBtn" aria-label="Capturar">
-        <!-- Ícone com gradiente, sem dependências externas -->
-        <svg viewBox="0 0 64 64" width="76" height="76" aria-hidden="true">
-          <defs>
-            <linearGradient id="camGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"  stop-color="#2d5bff"/>
-              <stop offset="100%" stop-color="#86b3ff"/>
-            </linearGradient>
-          </defs>
-          <path d="M24 18h16l3 4h9a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V26a4 4 0 0 1 4-4h9l3-4z"
-                fill="none" stroke="url(#camGrad)" stroke-width="2.5" stroke-linejoin="round"/>
-          <circle cx="32" cy="38" r="10" fill="none" stroke="url(#camGrad)" stroke-width="2.5"/>
-          <circle cx="32" cy="38" r="4" fill="url(#camGrad)"/>
-        </svg>
+  <!-- MOBILE VIEW -->
+  <main id="mobileView" class="card mobile-only">
+    <div class="mobile-cta">
+      <button id="btnCamera" class="btn-square" aria-label="Tirar foto da etiqueta">
+        <span class="emoji">📷</span>
       </button>
-
-      <h2 class="title">Receção de Material</h2>
-
-      <p class="ok">
-        <span class="dot"></span>
-        A receção foi concluída<br/>com sucesso
+      <p class="hint">
+        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
+        Se conseguires, inclui a <strong>descrição</strong> e o <strong>Eurocode</strong>.
       </p>
+    </div>
 
-      <button class="fab help" id="helpBtn" aria-label="Ajuda">?</button>
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <div id="mobileStatus" class="status"></div>
 
-      <button class="switch" id="switchBtn" aria-label="Ativar/desativar">
-        <span></span>
-      </button>
-    </section>
+    <footer class="footnote">
+      <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
+    </footer>
   </main>
 
-  <!-- Modal de ajuda simples -->
-  <dialog id="helpModal" class="modal">
-    <div class="modal-box">
-      <h3>Instruções</h3>
-      <p>1) Toca na câmara.<br>2) Confirma a leitura.<br>3) Avança para o passo seguinte.</p>
-      <div class="modal-actions">
-        <button class="btn" id="closeHelp">Fechar</button>
-      </div>
+  <!-- DESKTOP VIEW -->
+  <section id="desktopView" class="card desktop-only">
+    <div class="toolbar">
+      <button id="btnUpload" class="btn">Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+      <button id="btnExport" class="btn">Exportar CSV</button>
+      <button id="btnClear" class="btn danger">Limpar Tabela</button>
     </div>
-  </dialog>
 
-  <script src="script.js"></script>
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th style="width:60px">#</th>
+            <th style="width:220px">Data/Hora</th>
+            <th style="width:auto">Texto lido (OCR)</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div id="desktopStatus" class="status"></div>
+  </section>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
 </body>
 </html>
