@@ -1,124 +1,128 @@
 /* ===== BASE ===== */
 :root{
-  --bg:#f3f6fb;
+  --bg:#eef2f6;
   --card:#ffffff;
   --ink:#0f172a;
-  --muted:#5b6b80;
-  --primary:#3b82f6;
+  --muted:#64748b;
+  --primary:#2563eb;
   --primary-2:#60a5fa;
   --ok:#16a34a;
-  --radius-lg:22px;
-  --radius-md:14px;
-  --shadow:0 12px 28px rgba(15,23,42,.12);
-}
 
+  --r-lg:20px;
+  --r-md:14px;
+  --shadow-sm:0 4px 10px rgba(15,23,42,.06);
+  --shadow-md:0 10px 24px rgba(15,23,42,.10);
+}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial;
+  font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial;
   color:var(--ink);
   background:var(--bg);
 }
 
-/* ===== HEADER (igual ao mockup) ===== */
+/* ===== HEADER (limpo) ===== */
 .header{
-  padding:20px 16px 8px;
+  padding:18px 16px 10px;
   background:linear-gradient(135deg,var(--primary) 0%, var(--primary-2) 100%);
 }
 .header-inner{
   max-width:420px; margin:0 auto;
-  background:linear-gradient(135deg,var(--primary) 0%, var(--primary-2) 100%);
-  border-radius:24px;
-  padding:18px 18px 22px;
+  background:transparent;
+  border-radius:22px;
   position:relative;
 }
 .header h1{
-  margin:0; color:#fff; font-weight:800; letter-spacing:.5px;
-  font-size:30px;
+  margin:0; color:#fff; font-weight:800; letter-spacing:.3px;
+  font-size:28px; text-shadow:0 1px 0 rgba(0,0,0,.08);
 }
 .badge{
-  position:absolute; right:16px; top:14px;
-  background:#e6eefc; color:#1e293b; font-weight:700; font-size:14px;
-  padding:6px 12px; border-radius:999px;
-  box-shadow:0 1px 0 rgba(0,0,0,.06) inset;
+  position:absolute; right:0; top:4px;
+  background:rgba(255,255,255,.9); color:#1f2937; font-weight:700; font-size:13px;
+  padding:6px 10px; border-radius:999px; box-shadow:var(--shadow-sm);
 }
 
 /* ===== LAYOUT ===== */
-.wrap{max-width:420px; margin:-18px auto 28px; padding:0 16px}
+.wrap{max-width:420px; margin:-6px auto 28px; padding:0 16px}
 
 /* ===== CARD ===== */
 .card{
   position:relative;
   background:var(--card);
-  border-radius:var(--radius-lg);
-  box-shadow:var(--shadow);
-  padding:28px 22px 68px;
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-md);
+  padding:24px 20px 64px;
 }
-
-/* step "1 de 3" no topo direito */
 .step{
-  position:absolute; right:22px; top:20px; color:#1f2937;
-  font-weight:700; font-size:14px; opacity:.6;
+  position:absolute; right:18px; top:16px;
+  color:var(--muted); font-weight:700; font-size:13px; opacity:.9;
 }
 
-/* botão câmara com glow suave */
+/* ===== CÂMARA (menos “bola”, glow suave) ===== */
 .camera{
   display:grid; place-items:center;
-  width:140px; height:140px; margin:6px auto 10px;
-  border-radius:20px; border:none; background:#f6f9ff;
-  box-shadow:0 8px 24px rgba(48,106,255,.18), inset 0 0 0 2px rgba(48,106,255,.18);
+  width:120px; height:120px; margin:6px auto 12px;
+  border-radius:18px; border:1px solid #dce6ff; background:#f9fbff;
+  box-shadow:0 8px 20px rgba(37,99,235,.12), inset 0 0 0 2px rgba(37,99,235,.10);
   cursor:pointer;
 }
+.camera svg path, .camera svg circle{stroke:#2563eb}
+.camera svg circle:last-of-type{fill:#2563eb}
 
-/* título */
+/* ===== TÍTULO + ESTADO ===== */
 .title{
-  margin:8px 0 2px; text-align:left; font-size:26px; line-height:1.1;
-  letter-spacing:.2px; color:#111827; font-weight:800;
+  margin:6px 0 6px; text-align:left; font-size:24px; line-height:1.1;
+  letter-spacing:.1px; color:#0b1220; font-weight:800;
 }
-
-/* linha "ok" com visto verde */
 .ok{
-  margin:12px 0 0; color:#1b4332; font-weight:700; font-size:18px;
-  line-height:1.25; display:flex; gap:10px; align-items:flex-start;
+  margin:10px 0 0; color:#0b3d2e; font-weight:700; font-size:16px;
+  line-height:1.3; display:flex; gap:10px; align-items:flex-start;
 }
 .ok .dot{
-  width:22px; height:22px; flex:0 0 22px; border-radius:999px;
-  background:var(--ok); display:inline-block; position:relative;
+  width:20px; height:20px; flex:0 0 20px; border-radius:999px; background:var(--ok); position:relative;
+  box-shadow:0 1px 0 rgba(0,0,0,.05) inset;
 }
 .ok .dot::after{
-  content:""; position:absolute; inset:5px 7px 7px 5px;
-  border:3px solid #fff; border-top:0; border-left:0; transform:rotate(45deg);
+  content:""; position:absolute; left:5px; top:3px;
+  width:8px; height:12px; border:3px solid #fff; border-top:0; border-left:0; transform:rotate(45deg);
 }
 
-/* FABs no rodapé do cartão */
+/* ===== BOTÕES (cantos opostos) ===== */
 .fab{
-  position:absolute; bottom:16px; width:44px; height:44px; border-radius:999px;
-  border:none; background:#2b3441; color:#fff; font-weight:800; font-size:20px;
-  display:grid; place-items:center; box-shadow:0 6px 16px rgba(0,0,0,.18); cursor:pointer;
+  position:absolute; bottom:14px; width:44px; height:44px; border-radius:999px;
+  border:none; background:#2f3a46; color:#fff; font-weight:800; font-size:20px;
+  display:grid; place-items:center; box-shadow:var(--shadow-sm); cursor:pointer;
 }
-.fab.help{left:16px}
+.fab.help{left:14px}
 
-/* switch no canto direito */
+/* ===== SWITCH minimal ===== */
 .switch{
-  position:absolute; bottom:16px; right:16px; width:64px; height:34px;
-  background:#2b3441; border-radius:999px; border:none; cursor:pointer; padding:3px;
-  box-shadow:0 6px 16px rgba(0,0,0,.18);
+  position:absolute; bottom:14px; right:14px;
+  width:60px; height:34px; padding:3px; border:none; cursor:pointer;
+  background:#e9eef5; border-radius:999px; box-shadow:var(--shadow-sm);
 }
 .switch > span{
-  display:block; width:28px; height:28px; border-radius:50%; background:#fff; transform:translateX(0);
-  transition:transform .18s ease;
+  display:block; width:28px; height:28px; border-radius:50%; background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.12);
+  transform:translateX(0); transition:transform .18s ease, background .18s ease;
 }
-.switch.on{background:#0f766e}
-.switch.on > span{transform:translateX(30px)}
+.switch.on{background:#2563eb22}
+.switch.on > span{transform:translateX(26px); background:#2563eb}
 
 /* ===== MODAL ===== */
-.modal{border:none; border-radius:16px; padding:0; width:min(92vw,420px)}
+.modal{border:none; border-radius:14px; padding:0; width:min(92vw,420px)}
 .modal::backdrop{background:rgba(0,0,0,.45)}
-.modal-box{background:#fff; color:#0f172a; padding:18px 16px; border-radius:16px}
-.modal-box h3{margin:0 0 8px}
+.modal-box{background:#fff; color:#0f172a; padding:16px; border-radius:14px; box-shadow:var(--shadow-md)}
+.modal-box h3{margin:0 0 8px; font-size:18px}
 .modal-actions{display:flex; justify-content:flex-end}
 .btn{
   background:var(--primary); color:#fff; border:none; padding:8px 12px; border-radius:10px;
   font-weight:700; cursor:pointer;
+}
+
+/* ===== MICRO-AJUSTES MOBILE PEQUENO ===== */
+@media (max-width:390px){
+  .title{font-size:22px}
+  .camera{width:112px; height:112px}
 }
