@@ -2,7 +2,6 @@
 const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
-const DELETE_URL   = "/api/delete-ocr"; // função para remover pelo id
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -20,7 +19,7 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== CSS runtime (texto OCR corrido) ===== */
+/* ===== CSS para texto corrido ===== */
 (function(){
   const id = "ocr-text-style";
   if (document.getElementById(id)) return;
@@ -28,14 +27,10 @@ const toast         = document.getElementById("toast");
   s.id = id;
   s.textContent = `
     .ocr-text{ white-space: normal; overflow-wrap:anywhere; line-height:1.4 }
-    .status.error{ background:#3b0f12; border-color:#c23; }
-    .status .progress{ width:100%; height:6px; background:#1f2937; border-radius:4px; overflow:hidden; margin-top:6px }
-    .status .progress > span{ display:block; height:100%; width:0% }
-    .status:not(.error) .progress > span{ background:#22c55e } /* verde */
-    .status.error .progress > span{ background:#ef4444 } /* vermelho */
-    .retry-btn{ margin-top:8px; padding:6px 10px; border-radius:8px }
-    .btn-icon{ background:transparent; border:1px solid #3b82f6; border-radius:10px; padding:6px 8px; cursor:pointer }
-    .btn-icon:hover{ filter:brightness(1.1) }
+    .error { background:#300; color:#fff; padding:6px; border-radius:6px }
+    .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
+    .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
+    .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
   `;
   document.head.appendChild(s);
 })();
@@ -50,7 +45,7 @@ function showToast(msg){
   toast.classList.add("show");
   setTimeout(()=>toast.classList.remove("show"), 2200);
 }
-const statusEl = () => (isDesktop ? desktopStatus : mobileStatus);
+function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
 function setStatus(html, opts={}) {
   const el = statusEl();
   el.classList.toggle("error", !!opts.error);
@@ -65,7 +60,8 @@ function showProgress(label, pct=0, asError=false){
   `;
 }
 function updateProgress(pct){
-  const bar = statusEl().querySelector(".progress > span");
+  const el = statusEl();
+  const bar = el.querySelector(".progress > span");
   if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
 }
 function showError(message){
@@ -79,27 +75,25 @@ function showError(message){
   document.getElementById("retryBtn")?.addEventListener("click", ()=> lastFile && handleImage(lastFile, "retry"));
 }
 
-/* ===== Cabeçalho seguro p/ Ações (não duplica) ===== */
-function ensureActionsHeader(){
-  if(!isDesktop) return;
-  const row = document.querySelector("#resultsTable thead tr");
-  if (!row) return;
-  if (row.querySelector("th#col-actions-1")) return; // já existe
-  // 4 colunas “Ações” para manter layout que tens no HTML
-  for (let i=1; i<=4; i++){
-    const th = document.createElement("th");
-    th.id = `col-actions-${i}`;
-    th.textContent = "Ações";
-    th.style.width = "80px";
-    row.appendChild(th);
-  }
+/* ===== Cabeçalho da tabela ===== */
+function ensureActionsHeader() {
+  if (!isDesktop) return;
+  const thead = document.querySelector("#resultsTable thead");
+  if (!thead) return;
+  thead.innerHTML = `
+    <tr>
+      <th style="width:60px">#</th>
+      <th style="width:220px">Data/Hora</th>
+      <th style="width:auto">Texto lido (OCR)</th>
+      <th style="width:80px">Ações</th>
+    </tr>
+  `;
 }
 
-/* ===== Render Tabela ===== */
+/* ===== Render da tabela ===== */
 function renderTable(){
   if(!isDesktop) return;
   ensureActionsHeader();
-
   resultsBody.innerHTML = "";
   RESULTS.forEach((r,i)=>{
     const txt = (r.text || "").replace(/\s*\n\s*/g, " ");
@@ -108,14 +102,22 @@ function renderTable(){
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
       <td><div class="ocr-text">${txt}</div></td>
-      <td><button class="btn-icon delBtn" title="Apagar" data-id="${r.id}">🗑️</button></td>
-      <td></td>
-      <td></td>
-      <td></td>
+      <td>
+        <button class="btn-icon delBtn" title="Apagar" data-id="${r.id}">🗑️</button>
+      </td>
     `;
     resultsBody.appendChild(tr);
   });
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
+
+  // listeners para apagar linhas
+  document.querySelectorAll(".delBtn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.dataset.id;
+      RESULTS = RESULTS.filter(r=>r.id!=id);
+      renderTable();
+    });
+  });
 }
 
 /* ===== Neon API ===== */
@@ -124,7 +126,7 @@ async function fetchServerRows(){
   if(!r.ok) throw new Error('HTTP '+r.status);
   const { rows } = await r.json();
   return rows.map(x => ({
-    id: x.id,                          // precisa existir na tua list-ocr
+    id: x.id,
     ts: new Date(x.ts).getTime(),
     text: x.text || '',
     filename: x.filename || '',
@@ -139,15 +141,6 @@ async function persistToDB({ ts, text, filename, origin }) {
   });
   const txt = await resp.text().catch(()=>resp.statusText);
   if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
-}
-async function deleteRowById(id){
-  const resp = await fetch(DELETE_URL, {
-    method: 'POST',
-    headers: { 'content-type':'application/json' },
-    body: JSON.stringify({ id })
-  });
-  const t = await resp.text().catch(()=>resp.statusText);
-  if(!resp.ok) throw new Error(t || ('HTTP '+resp.status));
 }
 
 /* ===== OCR ===== */
@@ -169,7 +162,6 @@ async function runOCR(file){
   const optimized = await optimizeImageForOCR(file);
   const fd = new FormData();
   fd.append("file", optimized, optimized.name);
-
   const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
   const t = await res.text().catch(()=>res.statusText);
   if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
@@ -181,7 +173,7 @@ async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
     showProgress("A preparar imagem…", 10);
-    await new Promise(r=>setTimeout(r, 120));
+    await new Promise(r=>setTimeout(r, 150));
 
     showProgress("A otimizar…", 25);
     const prepped = await optimizeImageForOCR(file);
@@ -196,6 +188,7 @@ async function handleImage(file, origin="camera"){
     const data = JSON.parse(t);
 
     const row = {
+      id: Date.now().toString(),
       ts: Date.now(),
       filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
       text: data?.text || (data?.qr ? `QR: ${data.qr}` : "")
@@ -208,7 +201,7 @@ async function handleImage(file, origin="camera"){
     renderTable();
 
     showProgress("Concluído ✅", 100);
-    setTimeout(()=> setStatus(""), 500);
+    setTimeout(()=> setStatus(""), 400);
     showToast("OCR concluído");
   }catch(err){
     console.error(err);
@@ -258,23 +251,4 @@ clearBtn?.addEventListener("click", ()=>{
   RESULTS = [];
   renderTable();
   showToast("Vista limpa (dados no Neon mantidos)");
-});
-
-/* Apagar linha (delegação de eventos) */
-resultsBody?.addEventListener("click", async (e)=>{
-  const btn = e.target.closest(".delBtn");
-  if(!btn) return;
-  const id = btn.getAttribute("data-id");
-  if(!id) return showToast("Registo sem ID.");
-  if(!confirm("Apagar este registo da base de dados?")) return;
-
-  try{
-    await deleteRowById(id);
-    RESULTS = RESULTS.filter(r => String(r.id) !== String(id));
-    renderTable();
-    showToast("Registo apagado.");
-  }catch(err){
-    console.error(err);
-    showToast("Falha ao apagar: " + (err.message || "erro"));
-  }
 });
