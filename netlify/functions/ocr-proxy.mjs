@@ -1,97 +1,158 @@
 // netlify/functions/ocr-proxy.mjs
-import { Buffer } from "node:buffer";
-import Busboy from "busboy";
-import sharp from "sharp";
-import jsQR from "jsqr";
-import vision from "@google-cloud/vision";
+import vision from '@google-cloud/vision';
+import Busboy from 'busboy';
+import sharp from 'sharp';
 
-function parseMultipart(event) {
-  return new Promise((resolve, reject) => {
-    const ct = event.headers["content-type"] || event.headers["Content-Type"] || "";
-    const busboy = Busboy({ headers: { "content-type": ct } });
+const JSON_HEADERS = {
+  'content-type': 'application/json',
+  'access-control-allow-origin': '*',
+};
+const TEXT_HEADERS = {
+  'content-type': 'text/plain; charset=utf-8',
+  'access-control-allow-origin': '*',
+};
 
-    let fileBuffer = Buffer.alloc(0);
-    let filename = "upload";
+// --- Instância do cliente Vision com validações legíveis
+let client;
+function getVisionClient() {
+  const raw = process.env.GCP_KEY_JSON;
+  if (!raw) throw new Error('GCP_KEY_JSON ausente nas variáveis de ambiente');
 
-    busboy.on("file", (_name, file, info) => {
-      if (info?.filename) filename = info.filename;
-      file.on("data", d => fileBuffer = Buffer.concat([fileBuffer, d]));
-    });
+  let creds;
+  try {
+    creds = JSON.parse(raw);
+  } catch {
+    throw new Error('GCP_KEY_JSON inválido (não é JSON válido)');
+  }
+  if (!creds.private_key || !creds.client_email) {
+    throw new Error('GCP_KEY_JSON incompleto (falta private_key/client_email)');
+  }
 
-    busboy.on("finish", () => resolve({ fileBuffer, filename }));
-    busboy.on("error", reject);
+  if (!client) {
+    client = new vision.ImageAnnotatorClient({ credentials: creds });
+  }
+  return client;
+}
 
-    const body = event.body || "";
-    busboy.end(Buffer.from(body, event.isBase64Encoded ? "base64" : "utf8"));
+// --- Lê o body multipart/form-data e devolve {buffer, filename, mimetype}
+async function readMultipartFile(event) {
+  return await new Promise((resolve, reject) => {
+    try {
+      const bb = Busboy({ headers: event.headers });
+      const chunks = [];
+      let filename = 'upload';
+      let mimetype = 'application/octet-stream';
+
+      bb.on('file', (_name, file, info) => {
+        if (info?.filename) filename = info.filename;
+        if (info?.mimeType) mimetype = info.mimeType;
+        file.on('data', (d) => chunks.push(d));
+        file.on('limit', () => reject(new Error('Ficheiro demasiado grande')));
+        file.on('end', () => resolve({
+          buffer: Buffer.concat(chunks),
+          filename,
+          mimetype
+        }));
+      });
+      bb.on('error', reject);
+
+      const body = event.isBase64Encoded
+        ? Buffer.from(event.body || '', 'base64')
+        : Buffer.from(event.body || '', 'utf8');
+
+      bb.end(body);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
-async function tryReadQR(fileBuffer) {
-  try {
-    const { data, info } = await sharp(fileBuffer).ensureAlpha().raw().toBuffer({ resolveWithObject:true });
-    const code = jsQR(
-      new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength),
-      info.width,
-      info.height
-    );
-    return code?.data || null;
-  } catch { return null; }
+// --- Normaliza a imagem: converte HEIC/HEIF e limita tamanho (máx 1600px)
+async function normalizeImage({ buffer, mimetype }) {
+  if (!buffer?.length) throw new Error('Sem ficheiro recebido');
+
+  // Tenta identificar formato com o sharp
+  let img = sharp(buffer, { failOn: false });
+
+  // Se for HEIC/HEIF (ou formato estranho) convertemos para JPEG
+  const isHeic = /heic|heif/i.test(mimetype || '');
+  if (isHeic) {
+    img = sharp(buffer, { failOn: false });
+  }
+
+  // Reduz para máx 1600px (mantém proporção), e exporta JPEG de qualidade 80
+  // (Mesmo que já seja JPG/PNG, isto garante tamanho razoável para o Vision)
+  const out = await img
+    .rotate()                         // respeita EXIF
+    .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 80 })
+    .toBuffer();
+
+  return out;
 }
 
-function createVisionClient() {
-  const json = process.env.GCP_KEY_JSON;
-  if (!json) throw new Error("Falta a variável GCP_KEY_JSON no Netlify (cole o JSON da Service Account).");
-  return new vision.ImageAnnotatorClient({ credentials: JSON.parse(json) });
+// --- OCR propriamente dito
+async function doOCR(imageBuffer) {
+  const vClient = getVisionClient();
+  const [result] = await vClient.textDetection({ image: { content: imageBuffer } });
+  const text = result?.fullTextAnnotation?.text || '';
+  return text;
 }
 
 export const handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
+  // Preflight/CORS básico (se precisares)
+  if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
       headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        ...TEXT_HEADERS,
+        'access-control-allow-methods': 'POST,GET,OPTIONS',
+        'access-control-allow-headers': 'content-type',
       },
+      body: '',
     };
   }
 
-  if (event.httpMethod === "GET") {
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ ok: true, message: "ocr-proxy com Vision pronto" }),
-    };
+  // Health-check simples
+  if (event.httpMethod === 'GET') {
+    try {
+      // também valida as credenciais aqui; se falhar, devolve erro legível
+      getVisionClient();
+      return {
+        statusCode: 200,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ok: true, message: 'ocr-proxy com Vision pronto' }),
+      };
+    } catch (e) {
+      return {
+        statusCode: 500,
+        headers: TEXT_HEADERS,
+        body: `OCR health error: ${e.message}`,
+      };
+    }
   }
 
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Usa POST multipart/form-data com campo 'file'." };
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, headers: TEXT_HEADERS, body: 'Method Not Allowed' };
   }
 
   try {
-    const { fileBuffer, filename } = await parseMultipart(event);
-    if (!fileBuffer?.length) {
-      return { statusCode: 400, headers: { "Access-Control-Allow-Origin": "*" }, body: "Nenhum ficheiro recebido." };
-    }
-
-    // QR primeiro (rápido)
-    const qr = await tryReadQR(fileBuffer);
-
-    // OCR com Google Vision
-    const client = createVisionClient();
-    const [result] = await client.documentTextDetection({ image: { content: fileBuffer } });
-    const text =
-      result?.fullTextAnnotation?.text ||
-      result?.textAnnotations?.[0]?.description ||
-      "";
+    const { buffer, filename, mimetype } = await readMultipartFile(event);
+    const normalized = await normalizeImage({ buffer, mimetype });
+    const text = await doOCR(normalized);
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ filename, text, qr }),
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ text, filename }),
     };
-  } catch (err) {
-    console.error("OCR error:", err);
-    return { statusCode: 500, headers: { "Access-Control-Allow-Origin": "*" }, body: `Erro: ${err.message || err}` };
+  } catch (e) {
+    // Log detalhado (aparece em Netlify → Functions → Logs)
+    console.error('OCR ERROR:', e?.message, e?.stack);
+    return {
+      statusCode: 500,
+      headers: TEXT_HEADERS,
+      body: `OCR failure: ${e?.message || 'unknown'}`,
+    };
   }
 };
