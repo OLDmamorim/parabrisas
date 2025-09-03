@@ -23,10 +23,6 @@
       <button id="btnCamera" class="btn-square" aria-label="Tirar foto da etiqueta">
         <span class="emoji">📷</span>
       </button>
-      <p class="hint">
-        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
-        Se conseguires, inclui a <strong>descrição</strong> e o <strong>Eurocode</strong>.
-      </p>
     </div>
 
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
@@ -35,14 +31,24 @@
     <footer class="footnote">
       <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
     </footer>
-
-    <!-- Botões dos cantos -->
-    <button class="fab fab-help" id="btnHelp" type="button" aria-label="Ajuda">?</button>
-
-    <button class="fab fab-switch" type="button" aria-pressed="false" aria-label="Ativar/desativar">
-      <span></span>
-    </button>
   </main>
+
+  <!-- HISTÓRICO MOBILE -->
+  <section id="mobileHistory" class="card mobile-only">
+    <h3 class="history-title">Histórico OCR</h3>
+    <div class="table-wrap">
+      <table id="mobileResultsTable">
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th style="width:120px">Data/Hora</th>
+            <th style="width:auto">Texto lido</th>
+          </tr>
+        </thead>
+        <tbody id="mobileResultsBody"></tbody>
+      </table>
+    </div>
+  </section>
 
   <!-- DESKTOP VIEW -->
   <section id="desktopView" class="card desktop-only">
