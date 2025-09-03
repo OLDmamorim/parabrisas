@@ -98,3 +98,118 @@ body{
   .eg-camera{width:136px; height:136px}
   .eg-card{padding:24px 18px}
 }
+/* ======== HOTFIX MOBILE LOOK (mockup) ======== */
+
+/* cartão branco para a área mobile */
+#mobileView{
+  position: relative;
+  max-width: 440px;
+  margin: 12px auto 16px;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 0 !important;
+  border-radius: 28px !important;
+  box-shadow: 0 14px 32px rgba(15,23,42,.10) !important;
+  padding: 28px 22px 28px !important;
+}
+
+/* esconder elementos que não queres */
+#mobileView .hint,
+#mobileView .fab,
+#mobileView .fab-help,
+#mobileView .fab-switch,
+#mobileView .instructions,
+#mobileView [data-role="instructions"]{
+  display: none !important;
+}
+
+/* botão da câmara centrado com glow */
+#mobileView #btnCamera,
+#mobileView .btn-square{
+  display: grid;
+  place-items: center;
+  width: 144px; height: 144px;
+  margin: 6px auto 14px !important;
+  border-radius: 22px !important;
+  border: 2px solid #d7e5ff !important;
+  background: #fbfdff !important;
+  box-shadow: 0 8px 22px rgba(59,130,246,.16), inset 0 0 0 2px rgba(59,130,246,.10) !important;
+}
+#mobileView #btnCamera .emoji,
+#mobileView .btn-square .emoji{ font-size: 56px; line-height: 1 }
+
+/* título e mensagem de sucesso */
+#mobileView h2,
+#mobileView .card-title{
+  margin: 10px 0 6px !important;
+  font-size: 28px !important;
+  line-height: 1.08;
+  font-weight: 800;
+  color: #0b1220;
+}
+#mobileView #mobileStatus{
+  margin-top: 10px !important;
+  color: #134e3a !important;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* cartão branco para o histórico logo abaixo */
+.eg-history,
+#mobileHistory,
+#history, /* caso o id seja outro */
+section.history{
+  max-width: 440px;
+  margin: 0 auto 18px;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 0 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 12px 28px rgba(15,23,42,.10) !important;
+  padding: 16px !important;
+}
+
+/* título do histórico */
+.eg-history h3,
+#mobileHistory h3,
+#history h3{
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0b1220;
+}
+
+/* tabela do histórico */
+.eg-history .table-wrap,
+#mobileHistory .table-wrap,
+#history .table-wrap{
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+.eg-history table,
+#mobileHistory table,
+#history table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  min-width: 520px;
+}
+.eg-history thead th,
+#mobileHistory thead th,
+#history thead th{
+  text-align: left;
+  padding: 10px 12px;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  position: sticky; top: 0;
+}
+.eg-history tbody td,
+#mobileHistory tbody td,
+#history tbody td{
+  padding: 10px 12px;
+  border-top: 1px solid #e2e8f0;
+  vertical-align: top;
+}
