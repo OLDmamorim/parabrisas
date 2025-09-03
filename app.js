@@ -20,18 +20,38 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== (CSS para texto corrido) ===== */
-(function injectOCRCss(){
-  const id = "ocr-text-style";
+/* ===== (CSS extra para estados de erro) ===== */
+(function injectExtraCss(){
+  const id = "ocr-extra-style";
   if (document.getElementById(id)) return;
   const s = document.createElement("style");
   s.id = id;
-  s.textContent = `.ocr-text{ white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }`;
+  s.textContent = `
+    .error-box {
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 8px;
+      margin-top: 6px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .retry-btn {
+      background: #b91c1c;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      margin-top: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .retry-btn:hover { background:#991b1b; }
+  `;
   document.head.appendChild(s);
 })();
 
 /* ===== Estado em memória (só Neon) ===== */
 let RESULTS = [];
+let lastFile = null; // guarda último ficheiro para retry
 
 /* ===== UI ===== */
 function showToast(msg){
@@ -77,7 +97,6 @@ async function persistToDB({ ts, text, filename, origin }) {
 }
 
 /* ===== OCR ===== */
-/* Reduz a imagem no cliente para evitar 500s no backend (HEIC, fotos muito grandes, etc.) */
 async function optimizeImageForOCR(file){
   const srcBlob = file instanceof Blob ? file : new Blob([file]);
   const imgBitmap = await createImageBitmap(srcBlob);
@@ -107,15 +126,15 @@ async function runOCR(file){
   const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
   const t = await res.text().catch(()=>res.statusText);
   if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
-  return JSON.parse(t); // { text, filename }
+  return JSON.parse(t);
 }
 
 /* ===== Fluxo comum ===== */
 async function handleImage(file, origin="camera"){
   try{
-    (isDesktop ? desktopStatus : mobileStatus).textContent = "A processar…";
+    lastFile = file; // guarda para retry
+    (isDesktop ? desktopStatus : mobileStatus).innerHTML = "A processar…";
 
-    // 1) OCR
     const data = await runOCR(file);
     const row = {
       ts: Date.now(),
@@ -123,24 +142,30 @@ async function handleImage(file, origin="camera"){
       text: data?.text || (data?.qr ? `QR: ${data.qr}` : "")
     };
 
-    // 2) Gravar no Neon
     await persistToDB({
       ts: row.ts, text: row.text, filename: row.filename, origin
     });
 
-    // 3) Ler do Neon para manter tudo sincronizado
     RESULTS = await fetchServerRows();
     renderTable();
-
     showToast("✅ OCR concluído");
   }catch(err){
     console.error(err);
-    (isDesktop ? desktopStatus : mobileStatus).textContent = "Erro: " + err.message;
-    showToast("Falha no processo: " + err.message);
-  }finally{
-    (isDesktop ? desktopStatus : mobileStatus).textContent = "";
+    const statusEl = isDesktop ? desktopStatus : mobileStatus;
+    statusEl.innerHTML = `
+      <div class="error-box">
+        ❌ Erro no OCR: ${err.message}
+        <br/>
+        <button class="retry-btn" onclick="retryOCR()">🔄 Tentar novamente</button>
+      </div>
+    `;
+    showToast("Falha no OCR");
   }
 }
+
+window.retryOCR = function(){
+  if(lastFile) handleImage(lastFile, "retry");
+};
 
 /* ===== Bootstrap ===== */
 async function bootstrap(){
