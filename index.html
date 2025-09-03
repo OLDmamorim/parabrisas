@@ -3,51 +3,34 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>Express OCR</title>
+  <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- OVERRIDES: garantir 3ª coluna larga -->
-  <style>
-    /* Cartão mais largo em desktop */
-    @media (min-width: 900px){
-      #desktopView.card{ max-width:1200px; width:96vw; }
-    }
-
-    /* Tabela ocupa toda a largura e 3ª coluna leva o resto */
-    #resultsTable{ width:100%; table-layout:fixed; }
-    #resultsTable th, #resultsTable td{ vertical-align: top; }
-
-    #resultsTable th:nth-child(1),
-    #resultsTable td:nth-child(1){ width:8% !important; }
-
-    #resultsTable th:nth-child(2),
-    #resultsTable td:nth-child(2){ width:22% !important; }
-
-    #resultsTable th:nth-child(3),
-    #resultsTable td:nth-child(3){ width:70% !important; }
-
-    /* Se quiseres que o texto não respeite \n vindos do OCR, troca para normal */
-    #resultsTable td:nth-child(3){
-      white-space: normal;           /* antes: pre-wrap */
-      overflow-wrap: anywhere;
-    }
-
-    .table-wrap{ width:100%; overflow:auto; }
-  </style>
 </head>
 <body>
   <!-- HEADER -->
   <header class="header">
-    <h1>Express OCR</h1>
+    <div class="brand">
+      <h1 class="title">EXPRESSGLASS</h1>
+      <p class="subtitle">Receção material</p>
+    </div>
     <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
   <!-- MOBILE VIEW -->
   <main id="mobileView" class="card mobile-only">
-    <p class="subtitle">Tira a foto do documento para leitura.</p>
-    <button id="btnCamera" class="btn primary">📷 Tirar foto</button>
+    <div class="mobile-cta">
+      <button id="btnCamera" class="btn-square" aria-label="Tirar foto da etiqueta">
+        <span class="emoji">📷</span>
+      </button>
+      <p class="hint">
+        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
+        Se conseguires, inclui a <strong>descrição</strong> e o <strong>Eurocode</strong>.
+      </p>
+    </div>
+
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
     <div id="mobileStatus" class="status"></div>
+
     <footer class="footnote">
       <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
     </footer>
@@ -64,16 +47,11 @@
 
     <div class="table-wrap">
       <table id="resultsTable">
-        <colgroup>
-          <col span="1" style="width:8%">
-          <col span="1" style="width:22%">
-          <col span="1" style="width:70%">
-        </colgroup>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Data/Hora</th>
-            <th>Texto lido (OCR)</th>
+            <th style="width:60px">#</th>
+            <th style="width:220px">Data/Hora</th>
+            <th style="width:auto">Texto lido (OCR)</th>
           </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
