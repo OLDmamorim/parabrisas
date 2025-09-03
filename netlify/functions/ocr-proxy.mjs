@@ -1,3 +1,4 @@
+
 // netlify/functions/ocr-proxy.mjs
 import vision from '@google-cloud/vision';
 import Busboy from 'busboy';
@@ -12,33 +13,33 @@ const TEXT_HEADERS = {
   'access-control-allow-origin': '*',
 };
 
-// --- Instância do cliente Vision com validações legíveis
+// --- Cliente Vision com validações claras
 let client;
 function getVisionClient() {
   const raw = process.env.GCP_KEY_JSON;
   if (!raw) throw new Error('GCP_KEY_JSON ausente nas variáveis de ambiente');
 
   let creds;
-  try {
-    creds = JSON.parse(raw);
-  } catch {
-    throw new Error('GCP_KEY_JSON inválido (não é JSON válido)');
-  }
+  try { creds = JSON.parse(raw); }
+  catch { throw new Error('GCP_KEY_JSON inválido (não é JSON válido)'); }
+
   if (!creds.private_key || !creds.client_email) {
     throw new Error('GCP_KEY_JSON incompleto (falta private_key/client_email)');
   }
-
-  if (!client) {
-    client = new vision.ImageAnnotatorClient({ credentials: creds });
-  }
+  if (!client) client = new vision.ImageAnnotatorClient({ credentials: creds });
   return client;
 }
 
 // --- Lê o body multipart/form-data e devolve {buffer, filename, mimetype}
 async function readMultipartFile(event) {
+  const ct = event.headers['content-type'] || event.headers['Content-Type'];
+  if (!ct || !ct.toLowerCase().startsWith('multipart/')) {
+    throw new Error('Content-Type inválido (esperado multipart/form-data)');
+  }
+
   return await new Promise((resolve, reject) => {
     try {
-      const bb = Busboy({ headers: event.headers });
+      const bb = Busboy({ headers: { 'content-type': ct }, limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
       const chunks = [];
       let filename = 'upload';
       let mimetype = 'application/octet-stream';
@@ -61,29 +62,16 @@ async function readMultipartFile(event) {
         : Buffer.from(event.body || '', 'utf8');
 
       bb.end(body);
-    } catch (e) {
-      reject(e);
-    }
+    } catch (e) { reject(e); }
   });
 }
 
-// --- Normaliza a imagem: converte HEIC/HEIF e limita tamanho (máx 1600px)
-async function normalizeImage({ buffer, mimetype }) {
+// --- Normaliza imagem (HEIC→JPEG, resize máx 1600px)
+async function normalizeImage({ buffer }) {
   if (!buffer?.length) throw new Error('Sem ficheiro recebido');
 
-  // Tenta identificar formato com o sharp
-  let img = sharp(buffer, { failOn: false });
-
-  // Se for HEIC/HEIF (ou formato estranho) convertemos para JPEG
-  const isHeic = /heic|heif/i.test(mimetype || '');
-  if (isHeic) {
-    img = sharp(buffer, { failOn: false });
-  }
-
-  // Reduz para máx 1600px (mantém proporção), e exporta JPEG de qualidade 80
-  // (Mesmo que já seja JPG/PNG, isto garante tamanho razoável para o Vision)
-  const out = await img
-    .rotate()                         // respeita EXIF
+  const out = await sharp(buffer, { failOn: false })
+    .rotate()
     .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
     .jpeg({ quality: 80 })
     .toBuffer();
@@ -91,7 +79,6 @@ async function normalizeImage({ buffer, mimetype }) {
   return out;
 }
 
-// --- OCR propriamente dito
 async function doOCR(imageBuffer) {
   const vClient = getVisionClient();
   const [result] = await vClient.textDetection({ image: { content: imageBuffer } });
@@ -100,7 +87,7 @@ async function doOCR(imageBuffer) {
 }
 
 export const handler = async (event) => {
-  // Preflight/CORS básico (se precisares)
+  // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
@@ -113,22 +100,13 @@ export const handler = async (event) => {
     };
   }
 
-  // Health-check simples
+  // Health-check
   if (event.httpMethod === 'GET') {
     try {
-      // também valida as credenciais aqui; se falhar, devolve erro legível
       getVisionClient();
-      return {
-        statusCode: 200,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ ok: true, message: 'ocr-proxy com Vision pronto' }),
-      };
+      return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify({ ok: true, message: 'ocr-proxy com Vision pronto' }) };
     } catch (e) {
-      return {
-        statusCode: 500,
-        headers: TEXT_HEADERS,
-        body: `OCR health error: ${e.message}`,
-      };
+      return { statusCode: 500, headers: TEXT_HEADERS, body: `OCR health error: ${e.message}` };
     }
   }
 
@@ -137,8 +115,8 @@ export const handler = async (event) => {
   }
 
   try {
-    const { buffer, filename, mimetype } = await readMultipartFile(event);
-    const normalized = await normalizeImage({ buffer, mimetype });
+    const { buffer, filename } = await readMultipartFile(event);
+    const normalized = await normalizeImage({ buffer });
     const text = await doOCR(normalized);
 
     return {
@@ -147,12 +125,7 @@ export const handler = async (event) => {
       body: JSON.stringify({ text, filename }),
     };
   } catch (e) {
-    // Log detalhado (aparece em Netlify → Functions → Logs)
     console.error('OCR ERROR:', e?.message, e?.stack);
-    return {
-      statusCode: 500,
-      headers: TEXT_HEADERS,
-      body: `OCR failure: ${e?.message || 'unknown'}`,
-    };
+    return { statusCode: 500, headers: TEXT_HEADERS, body: `OCR failure: ${e?.message || 'unknown'}` };
   }
 };
