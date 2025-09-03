@@ -1,180 +1,170 @@
+/* ===== Variáveis ===== */
 :root{
-  --bgA:#3b82f6;
-  --bgB:#2563eb;
-  --ink:#0b1324;
-  --inkSoft:#586380;
-  --ok:#16a34a;
-  --error:#ef4444;
-  --chip:#e5edff;
-  --white:#ffffff;
+  --bg:#0f172a;
+  --panel:#ffffff;
+  --primary:#2563eb;
+  --primaryLight:#3b82f6;
+  --success:#22c55e;
+  --danger:#ef4444;
+  --ink:#0f172a;
+  --inkSoft:#475569;
+  --radius:18px;
+  --shadow:0 4px 14px rgba(0,0,0,0.12);
 }
 
-/* Reset básico */
-*{ box-sizing:border-box }
-html,body{ height:100% }
+/* ===== Reset ===== */
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
 body{
-  margin:0;
-  font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  background: linear-gradient(135deg,var(--bgA),var(--bgB));
-  background-attachment: fixed;
-  color:#fff;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(135deg, var(--primaryLight), var(--primary)) fixed;
+  color: var(--ink);
+  line-height:1.4;
+  -webkit-font-smoothing: antialiased;
+  padding:16px;
 }
 
 /* ===== Header ===== */
 .header{
-  position:relative;
-  max-width:1080px;
-  margin:24px auto 12px;
-  padding:0 16px 0 16px;
   display:flex;
   align-items:center;
-  gap:12px;
+  justify-content:space-between;
+  margin-bottom:20px;
 }
 .header h1{
-  margin:0;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  font-size:clamp(22px,5.8vw,36px);
+  font-size:28px;
   font-weight:800;
-  text-shadow:0 6px 24px rgba(0,0,0,.25);
-  line-height:1.1;
+  color:#fff;
+  letter-spacing:0.5px;
 }
-.view-badge{
-  margin-left:auto;                 /* empurra para a direita */
-  flex:0 0 auto;
-  background: rgba(255,255,255,.92);
-  color:#0f172a;
-  border-radius:999px;
-  padding:6px 12px;
-  font-size:14px;
-  font-weight:700;
-  box-shadow:0 6px 16px rgba(0,0,0,.15);
-  max-height:32px;
-}
-
-/* ===== Card ===== */
-.card{
-  max-width:1080px;
-  margin: 0 auto 28px;
-  padding: 18px 16px;
-  border-radius:22px;
-  background:var(--white);
+.badge{
+  background:#fff;
   color:var(--ink);
-  box-shadow:0 16px 50px rgba(0,0,0,.18);
-}
-.mobile-only{ display:block }
-.desktop-only{ display:none }
-
-/* topo do card (botão instruções) */
-.card-header{
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-}
-.help-btn{
-  border:none;
-  background:var(--chip);
-  color:var(--bgB);
-  font-weight:700;
-  border-radius:14px;
-  padding:8px 14px;
-  cursor:pointer;
-  box-shadow:0 4px 12px rgba(37,99,235,.25);
-}
-
-/* ===== Área câmara ===== */
-.camera-area{
-  margin: 6px auto 6px;
-  text-align:center;
-}
-.camera-btn{
-  width:110px;height:110px;
-  border:none; cursor:pointer;
-  border-radius:26px;
-  background: radial-gradient(120px 120px at 50% 40%, #f3f6ff, #eaf0ff 60%, #dfe8ff 100%);
-  font-size:40px;
-  box-shadow: 0 10px 28px rgba(0,0,0,.15), inset 0 2px 8px rgba(255,255,255,.6);
-  transition: transform .08s ease, filter .08s ease;
-}
-.camera-btn:active{ transform: scale(.98); filter: brightness(.97) }
-
-.subtitle{
-  margin:14px 0 0;
-  font-size:22px;
-  font-weight:800;
-}
-
-/* instruções ficam escondidas (removidas) */
-.instructions{ display:none }
-
-/* ===== Status / progresso ===== */
-.status{
-  margin: 10px auto 4px;
-  min-height: 22px;
-  text-align:center;
-  color: #1d4ed8;
-  font-weight:700;
-}
-.status.error{ color: var(--error) }
-
-.progress{
-  margin:8px auto 0;
-  height:8px; width:220px; border-radius:999px;
-  background:#eef2ff; overflow:hidden;
-}
-.progress > span{
-  display:block; height:100%; width:0%;
-  background: linear-gradient(90deg, #60a5fa, #2563eb);
+  font-size:14px;
+  font-weight:600;
+  padding:6px 14px;
   border-radius:999px;
+  box-shadow: var(--shadow);
 }
+
+/* ===== Card principal ===== */
+.card{
+  background:var(--panel);
+  border-radius:var(--radius);
+  box-shadow: var(--shadow);
+  padding:24px;
+  max-width:500px;
+  margin:0 auto 20px;
+  text-align:center;
+}
+
+/* Botão Instruções */
+.help-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#f8fafc;
+  color:var(--primary);
+  font-size:14px;
+  font-weight:600;
+  padding:6px 12px;
+  border-radius:999px;
+  box-shadow:var(--shadow);
+  cursor:pointer;
+  float:right;
+}
+.help-btn span{ color:var(--danger); font-weight:bold; }
+
+/* ===== Botão Câmera ===== */
+.camera-btn{
+  width:110px; height:110px;
+  border-radius:22px;
+  border:none;
+  background:#f1f5f9;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:20px auto;
+  font-size:40px;
+  color:var(--primary);
+  box-shadow: var(--shadow);
+  cursor:pointer;
+  transition: all .2s ease;
+}
+.camera-btn:hover{ transform: scale(1.05); }
+.camera-btn img{ width:56px; height:56px; }
+
+/* ===== Status ===== */
+#mobileStatus{
+  font-size:16px;
+  font-weight:600;
+  margin:10px 0;
+}
+#mobileStatus.error{ color:var(--danger); }
+#mobileStatus.success{ color:var(--success); }
+#mobileStatus.pending{ color:var(--primary); }
 
 /* ===== Histórico ===== */
-.history{ margin-top: 12px }
-.history-head{
-  display:flex; align-items:center; justify-content:space-between;
+.history{ 
+  margin-top: 32px; /* espaçamento aumentado */
 }
-.history h3{ margin: 0 0 10px; font-size:16px; font-weight:700 }
+.history-head{
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between;
+  margin-bottom: 12px;
+}
+.history h3{
+  font-size:18px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.clear-btn{
+  background: var(--danger);
+  color:#fff;
+  border:none;
+  padding:6px 14px;
+  font-size:14px;
+  border-radius:8px;
+  cursor:pointer;
+}
 .history-list{
-  background:#0f172a10;
-  border:1px solid #e9edf9;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
   border-radius:12px;
   padding:12px;
+  font-size:15px;
   color:var(--inkSoft);
 }
 
-/* ===== Botões genéricos ===== */
-.btn{
-  background:#f3f6ff; color:#0f172a; border:1px solid #dfe6ff;
-  border-radius:10px; padding:8px 12px; cursor:pointer; font-weight:700;
-}
-.btn.danger{ background:#fee2e2; border-color:#fecaca; color:#991b1b }
-
-/* ===== Desktop ===== */
-.toolbar{ display:flex; gap:8px; margin-bottom:12px }
-.table-wrap{ overflow:auto; border-radius:12px; border:1px solid #e9edf9 }
-table{ border-collapse:collapse; width:100%; min-width:720px }
-th,td{ padding:12px 14px; text-align:left; border-bottom:1px solid #eef2ff; vertical-align:top }
-thead th{ background:#f8faff; font-weight:700 }
-td pre, .ocr-text{ white-space:normal; overflow-wrap:anywhere; line-height:1.4 }
-
 /* ===== Toast ===== */
 .toast{
-  position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
-  background:#0f172a; color:#fff; padding:10px 14px; border-radius:12px;
-  box-shadow:0 10px 30px rgba(0,0,0,.25);
-  opacity:0; pointer-events:none; transition:.25s ease;
+  position:fixed;
+  bottom:20px; left:50%;
+  transform:translateX(-50%);
+  background:var(--ink);
+  color:#fff;
+  padding:10px 18px;
+  border-radius:8px;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s;
 }
-.toast.show{ opacity:1; transform:translateX(-50%) translateY(0) }
+.toast.show{ opacity:1; }
 
-/* ===== Dialog ===== */
-.help-dialog{
-  border:none; border-radius:16px; padding:18px; max-width:520px; width:calc(100% - 32px);
-  box-shadow:0 30px 80px rgba(0,0,0,.35);
-}
-.help-dialog::backdrop{ background:rgba(0,0,0,.5) }
+/* ===== Tabela Desktop ===== */
+.table-wrap{ overflow-x:auto; }
+table{ width:100%; border-collapse:collapse; margin-top:16px; }
+th, td{ border:1px solid #e5e7eb; padding:8px; text-align:left; }
+th{ background:#f8fafc; font-weight:700; }
+td .ocr-text{ white-space: normal; }
 
-/* ===== Responsivo ===== */
-@media (min-width:900px){
-  .mobile-only{ display:none }
-  .desktop-only{ display:block }
+/* Botão apagar linha */
+.delete-btn{
+  background:none;
+  border:none;
+  color:var(--danger);
+  cursor:pointer;
+  font-size:18px;
 }
