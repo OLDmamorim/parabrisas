@@ -5,3 +5,15 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["@google-cloud/vision","busboy","sharp","jsqr"]
+
+# Rotas limpas para as funções (usando /api/...)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Qualquer outro caminho cai no index.html (SPA fallback)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
