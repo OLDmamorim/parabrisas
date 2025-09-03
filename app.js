@@ -37,7 +37,6 @@ function renderTable(){
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
-      <td>${r.filename || "-"}</td>
       <td><pre>${r.text || ""}</pre></td>`;
     resultsBody.appendChild(tr);
   });
@@ -81,6 +80,7 @@ async function handleImage(file, origin="camera"){
     const rows = loadResults();
     rows.unshift({
       ts: Date.now(),
+      // Guardamos filename internamente caso um dia queiras voltar a mostrar/exportar
       filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
       text: data?.text || (data?.qr ? `QR: ${data.qr}` : "")
     });
@@ -115,12 +115,11 @@ fileInput?.addEventListener("change", (e) => {
 exportBtn?.addEventListener("click", () => {
   const rows = loadResults();
   if(!rows.length) return showToast("Nada para exportar");
-  const header = ["idx","timestamp","filename","text"];
+  const header = ["idx","timestamp","text"]; // removido filename
   const lines = [header.join(",")].concat(
     rows.map((r,i)=>[
       i+1,
       new Date(r.ts).toISOString(),
-      `"${(r.filename||"").replace(/"/g,'""')}"`,
       `"${(r.text||"").replace(/"/g,'""')}"`
     ].join(","))
   );
