@@ -1,97 +1,88 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>EXPRESSGLASS</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <title>ExpressGlass • Receção de Material (Mobile)</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
 </head>
 <body>
-  <!-- HEADER -->
-  <header class="header">
+  <header class="app-header">
     <h1>EXPRESSGLASS</h1>
-    <div class="view-badge" id="viewBadge">Mobile</div>
+    <span class="header-badge">Mobile</span>
   </header>
 
-  <!-- MOBILE VIEW -->
-  <main id="mobileView" class="card mobile-only">
-    <div class="card-header">
-      <button id="helpBtn" class="help-btn">❓ Instruções</button>
-    </div>
+  <main class="container">
+    <!-- CARD CAPTURA -->
+    <section class="card capture-card">
+      <button class="help-btn" id="helpBtn" aria-label="Ver instruções">
+        <span class="help-ico">?</span> Instruções
+      </button>
 
-    <section class="camera-area">
-      <button id="btnCamera" class="camera-btn" aria-label="Tirar foto">📷</button>
-      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
-      <p class="subtitle">Receção de Material</p>
+      <div class="camera-wrap">
+        <button id="captureBtn" class="camera-btn" aria-label="Capturar imagem">
+          <img src="camera.png" alt="Câmara" />
+        </button>
+        <input id="uploadInput" type="file" accept="image/*" capture="environment" class="hidden">
+      </div>
 
-      <!-- INSTRUÇÕES (removidas; manter comentado se quiseres voltar)
-      <p class="instructions">
-        Fotografa a <b>etiqueta</b>, a <b>descrição</b> e, se possível, o <b>Eurocode</b>.
-      </p>
-      -->
+      <h2 class="card-title">Receção de Material</h2>
+      <p class="status" id="statusText">Aguardando captura…</p>
     </section>
 
-    <div id="mobileStatus" class="status">Aguardando captura…</div>
-
-    <section class="history">
-      <div class="history-head">
-        <h3>📑 Últimas capturas</h3>
-        <button id="btnClear" class="btn danger">Limpar</button>
+    <!-- HISTÓRICO -->
+    <section class="card history-card">
+      <div class="section-header">
+        <div class="title-with-ico">
+          <span class="doc-ico">🗒️</span>
+          <h3>Últimas capturas</h3>
+        </div>
+        <button id="clearHistoryBtn" class="link-btn">Limpar</button>
       </div>
-      <div id="historyList" class="history-list">Sem histórico ainda.</div>
+
+      <div id="historyEmpty" class="empty-box">Sem histórico ainda.</div>
+      <ul id="historyList" class="history-list"></ul>
+    </section>
+
+    <!-- AÇÕES + TABELA -->
+    <section class="card table-card">
+      <div class="actions">
+        <button id="uploadBtn" class="btn">Carregar imagem</button>
+        <button id="exportCsvBtn" class="btn ghost">Exportar CSV</button>
+        <button id="clearTableBtn" class="btn danger ghost">Limpar Tabela</button>
+      </div>
+
+      <div class="table-wrap">
+        <table id="ocrTable" class="table">
+          <thead>
+            <tr>
+              <th class="col-n">#</th>
+              <th class="col-dt">Data/Hora</th>
+              <th class="col-texto">Texto lido (OCR)</th>
+              <th class="col-acoes">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="ocrTbody">
+            <!-- linhas geradas via JS -->
+          </tbody>
+        </table>
+      </div>
     </section>
   </main>
 
-  <!-- DESKTOP VIEW -->
-  <section id="desktopView" class="card desktop-only">
-    <div class="toolbar">
-      <button id="btnUpload" class="btn">Carregar imagem</button>
-      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
-      <button id="btnExport" class="btn">Exportar CSV</button>
-      <button id="btnClearDesktop" class="btn danger">Limpar Tabela</button>
+  <!-- MODAL INSTRUÇÕES (sem texto por defeito; abre leve) -->
+  <dialog id="helpModal" class="modal">
+    <div class="modal-content">
+      <h4>Instruções</h4>
+      <p>1) Carrega na câmara para capturar.<br>2) Confirma e guarda a leitura.<br>3) Exporta quando precisares.</p>
+      <div class="modal-actions">
+        <button class="btn" id="closeHelp">Fechar</button>
+      </div>
     </div>
-
-    <div class="table-wrap">
-      <table id="resultsTable">
-        <thead>
-          <tr>
-            <th style="width:60px">#</th>
-            <th style="width:220px">Data/Hora</th>
-            <th>Texto lido (OCR)</th>
-            <th style="width:110px">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
-
-    <div id="desktopStatus" class="status"></div>
-  </section>
-
-  <!-- TOAST -->
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <!-- DIALOG INSTRUÇÕES -->
-  <dialog id="helpDialog" class="help-dialog">
-    <h3>Instruções</h3>
-    <ol>
-      <li>Fotografa a <b>etiqueta</b> do material.</li>
-      <li>Inclui a <b>descrição</b> e, se possível, o <b>Eurocode</b>.</li>
-      <li>Evita reflexos e desfocagem.</li>
-    </ol>
-    <form method="dialog">
-      <button class="btn">Fechar</button>
-    </form>
   </dialog>
 
-  <script>
-    // abrir/fechar instruções (não interfere com app.js)
-    const helpBtn = document.getElementById('helpBtn');
-    const helpDialog = document.getElementById('helpDialog');
-    helpBtn?.addEventListener('click', () => helpDialog.showModal());
-  </script>
-
-  <script src="app.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
