@@ -2,6 +2,7 @@
 const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
+const DELETE_URL   = "/api/delete-ocr";
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -19,13 +20,23 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== CSS para texto corrido ===== */
+/* ===== CSS extra (texto corrido, botões, barra progresso) ===== */
 (function(){
-  const id = "ocr-text-style";
+  const id = "ocr-extra-style";
   if (document.getElementById(id)) return;
   const s = document.createElement("style");
   s.id = id;
-  s.textContent = `.ocr-text{ white-space: normal; overflow-wrap:anywhere; line-height:1.4 }`;
+  s.textContent = `
+    .ocr-text{ white-space:normal; overflow-wrap:anywhere; line-height:1.4 }
+    .progress{ margin-top:8px; width:100%; height:10px; background:#1f2937; border-radius:999px; overflow:hidden }
+    .progress>span{ display:block; height:100%; width:0%; background:#3b82f6; transition:width .25s ease }
+    .status.error .progress{ background:#7f1d1d } .status.error .progress>span{ background:#ef4444 }
+    .retry-btn{ background:#b91c1c; color:#fff; border:0; padding:6px 12px; border-radius:6px; margin-top:8px; cursor:pointer }
+    .retry-btn:active{ transform:scale(.98) }
+    .delBtn{ background:#111827; border:1px solid #432; color:#fecaca; padding:6px 10px; border-radius:8px; cursor:pointer }
+    .delBtn:hover{ background:#1a1111 }
+    @media (max-width: 899px){ .delBtn{ display:none } } /* só desktop */
+  `;
   document.head.appendChild(s);
 })();
 
@@ -35,15 +46,12 @@ let lastFile = null;
 
 /* ===== Helpers UI ===== */
 function showToast(msg){ toast.textContent = msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"), 2200); }
-
 function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
-
 function setStatus(html, opts={}) {
   const el = statusEl();
   el.classList.toggle("error", !!opts.error);
   el.innerHTML = html || "";
 }
-
 function showProgress(label, pct=0, asError=false){
   const el = statusEl();
   el.classList.toggle("error", !!asError);
@@ -68,9 +76,25 @@ function showError(message){
   document.getElementById("retryBtn")?.addEventListener("click", ()=> lastFile && handleImage(lastFile, "retry"));
 }
 
+/* ===== Header: garantir coluna Ações no Desktop ===== */
+function ensureActionsHeader(){
+  if(!isDesktop) return;
+  const thead = document.querySelector("#resultsTable thead tr");
+  if (!thead) return;
+  const ths = Array.from(thead.children);
+  const hasActions = ths.some(th => (th.textContent || "").toLowerCase().includes("ação"));
+  if (!hasActions) {
+    const th = document.createElement("th");
+    th.textContent = "Ações";
+    th.style.width = "80px";
+    thead.appendChild(th);
+  }
+}
+
 /* ===== Tabela ===== */
 function renderTable(){
   if(!isDesktop) return;
+  ensureActionsHeader();
   resultsBody.innerHTML = "";
   RESULTS.forEach((r,i)=>{
     const txt = (r.text || "").replace(/\s*\n\s*/g, " ");
@@ -78,11 +102,38 @@ function renderTable(){
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
-      <td><div class="ocr-text">${txt}</div></td>`;
+      <td><div class="ocr-text">${txt}</div></td>
+      <td><button class="delBtn" data-id="${r.id}">🗑️</button></td>`;
     resultsBody.appendChild(tr);
   });
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
+
+/* Delegação: clicks nos botões de apagar */
+resultsBody?.addEventListener("click", async (e)=>{
+  const btn = e.target.closest(".delBtn");
+  if(!btn) return;
+  const id = btn.getAttribute("data-id");
+  if(!id) return;
+  if(!confirm("Eliminar este registo?")) return;
+  try{
+    const resp = await fetch(DELETE_URL, {
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body: JSON.stringify({ id: Number(id) })
+    });
+    if(!resp.ok){
+      const t = await resp.text().catch(()=>resp.statusText);
+      throw new Error(t || ("HTTP " + resp.status));
+    }
+    RESULTS = RESULTS.filter(r => String(r.id) !== String(id));
+    renderTable();
+    showToast("Apagado ✔");
+  }catch(err){
+    console.error(err);
+    showToast("Erro ao apagar: " + err.message);
+  }
+});
 
 /* ===== Neon API ===== */
 async function fetchServerRows(){
@@ -90,6 +141,7 @@ async function fetchServerRows(){
   if(!r.ok) throw new Error('HTTP '+r.status);
   const { rows } = await r.json();
   return rows.map(x => ({
+    id: x.id,
     ts: new Date(x.ts).getTime(),
     text: x.text || '',
     filename: x.filename || '',
@@ -138,14 +190,12 @@ async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
     showProgress("A preparar imagem…", 10);
-    await new Promise(r=>setTimeout(r, 150)); // só para animar
+    await new Promise(r=>setTimeout(r, 150));
 
     showProgress("A otimizar…", 25);
     const prepped = await optimizeImageForOCR(file);
 
     showProgress("A enviar para o OCR…", 55);
-    // reutilizamos a função de OCR mas como já otimizámos em cima,
-    // passamos o ficheiro otimizado diretamente:
     const fd = new FormData(); fd.append("file", prepped, prepped.name);
     const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
 
