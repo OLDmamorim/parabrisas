@@ -1,549 +1,303 @@
-/* ===== CONFIG ===== */
-const OCR_ENDPOINT = "/api/ocr-proxy";
-const LIST_URL     = "/api/list-ocr";
-const SAVE_URL     = "/api/save-ocr";
-const DELETE_URL   = "/api/delete-ocr";
-const UPDATE_URL   = "/api/update-ocr";
-const DEMO_MODE    = false;
+/* =========================
+ * CONFIG
+ * ========================= */
+const OCR_ENDPOINT = "/api/ocr-proxy"; // TODO: confirma
+const USE_BACKEND  = false;            // mete true quando ligares API
 
-/* ===== Elements ===== */
-const isDesktop = window.matchMedia("(min-width: 900px)").matches;
-document.getElementById("viewBadge").textContent = isDesktop ? "Desktop" : "Mobile";
+/* =========================
+ * DOM
+ * ========================= */
+const els = {
+  camInput:   document.getElementById('cameraInput'),
+  btnUpload:  document.getElementById('btnUpload'),
+  fileInput:  document.getElementById('fileInput'),
+  btnExport:  document.getElementById('btnExport'),
+  btnClear:   document.getElementById('btnClear'),
+  tbody:      document.getElementById('resultsBody'),
+  toast:      document.getElementById('toast'),
+  mobileList: document.getElementById('mobileHistoryList'),
+  helpBtn:    document.getElementById('helpBtn'),
+  helpBtn2:   document.getElementById('helpBtnDesktop'),
+  helpModal:  document.getElementById('helpModal'),
+  helpClose:  document.getElementById('helpClose'),
+};
 
-const cameraBtn     = document.getElementById("btnCamera");
-const cameraInput   = document.getElementById("cameraInput");
-const mobileStatus  = document.getElementById("mobileStatus");
-const uploadBtn     = document.getElementById("btnUpload");
-const fileInput     = document.getElementById("fileInput");
-const exportBtn     = document.getElementById("btnExport");
-const clearBtn      = document.getElementById("btnClear");
-const resultsBody   = document.getElementById("resultsBody");
-const desktopStatus = document.getElementById("desktopStatus");
-const toast         = document.getElementById("toast");
+/* =========================
+ * STORAGE (fallback local)
+ * ========================= */
+const LS_KEY = 'eg_capturas_v1';
 
-/* ===== CSS extra rápido ===== */
-(function(){
-  const id = "ocr-text-style";
-  if (document.getElementById(id)) return;
-  const s = document.createElement("style");
-  s.id = id;
-  s.textContent = `
-    .ocr-text{ white-space: normal; overflow-wrap:anywhere; line-height:1.4 }
-    .error { background:#300; color:#fff; padding:6px; border-radius:6px }
-    .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
-    .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
-    .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
-    .cell-wrap.editing{ outline:2px solid #3b82f6; border-radius:6px; padding:2px 4px; background:rgba(59,130,246,.08); }
-    .col-actions .btn.btn-mini{ margin-right:6px }
-  `;
-  document.head.appendChild(s);
-})();
-
-/* ===== Estado ===== */
-let RESULTS = [];
-let lastFile = null;
-
-/* ===== Helpers UI ===== */
-function showToast(msg){
-  toast.textContent = msg;
-  toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"), 2200);
+function loadRows(){
+  if (USE_BACKEND) return []; // será preenchido via API list
+  try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch{ return []; }
 }
-function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
-function setStatus(html, opts={}) {
-  const el = statusEl();
-  el.classList.toggle("error", !!opts.error);
-  el.innerHTML = html || "";
-}
-function showProgress(label, pct=0, asError=false){
-  const el = statusEl();
-  el.classList.toggle("error", !!asError);
-  el.innerHTML = `
-    <div>${label}</div>
-    <div class="progress"><span style="width:${pct}%"></span></div>
-  `;
-}
-function updateProgress(pct){
-  const el = statusEl();
-  const bar = el.querySelector(".progress > span");
-  if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
-}
-function showError(message){
-  const el = statusEl();
-  el.classList.add("error");
-  el.innerHTML = `
-    <div>❌ ${message}</div>
-    <div class="progress"><span style="width:0%"></span></div>
-    <button class="retry-btn" id="retryBtn">🔄 Tentar novamente</button>
-  `;
-  document.getElementById("retryBtn")?.addEventListener("click", ()=> lastFile && handleImage(lastFile, "retry"));
+function saveRows(rows){
+  if (USE_BACKEND) return; // API save já trata
+  localStorage.setItem(LS_KEY, JSON.stringify(rows));
 }
 
-/* ===== Cabeçalho da tabela ===== */
-function ensureActionsHeader() {
-  if (!isDesktop) return;
-  const thead = document.querySelector("#resultsTable thead");
-  if (!thead) return;
-  thead.innerHTML = `
-    <tr>
-      <th style="width:60px">#</th>
-      <th style="width:220px">Data/Hora</th>
-      <th style="width:auto">Texto lido (OCR)</th>
-      <th style="width:180px">Eurocode</th>
-      <th style="width:140px">Ações</th>
-    </tr>
-  `;
-}
+/* =========================
+ * EUROCODE PARSER (único)
+ * Regra: 4 dígitos + 2 letras + 0–5 alfanuméricos,
+ * e o sufixo final precisa ter pelo menos 1 letra.
+ * Funciona mesmo com quebras de linha e separadores.
+ * ========================= */
+function parseEurocode(raw){
+  const text = String(raw||'').toUpperCase();
+  const tokens = text.split(/[^A-Z0-9]+/).filter(Boolean);
+  const VALID = /^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/;
+  const hasLetterInTail = code => /[A-Z]/.test(code.slice(6));
 
-/* ===== API Neon ===== */
-async function fetchServerRows(){
-  const r = await fetch(LIST_URL);
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  const { rows } = await r.json();
-  return rows.map(x => ({
-    id: x.id,
-    ts: new Date(x.ts).getTime(),
-    text: x.text || '',
-    filename: x.filename || '',
-    source: x.source || ''
-  }));
-}
-async function persistToDB({ ts, text, filename, origin }) {
-  const resp = await fetch(SAVE_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ ts, text, filename, source: origin })
-  });
-  const txt = await resp.text().catch(()=>resp.statusText);
-  if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
-}
-async function deleteFromDB(id){
-  const resp = await fetch(DELETE_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ id })
-  });
-  const data = await resp.json().catch(()=>({}));
-  if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
-  return true;
-}
-async function updateInDB(id, text){
-  const resp = await fetch(UPDATE_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ id, text })
-  });
-  const data = await resp.json().catch(()=>({}));
-  if (!resp.ok || data?.error || !data?.ok) throw new Error(data?.error || ('HTTP ' + resp.status));
-  return data.row;
-}
-
-/* ===== EUROCODE helpers ===== */
-/* Regra base: 4 dígitos + 2..7 chars (A/Z/0–9) e pelo menos 1 letra; aceita 1 espaço/hífen */
-const EURO_SEP_REGEX = /^([0-9]{4})[-\s]?([A-Z0-9]{2,7})$/;
-
-function euroNormalize(s='') {
-  return s.toUpperCase()
-    .replaceAll('O','0').replaceAll('I','1').replaceAll('S','5').replaceAll('B','8')
-    .replace(/[^\w-\s]/g,' '); // mantém letras, números, underscore, hífen e espaços
-}
-
-function hasLetter(s=''){ return /[A-Z]/.test(s); }
-
-/* devolve TODOS os candidatos encontrados (normalizados sem separador) */
-function extractEuroCandidates(text='') {
-  const cands = new Set();
-  const raw = euroNormalize(text);
-  const tokens = raw.split(/[\s\r\n]+/).filter(Boolean);
-
-  // tokens isolados
-  for (const t of tokens) {
-    const m = t.match(EURO_SEP_REGEX);
-    if (m && hasLetter(m[2])) cands.add(m[1] + m[2]);
+  // A) match contíguo dentro do token (1º válido)
+  for (const t of tokens){
+    const m = t.match(/\d{4}[A-Z]{2}[A-Z0-9]{0,5}/);
+    if (m && VALID.test(m[0]) && hasLetterInTail(m[0])) return m[0];
   }
-  // pares adjacentes (ex.: "3999" "AGNV")
+  // B) reconstrução entre tokens consecutivos (4 dígitos + 2 letras)
   for (let i=0;i<tokens.length-1;i++){
-    const pair = `${tokens[i]}${tokens[i+1]}`;
-    const m1 = pair.match(EURO_SEP_REGEX);
-    if (m1 && hasLetter(m1[2])) cands.add(m1[1] + m1[2]);
-
-    const withSep = `${tokens[i]}-${tokens[i+1]}`;
-    const m2 = withSep.match(EURO_SEP_REGEX);
-    if (m2 && hasLetter(m2[2])) cands.add(m2[1] + m2[2]);
-  }
-  return Array.from(cands);
-}
-
-/* scoring automático: mais letras primeiro, depois mais comprido */
-function scoreEuro(c){
-  const tail = c.slice(4);
-  const letters = (tail.match(/[A-Z]/g)||[]).length;
-  return letters*100 + c.length; // peso maior para letras
-}
-
-function selectBestEurocode(cands){
-  if (!cands.length) return { best:'', ties:[] };
-  const scored = cands.map(c => ({ c, s: scoreEuro(c) }))
-                      .sort((a,b)=> b.s - a.s);
-  const bestScore = scored[0].s;
-  const top = scored.filter(x => x.s === bestScore).map(x => x.c);
-  return { best: top[0], ties: top };
-}
-
-function extractEurocode(text='') {
-  const cands = extractEuroCandidates(text);
-  const { best } = selectBestEurocode(cands);
-  return best || '';
-}
-
-/* perguntar só se houver empate entre os melhores */
-async function chooseEurocode(cands) {
-  const { best, ties } = selectBestEurocode(cands);
-  if (!best) return '';
-  if (ties.length <= 1) return best;
-  const list = ties.map((c,i)=>`${i+1}. ${c}`).join('\n');
-  const ans = prompt(`Foram encontrados vários EUROCODEs.\nEscolhe 1:\n${list}\n\nEscreve o número da opção:`, '1');
-  if (!ans) return best;
-  const idx = parseInt(ans,10)-1;
-  return ties[idx] || best;
-}
-
-/* ===== Render da tabela ===== */
-function renderTable(){
-  if(!isDesktop) return;
-  ensureActionsHeader();
-  resultsBody.innerHTML = "";
-  RESULTS.forEach((r,i)=>{
-    const txt  = (r.text || "").replace(/\s*\n\s*/g, " ");
-    const euro = extractEurocode(r.text || "");
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i+1}</td>
-      <td>${new Date(r.ts).toLocaleString()}</td>
-      <td><div class="ocr-text">${txt}</div></td>
-      <td><div class="ocr-text">${euro}</div></td>
-      <td>
-        <button class="btn-icon editBtn" title="Editar" data-id="${r.id}">✏️</button>
-        <button class="btn-icon delBtn"  title="Apagar" data-id="${r.id}">🗑️</button>
-      </td>
-    `;
-    resultsBody.appendChild(tr);
-  });
-  desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
-}
-
-/* Delegação — editar e apagar */
-resultsBody?.addEventListener("click", async (e)=>{
-  const editBtn = e.target.closest(".editBtn");
-  const delBtn  = e.target.closest(".delBtn");
-
-  if (editBtn) {
-    const id = Number(editBtn.dataset.id);
-    if (!id) return;
-    const rowEl = editBtn.closest('tr');
-    const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
-    const newText = prompt('Editar texto lido (OCR):', currentText);
-    if (newText === null) return;
-    try{
-      editBtn.disabled = true; editBtn.textContent = '…';
-      await updateInDB(id, newText);
-      RESULTS = await fetchServerRows();
-      renderTable();
-      showToast('Registo atualizado.');
-    }catch(err){
-      console.error(err);
-      showToast('Falha ao atualizar: ' + (err.message || 'erro'));
-    }finally{
-      editBtn.disabled = false; editBtn.textContent = '✏️';
+    const a = tokens[i], b = tokens[i+1];
+    if (/^\d{4}$/.test(a) && /^[A-Z]{2}/.test(b)){
+      const code = (a+b).slice(0,11);
+      if (VALID.test(code) && hasLetterInTail(code)) return code;
     }
+  }
+  return null;
+}
+
+/* =========================
+ * OCR
+ * ========================= */
+async function doOCR(file){
+  // TODO: liga ao teu endpoint; este é um exemplo típico
+  const fd = new FormData();
+  fd.append('file', file, 'etiqueta.jpg');
+  const res = await fetch(OCR_ENDPOINT, { method:'POST', body: fd });
+  if(!res.ok) throw new Error(`OCR falhou (${res.status})`);
+  const data = await res.json();
+  return data?.text || data?.fullText || data?.ocr || '';
+}
+
+/* =========================
+ * BACKEND (mocks)
+ * ========================= */
+async function apiList(){
+  if (USE_BACKEND){
+    // TODO: GET /api/list-ocr
+    return [];
+  }
+  return loadRows();
+}
+async function apiSave(row){
+  if (USE_BACKEND){
+    // TODO: POST /api/save-ocr
+    return { ok:true, id: Date.now() };
+  }
+  const rows = loadRows();
+  rows.unshift(row);
+  saveRows(rows);
+  return { ok:true, id: row.id };
+}
+async function apiDelete(id){
+  if (USE_BACKEND){
+    // TODO: POST /api/delete-ocr
+    return { ok:true };
+  }
+  const rows = loadRows().filter(r=>r.id!==id);
+  saveRows(rows);
+  return { ok:true };
+}
+async function apiUpdate(id, patch){
+  if (USE_BACKEND){
+    // TODO: POST /api/update-ocr
+    return { ok:true };
+  }
+  const rows = loadRows().map(r=> r.id===id ? {...r, ...patch} : r );
+  saveRows(rows);
+  return { ok:true };
+}
+
+/* =========================
+ * RENDER
+ * ========================= */
+function fmtDate(ts){
+  try{
+    return new Date(ts).toLocaleString('pt-PT');
+  }catch{ return ts; }
+}
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function renderTable(rows){
+  if(!els.tbody) return;
+  if(!rows.length){
+    els.tbody.innerHTML = '';
     return;
   }
-
-  if(!delBtn) return;
-  const id = Number(delBtn.dataset.id);
-  if(!id) return;
-  if(!confirm("Apagar este registo da base de dados?")) return;
-
-  const old = delBtn.textContent;
-  delBtn.disabled = true; delBtn.textContent = "…";
-  try{
-    await deleteFromDB(id);
-    RESULTS = await fetchServerRows();
-    renderTable();
-    showToast("Registo apagado.");
-  }catch(err){
-    console.error(err);
-    showToast("Falha ao apagar: " + (err.message || "erro"));
-  }finally{
-    delBtn.disabled = false; delBtn.textContent = old;
-  }
-});
-
-/* ===== OCR (via endpoint) ===== */
-async function optimizeImageForOCR(file){
-  const srcBlob = file instanceof Blob ? file : new Blob([file]);
-  const bmp = await createImageBitmap(srcBlob);
-  const scale = Math.min(1600 / bmp.width, 1600 / bmp.height, 1);
-  const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
-  const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d'); ctx.drawImage(bmp, 0, 0, w, h);
-  const out = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
-  return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
+  els.tbody.innerHTML = rows.map((r,idx)=>`
+    <tr>
+      <td>${rows.length-idx}</td>
+      <td>${fmtDate(r.created_at)}</td>
+      <td class="ocr-cell"><pre>${escapeHtml(r.ocr_text)}</pre></td>
+      <td class="euro-cell">
+        <span class="eurocode">${r.eurocode?escapeHtml(r.eurocode):'—'}</span>
+      </td>
+      <td>
+        <button class="mini" data-edit="${r.id}">✏️</button>
+        <button class="mini danger" data-del="${r.id}">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
 }
-async function runOCR(file){
-  if (DEMO_MODE){
-    await new Promise(r=>setTimeout(r, 500));
-    return { text: "DEMO: Texto simulado de OCR\nLinha 2: 123 ABC" };
+function renderMobile(rows){
+  if(!els.mobileList) return;
+  if(!rows.length){
+    els.mobileList.innerHTML = `<p class="history-empty">Ainda não há capturas realizadas.</p>`;
+    return;
   }
-  const optimized = await optimizeImageForOCR(file);
-  const fd = new FormData();
-  fd.append("file", optimized, optimized.name);
-  const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
-  const t = await res.text().catch(()=>res.statusText);
-  if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
-  return JSON.parse(t);
+  els.mobileList.innerHTML = rows.slice(0,20).map(r=>`
+    <div class="cap-row">
+      <div class="cap-time">${fmtDate(r.created_at)}</div>
+      <div class="cap-euro">${r.eurocode?`<strong>${escapeHtml(r.eurocode)}</strong>`:'—'}</div>
+      <div class="cap-text">${escapeHtml((r.ocr_text||'').slice(0,160))}${(r.ocr_text||'').length>160?'…':''}</div>
+    </div>
+  `).join('');
 }
 
-/* ===== OCR EUROCODE local (Tesseract v5) ===== */
-async function ensureTesseract() {
-  if (window.Tesseract) return;
-  await new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = 'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
-    s.onload = res; s.onerror = () => rej(new Error('Falha a carregar Tesseract'));
-    document.head.appendChild(s);
+/* =========================
+ * TOAST / HELP
+ * ========================= */
+let toastTimer;
+function toast(msg, kind='ok'){
+  if(!els.toast) return;
+  els.toast.className = `toast ${kind}`;
+  els.toast.textContent = msg;
+  els.toast.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> els.toast.style.opacity='0', 2600);
+}
+function wireHelp(){
+  const open = ()=>{ els.helpModal?.setAttribute('aria-hidden','false'); els.helpModal?.classList.add('open'); };
+  const close= ()=>{ els.helpModal?.setAttribute('aria-hidden','true');  els.helpModal?.classList.remove('open'); };
+  els.helpBtn?.addEventListener('click', open);
+  els.helpBtn2?.addEventListener('click', open);
+  els.helpClose?.addEventListener('click', close);
+  els.helpModal?.addEventListener('click', e=>{ if(e.target===els.helpModal) close(); });
+}
+
+/* =========================
+ * EXPORT CSV
+ * ========================= */
+function toCSV(rows){
+  const header = ['#','Data/Hora','Texto OCR','Eurocode'];
+  const lines = [header.join(';')];
+  const total = rows.length;
+  rows.forEach((r,idx)=>{
+    const num = total-idx;
+    const cols = [
+      num,
+      fmtDate(r.created_at).replaceAll(';',','),
+      (r.ocr_text||'').replaceAll('\n',' ').replaceAll(';',','),
+      r.eurocode||''
+    ];
+    lines.push(cols.join(';'));
+  });
+  return lines.join('\n');
+}
+function download(filename, text){
+  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+}
+
+/* =========================
+ * EVENTS
+ * ========================= */
+async function refresh(){
+  const rows = await apiList();
+  renderTable(rows);
+  renderMobile(rows);
+  wireRowActions();
+}
+function wireRowActions(){
+  // delete
+  document.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = async ()=> {
+      const id = Number(btn.dataset.del);
+      await apiDelete(id);
+      toast('Registo apagado.');
+      refresh();
+    };
+  });
+  // edit eurocode
+  document.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick = async ()=> {
+      const id = Number(btn.dataset.edit);
+      const rows = await apiList();
+      const row = rows.find(r=>r.id===id);
+      const cur = row?.eurocode || '';
+      const val = prompt('Editar Eurocode:', cur);
+      if (val===null) return;
+      await apiUpdate(id, { eurocode: (val||'').toUpperCase().replace(/[^A-Z0-9]/g,'') });
+      toast('Eurocode atualizado.');
+      refresh();
+    };
   });
 }
-let _tessWorker = null;
-let _tessReady  = false;
 
-async function ocrImageEuro(file) {
-  await ensureTesseract();
-  if (!_tessWorker) _tessWorker = await window.Tesseract.createWorker();
-  if (!_tessReady) {
-    await _tessWorker.loadLanguage('eng');
-    await _tessWorker.initialize('eng');
-    await _tessWorker.setParameters({
-      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-      user_defined_dpi: '300',
-      preserve_interword_spaces: '1'
-    });
-    _tessReady = true;
-  }
-  const prepped = await optimizeImageForOCR(file);
-  const { data } = await _tessWorker.recognize(prepped);
-  const raw  = (data.text || '').trim();
-  const cands = extractEuroCandidates(raw);
-  const euro = await chooseEurocode(cands);
-  const conf = (data.confidence || 0) / 100;
-  return { raw, euro, conf, cands };
-}
+async function handleFiles(files){
+  const file = files?.[0];
+  if (!file) return;
 
-/* ===== Fluxo (desktop + mobile) ===== */
-async function handleImage(file, origin="camera"){
-  lastFile = file;
   try{
-    showProgress("A preparar imagem…", 10);
-    await new Promise(r=>setTimeout(r, 150));
-
-    showProgress("A otimizar…", 25);
-    const prepped = await optimizeImageForOCR(file);
-
-    showProgress("A enviar para o OCR…", 55);
-    const fd = new FormData(); fd.append("file", prepped, prepped.name);
-    const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
-
-    showProgress("A ler…", 80);
-    const t = await res.text().catch(()=>res.statusText);
-    if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
-    const data = JSON.parse(t);
+    toast('A ler etiqueta…');
+    const text = await doOCR(file);
+    const euro = parseEurocode(text);
 
     const row = {
-      id: Date.now().toString(),
-      ts: Date.now(),
-      filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
-      text: data?.text || (data?.qr ? `QR: ${data.qr}` : "")
+      id: Date.now(),
+      created_at: new Date().toISOString(),
+      ocr_text: text,
+      eurocode: euro
     };
-
-    showProgress("A gravar no Neon…", 90);
-    await persistToDB({ ts: row.ts, text: row.text, filename: row.filename, origin });
-
-    RESULTS = await fetchServerRows();
-    renderTable();
-
-    showProgress("Concluído ✅", 100);
-    setTimeout(()=> setStatus(""), 400);
-    showToast("OCR concluído");
-  }catch(err){
-    console.error(err);
-    showError(err.message || "Erro inesperado");
-    showToast("Falha no OCR");
+    await apiSave(row);
+    toast(euro?`EUROCODE: ${euro}`:'Texto lido. Eurocode não detetado.');
+    refresh();
+  }catch(e){
+    console.error(e);
+    toast('Falha no OCR. Tenta de novo.', 'err');
   }
 }
 
-/* ===== Bootstrap ===== */
-(async function(){
-  if(!isDesktop) return;
-  try { RESULTS = await fetchServerRows(); }
-  catch(e){ console.warn("Sem Neon:", e.message); RESULTS = []; }
-  renderTable();
-})();
+/* =========================
+ * INIT
+ * ========================= */
+function init(){
+  // inputs
+  els.camInput?.addEventListener('change', e=>{ handleFiles(e.target.files); e.target.value=''; });
+  els.btnUpload?.addEventListener('click', ()=> els.fileInput?.click());
+  els.fileInput?.addEventListener('change', e=>{ handleFiles(e.target.files); e.target.value=''; });
 
-/* ===== Ações ===== */
-cameraBtn?.addEventListener("click", () => cameraInput.click());
-
-cameraInput?.addEventListener("change", async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  const mode = (window.OCR_MODE || 'ocr');
-  const when = Date.now();
-
-  try{
-    if (mode === 'euro') {
-      showProgress("EUROCODE: a ler localmente…", 40);
-      const { raw, euro, conf, cands } = await ocrImageEuro(file);
-
-      if (!euro) {
-        showError('Não encontrei um EUROCODE válido (4 dígitos + 2–7 A/Z/0–9, pode ter espaço/hífen).');
-        showToast('⚠️ EUROCODE não detetado', 'error');
-        e.target.value = "";
-        return;
-      }
-
-      await persistToDB({ ts: when, text: raw, filename: file.name || "captura.jpg", origin: "camera-euro" });
-
-      RESULTS = await fetchServerRows();
-      renderTable();
-
-      setStatus("Concluído ✅", { success:true });
-      const plural = cands && cands.length > 1 ? ` (entre ${cands.length} candidatos)` : '';
-      showToast(`EUROCODE: ${euro}${plural} • ${Math.round(conf*100)}%`, 'success');
+  // export / clear
+  els.btnExport?.addEventListener('click', async ()=>{
+    const rows = await apiList();
+    if (!rows.length) return toast('Sem dados para exportar.');
+    download(`capturas_${new Date().toISOString().slice(0,10)}.csv`, toCSV(rows));
+  });
+  els.btnClear?.addEventListener('click', async ()=>{
+    if (!confirm('Limpar todos os registos?')) return;
+    if (USE_BACKEND){
+      // TODO: endpoint para limpar tudo
     } else {
-      await handleImage(file, "camera");
+      saveRows([]);
     }
-  }catch(err){
-    console.error(err);
-    showError(err.message || 'Erro no OCR');
-    showToast('Falha no OCR', 'error');
-  }finally{
-    cameraInput.value = "";
-  }
-});
+    toast('Tabela limpa.');
+    refresh();
+  });
 
-uploadBtn?.addEventListener("click", () => fileInput.click());
-fileInput?.addEventListener("change", async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  await handleImage(file, "upload");
-  fileInput.value = "";
-});
-
-/* ===== Exportar CSV (com coluna Eurocode) ===== */
-exportBtn?.addEventListener("click", async () => {
-  if(!RESULTS.length) return showToast("Nada para exportar");
-  const header = ["idx","timestamp","ocr_text","eurocode"];
-  const lines = [header.join(",")].concat(
-    RESULTS.map((r,i)=>{
-      const euro = extractEurocode(r.text||"");
-      return [
-        i+1,
-        new Date(r.ts).toISOString(),
-        `"${(r.text||"").replace(/"/g,'""')}"`,
-        `"${(euro||"").replace(/"/g,'""')}"`
-      ].join(",");
-    })
-  );
-  const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "express_ocr.csv"; a.click();
-  URL.revokeObjectURL(url);
-});
-
-/* ===== Limpar vista ===== */
-clearBtn?.addEventListener("click", ()=>{
-  RESULTS = [];
-  renderTable();
-  showToast("Vista limpa (dados no Neon mantidos)");
-});
-
-/* ===== MODAL DE AJUDA ===== */
-const helpModal = document.getElementById("helpModal");
-const helpBtn = document.getElementById("helpBtn");
-const helpBtnDesktop = document.getElementById("helpBtnDesktop");
-const helpClose = document.getElementById("helpClose");
-
-function showHelpModal() { helpModal?.classList.add("show"); }
-function hideHelpModal() { helpModal?.classList.remove("show"); }
-helpBtn?.addEventListener("click", showHelpModal);
-helpBtnDesktop?.addEventListener("click", showHelpModal);
-helpClose?.addEventListener("click", hideHelpModal);
-helpModal?.addEventListener("click", (e) => { if (e.target === helpModal) hideHelpModal(); });
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
-});
-
-/* ===== FEEDBACK VISUAL ===== */
-function showToastWithType(msg, type = 'info') {
-  toast.textContent = msg;
-  toast.classList.remove('success', 'error');
-  if (type === 'success') toast.classList.add('success');
-  else if (type === 'error') toast.classList.add('error');
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 2500);
+  wireHelp();
+  refresh();
 }
-function setCardState(state) {
-  const card = isDesktop ? document.getElementById("desktopView") : document.getElementById("mobileView");
-  card.classList.remove('success', 'error');
-  if (state === 'success') { card.classList.add('success'); setTimeout(() => card.classList.remove('success'), 3000); }
-  else if (state === 'error') { card.classList.add('error'); setTimeout(() => card.classList.remove('error'), 3000); }
-}
-function addFeedbackIcon(message, type) {
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-  return `<span class="feedback-icon">${icons[type] || icons.info}</span>${message}`;
-}
-function animateCameraButton(state) {
-  if (!cameraBtn) return;
-  cameraBtn.classList.remove('pulse');
-  if (state === 'processing') {
-    cameraBtn.style.transform = 'scale(0.95)';
-    cameraBtn.style.opacity = '0.7';
-  } else if (state === 'success') {
-    cameraBtn.style.transform = 'scale(1.05)'; cameraBtn.style.borderColor = 'var(--success)';
-    setTimeout(() => { cameraBtn.style.transform = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse'); }, 1000);
-  } else if (state === 'error') {
-    cameraBtn.style.transform = 'scale(1.05)'; cameraBtn.style.borderColor = 'var(--danger)';
-    setTimeout(() => { cameraBtn.style.transform = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse'); }, 1000);
-  } else {
-    cameraBtn.style.transform = ''; cameraBtn.style.opacity = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse');
-  }
-}
-const originalShowToast = showToast;
-showToast = function(msg, type = 'info') { showToastWithType(msg, type); };
-const originalSetStatus = setStatus;
-setStatus = function(html, opts = {}) {
-  const el = statusEl();
-  el.classList.toggle("error", !!opts.error);
-  if (opts.error) { html = addFeedbackIcon(html, 'error'); setCardState('error'); }
-  else if (opts.success) { html = addFeedbackIcon(html, 'success'); setCardState('success'); }
-  el.innerHTML = html || "";
-};
-const originalShowError = showError;
-showError = function(message) {
-  const el = statusEl();
-  el.classList.add("error");
-  el.innerHTML = `
-    <div>${addFeedbackIcon(message, 'error')}</div>
-    <div class="progress"><span style="width:0%"></span></div>
-    <button class="retry-btn" id="retryBtn">🔄 Tentar novamente</button>
-  `;
-  document.getElementById("retryBtn")?.addEventListener("click", () => lastFile && handleImage(lastFile, "retry"));
-  setCardState('error'); animateCameraButton('error'); showToast(message, 'error');
-};
-
-/* ===== HISTÓRICO (mantido) ===== */
-let captureHistory = [];
-function addToHistory(c){ captureHistory.unshift(c); if(captureHistory.length>10) captureHistory=captureHistory.slice(0,10); localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }
-function loadHistory(){ try{ const s=localStorage.getItem('expressglass_history'); if(s) captureHistory=JSON.parse(s);}catch(e){ captureHistory=[]; } }
-loadHistory();
+document.addEventListener('DOMContentLoaded', init);
