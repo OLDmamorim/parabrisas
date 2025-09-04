@@ -3,7 +3,7 @@ const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
 const DELETE_URL   = "/api/delete-ocr";
-const UPDATE_URL   = "/api/update-ocr";   // <- NOVO: editar no Neon
+const UPDATE_URL   = "/api/update-ocr";   // <- editar no Neon
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -33,6 +33,8 @@ const toast         = document.getElementById("toast");
     .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
     .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
     .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
+    .cell-wrap.editing{ outline:2px solid #3b82f6; border-radius:6px; padding:2px 4px; background:rgba(59,130,246,.08); }
+    .col-actions .btn.btn-mini{ margin-right:6px }
   `;
   document.head.appendChild(s);
 })();
@@ -87,7 +89,8 @@ function ensureActionsHeader() {
       <th style="width:60px">#</th>
       <th style="width:220px">Data/Hora</th>
       <th style="width:auto">Texto lido (OCR)</th>
-      <th style="width:110px">Ações</th>
+      <th style="width:180px">Eurocode</th>
+      <th style="width:140px">Ações</th>
     </tr>
   `;
 }
@@ -124,7 +127,7 @@ async function deleteFromDB(id){
   if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
   return true;
 }
-/* NOVO: atualizar no Neon */
+/* Atualizar no Neon */
 async function updateInDB(id, text){
   const resp = await fetch(UPDATE_URL, {
     method: 'POST',
@@ -136,18 +139,33 @@ async function updateInDB(id, text){
   return data.row;
 }
 
+/* ===== Extração de EUROCODE a partir do texto OCR ===== */
+function extractEurocode(text='') {
+  const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{5,8}$/;
+  const normalize = (s) => s.toUpperCase()
+    .replaceAll('O','0').replaceAll('I','1').replaceAll('S','5').replaceAll('B','8')
+    .replace(/[^A-Z0-9\s]/g,' ');
+  const toks = (text||'').toUpperCase().split(/[\s\r\n]+/).filter(Boolean);
+  let hit = toks.find(t => EUROCODE_REGEX.test(t));
+  if (hit) return hit;
+  const clean = normalize(text);
+  return clean.split(/\s+/).find(t => EUROCODE_REGEX.test(t)) || '';
+}
+
 /* ===== Render da tabela ===== */
 function renderTable(){
   if(!isDesktop) return;
   ensureActionsHeader();
   resultsBody.innerHTML = "";
   RESULTS.forEach((r,i)=>{
-    const txt = (r.text || "").replace(/\s*\n\s*/g, " ");
+    const txt  = (r.text || "").replace(/\s*\n\s*/g, " ");
+    const euro = extractEurocode(r.text || "");
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
       <td><div class="ocr-text">${txt}</div></td>
+      <td><div class="ocr-text">${euro}</div></td>
       <td>
         <button class="btn-icon editBtn" title="Editar" data-id="${r.id}">✏️</button>
         <button class="btn-icon delBtn"  title="Apagar" data-id="${r.id}">🗑️</button>
@@ -235,6 +253,36 @@ async function runOCR(file){
   return JSON.parse(t);
 }
 
+/* ===== OCR EUROCODE local (Tesseract) ===== */
+async function ensureTesseract() {
+  if (window.Tesseract) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = res; s.onerror = () => rej(new Error('Falha a carregar Tesseract'));
+    document.head.appendChild(s);
+  });
+}
+let _tessWorker = null;
+async function ocrImageEuro(file) {
+  await ensureTesseract();
+  const worker = _tessWorker || ( _tessWorker = await window.Tesseract.createWorker() );
+  await worker.loadLanguage('eng');
+  await worker.initialize('eng');
+  await worker.setParameters({
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+    user_defined_dpi: '300',
+    preserve_interword_spaces: '1'
+  });
+  const prepped = await optimizeImageForOCR(file);
+  const { data } = await worker.recognize(prepped);
+  await worker.clear();
+  const raw = (data.text || '').trim();
+  const euro = extractEurocode(raw);
+  const conf = (data.confidence || 0) / 100;
+  return { raw, euro, conf };
+}
+
 /* ===== Fluxo ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
@@ -287,26 +335,71 @@ async function handleImage(file, origin="camera"){
 
 /* ===== Ações ===== */
 cameraBtn?.addEventListener("click", () => cameraInput.click());
-cameraInput?.addEventListener("change", (e) => {
+
+cameraInput?.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
-  if (file) handleImage(file, "camera");
-  cameraInput.value = "";
+  if (!file) return;
+
+  const mode = (window.OCR_MODE || 'ocr');
+  const when = Date.now();
+
+  try{
+    if (mode === 'euro') {
+      // OCR local com Tesseract e extração do Eurocode
+      showProgress("EUROCODE: a ler localmente…", 40);
+      const { raw, euro, conf } = await ocrImageEuro(file);
+
+      if (!euro) {
+        showError('Não encontrei um EUROCODE válido (4 dígitos + 5–8 A/Z/0–9).');
+        showToast('⚠️ EUROCODE não detetado', 'error');
+        e.target.value = "";
+        return;
+      }
+
+      // Guardar apenas o texto completo no Neon (como antes)
+      await persistToDB({ ts: when, text: raw, filename: file.name || "captura.jpg", origin: "camera-euro" });
+
+      // Atualizar vista
+      RESULTS = await fetchServerRows();
+      renderTable();
+
+      setStatus("Concluído ✅", { success:true });
+      showToast(`EUROCODE: ${euro} • ${Math.round(conf*100)}%`, 'success');
+    } else {
+      // Fluxo normal (endpoint)
+      await handleImage(file, "camera");
+    }
+  }catch(err){
+    console.error(err);
+    showError(err.message || 'Erro no OCR');
+    showToast('Falha no OCR', 'error');
+  }finally{
+    cameraInput.value = "";
+  }
 });
+
 uploadBtn?.addEventListener("click", () => fileInput.click());
-fileInput?.addEventListener("change", (e) => {
+fileInput?.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
-  if (file) handleImage(file, "upload");
+  if (!file) return;
+  await handleImage(file, "upload");
   fileInput.value = "";
 });
+
+/* ===== Exportar CSV (com coluna Eurocode) ===== */
 exportBtn?.addEventListener("click", async () => {
   if(!RESULTS.length) return showToast("Nada para exportar");
-  const header = ["idx","timestamp","text"];
+  const header = ["idx","timestamp","ocr_text","eurocode"];
   const lines = [header.join(",")].concat(
-    RESULTS.map((r,i)=>[
-      i+1,
-      new Date(r.ts).toISOString(),
-      `"${(r.text||"").replace(/"/g,'""')}"`
-    ].join(","))
+    RESULTS.map((r,i)=>{
+      const euro = extractEurocode(r.text||"");
+      return [
+        i+1,
+        new Date(r.ts).toISOString(),
+        `"${(r.text||"").replace(/"/g,'""')}"`,
+        `"${(euro||"").replace(/"/g,'""')}"`
+      ].join(",");
+    })
   );
   const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
@@ -314,6 +407,8 @@ exportBtn?.addEventListener("click", async () => {
   a.href = url; a.download = "express_ocr.csv"; a.click();
   URL.revokeObjectURL(url);
 });
+
+/* ===== Limpar vista ===== */
 clearBtn?.addEventListener("click", ()=>{
   RESULTS = [];
   renderTable();
@@ -399,249 +494,3 @@ let captureHistory = [];
 function addToHistory(c){ captureHistory.unshift(c); if(captureHistory.length>10) captureHistory=captureHistory.slice(0,10); localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }
 function loadHistory(){ try{ const s=localStorage.getItem('expressglass_history'); if(s) captureHistory=JSON.parse(s);}catch(e){ captureHistory=[]; } }
 loadHistory();
-
-/* =========================
-   ADD-ON: Modo OCR vs EUROCODE
-   ========================= */
-(() => {
-  const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{5,8}$/;
-
-  // ---- helpers UI ----
-  const $ = (sel) => document.querySelector(sel);
-  const toast = (msg) => {
-    const t = $('#toast');
-    if (t) { t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200); }
-    else alert(msg);
-  };
-  const pushToMobileHistory = ({ value, raw, mode, conf, when }) => {
-    const list = $('#mobileHistoryList');
-    if (!list) return;
-    const empty = list.querySelector('.history-empty');
-    if (empty) empty.remove();
-    const item = document.createElement('div');
-    item.className = 'history-item';
-    item.innerHTML = `
-      <div class="h-top">
-        <span class="h-mode">${mode.toUpperCase()}</span>
-        <span class="h-time">${new Date(when).toLocaleString()}</span>
-        <span class="h-conf">${Math.round(conf*100)}%</span>
-      </div>
-      <div class="h-text">${(value || raw || '').toString().replace(/[<>]/g, s => ({'<':'&lt;','>':'&gt;'}[s]))}</div>
-    `;
-    list.prepend(item);
-  };
-  const pushToDesktopTable = ({ value, raw, when }) => {
-    const tbody = $('#resultsBody');
-    const table = $('#resultsTable');
-    if (!tbody || !table) return;
-    const idx = tbody.children.length + 1;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${idx}</td>
-      <td>${new Date(when).toLocaleString()}</td>
-      <td>${(value || raw || '').toString().replace(/[<>]/g, s => ({'<':'&lt;','>':'&gt;'}[s]))}</td>
-      <td><button class="btn btn-mini" data-del>Remover</button></td>
-    `;
-    tbody.prepend(tr);
-    tr.querySelector('[data-del]')?.addEventListener('click', () => tr.remove());
-  };
-
-  // ---- Normalizações para O↔0, I↔1, S↔5, B↔8 (típico em etiquetas) ----
-  const normalizeAmbiguous = (s='') =>
-    s.toUpperCase()
-     .replaceAll('O','0')
-     .replaceAll('I','1')
-     .replaceAll('S','5')
-     .replaceAll('B','8')
-     .replace(/[^A-Z0-9\s]/g,' ');
-
-  // ---- Extrair EUROCODE de texto OCR ----
-  function pickEurocode(text) {
-    const toks = (text||'').toUpperCase().split(/[\s\r\n]+/).filter(Boolean);
-    let hit = toks.find(t => EUROCODE_REGEX.test(t));
-    if (hit) return hit;
-    const clean = normalizeAmbiguous(text);
-    return clean.split(/\s+/).find(t => EUROCODE_REGEX.test(t)) || null;
-  }
-
-  // ---- Carregar Tesseract se não existir ----
-  async function ensureTesseract() {
-    if (window.Tesseract) return;
-    await new Promise((res, rej) => {
-      const s = document.createElement('script');
-      s.src = 'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
-      s.onload = res; s.onerror = () => rej(new Error('Falha a carregar Tesseract'));
-      document.head.appendChild(s);
-    });
-  }
-
-  // ---- OCR core (um worker reutilizável) ----
-  let workerPromise = null;
-  async function getWorker() {
-    await ensureTesseract();
-    if (!workerPromise) workerPromise = window.Tesseract.createWorker();
-    return workerPromise;
-  }
-
-  async function ocrImage(blob, mode='ocr') {
-    const worker = await getWorker();
-    let langs = 'eng';
-    let params;
-
-    if (mode === 'euro') {
-      params = {
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-        user_defined_dpi: '300',
-        preserve_interword_spaces: '1'
-      };
-    } else {
-      params = {
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_/.:() ',
-        user_defined_dpi: '300',
-        preserve_interword_spaces: '1'
-      };
-    }
-
-    await worker.loadLanguage(langs);
-    await worker.initialize(langs);
-    await worker.setParameters(params);
-
-    const { data } = await worker.recognize(blob);
-    await worker.clear(); // mantém o worker pronto para próxima
-
-    const text = (data.text || '').trim();
-    const conf = (data.confidence || 0) / 100;
-
-    if (mode === 'euro') {
-      const euro = pickEurocode(text);
-      return { raw: text, value: euro, conf, mode };
-    }
-    return { raw: text, value: text, conf, mode };
-  }
-
-  // ---- integrar no input de câmara que já tens ----
-  const camInput = document.getElementById('cameraInput');
-  if (camInput) {
-    camInput.addEventListener('change', async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-
-      const mode = (window.OCR_MODE || 'ocr');
-      const when = Date.now();
-      try {
-        const { raw, value, conf } = await ocrImage(file, mode);
-
-        if (mode === 'euro') {
-          if (!value) {
-            toast('⚠️ Não encontrei um EUROCODE válido (4 dígitos + 5–8 A/Z/0–9). Tenta aproximar e evitar reflexos.');
-            return;
-          }
-          toast(`✅ EUROCODE: ${value} • ${Math.round(conf*100)}%`);
-          pushToMobileHistory({ value, raw, mode, conf, when });
-          pushToDesktopTable({ value, raw, when });
-        } else {
-          toast(`✅ OCR lido • ${Math.round(conf*100)}%`);
-          pushToMobileHistory({ value: raw, raw, mode, conf, when });
-          pushToDesktopTable({ value: raw, raw, when });
-        }
-
-        // limpa input para permitir nova captura igual
-        e.target.value = '';
-      } catch (err) {
-        console.error(err);
-        toast('Erro no OCR: ' + (err.message || err));
-      }
-    });
-  }
-
-})();
-
-/* ========= DESKTOP: inserir linha com OCR + EUROCODE + ações ========= */
-function escapeHTML(s=''){ return s.toString().replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-
-function pushToDesktopTable({ raw, euro, when }) {
-  const tbody = document.querySelector('#resultsBody');
-  if (!tbody) return;
-  const idx = tbody.children.length + 1;
-
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td>${idx}</td>
-    <td>${new Date(when).toLocaleString()}</td>
-    <td class="col-ocr"><div class="cell-wrap" data-field="ocr">${escapeHTML(raw || '')}</div></td>
-    <td class="col-euro"><div class="cell-wrap" data-field="euro">${escapeHTML(euro || '')}</div></td>
-    <td class="col-actions">
-      <button class="btn btn-mini" data-edit>Editar</button>
-      <button class="btn btn-mini danger" data-del>Apagar</button>
-    </td>
-  `;
-  tbody.prepend(tr);
-
-  // Apagar
-  tr.querySelector('[data-del]')?.addEventListener('click', () => tr.remove());
-
-  // Editar/Guardar (inline nos dois campos)
-  const btnEdit = tr.querySelector('[data-edit]');
-  const ocrDiv  = tr.querySelector('[data-field="ocr"]');
-  const euroDiv = tr.querySelector('[data-field="euro"]');
-
-  btnEdit.addEventListener('click', () => {
-    const saving = btnEdit.dataset.mode === 'save';
-    if (saving) {
-      [ocrDiv, euroDiv].forEach(d => { d.contentEditable = 'false'; d.classList.remove('editing'); });
-      btnEdit.textContent = 'Editar';
-      btnEdit.dataset.mode = 'edit';
-      // aqui podes sincronizar com backend se quiseres
-    } else {
-      [ocrDiv, euroDiv].forEach(d => { d.contentEditable = 'true'; d.classList.add('editing'); });
-      btnEdit.textContent = 'Guardar';
-      btnEdit.dataset.mode = 'save';
-    }
-  });
-}
-
-/* ===== HOTFIX: garantir coluna "Eurocode" no desktop ===== */
-(function ensureEuroDesktop(){
-  const table = document.getElementById('resultsTable');
-  if (!table) return;
-
-  // 1) Cabeçalho: acrescentar "Eurocode" antes da coluna Ações se ainda não existir
-  const headRow = table.querySelector('thead tr');
-  if (headRow) {
-    const hasEuro = Array.from(headRow.children).some(th =>
-      th.textContent.trim().toLowerCase().includes('eurocode')
-    );
-    if (!hasEuro) {
-      const th = document.createElement('th');
-      th.style.width = '180px';
-      th.textContent = 'Eurocode';
-      headRow.insertBefore(th, headRow.lastElementChild); // antes de "Ações"
-    }
-  }
-
-  // 2) Função para normalizar uma linha do tbody (inserir TD do Eurocode se faltar)
-  const normalizeRow = (tr) => {
-    if (!tr || tr.tagName !== 'TR') return;
-    const tds = tr.children;
-    // Esperado: #, Data/Hora, OCR, Eurocode, Ações => 5 TDs
-    // Se só houver 4 (sem Eurocode), inserimos a meio.
-    if (tds.length === 4) {
-      const euroTd = document.createElement('td');
-      euroTd.className = 'col-euro';
-      euroTd.innerHTML = `<div class="cell-wrap" data-field="euro"></div>`;
-      tr.insertBefore(euroTd, tds[3]); // antes de "Ações"
-    }
-  };
-
-  // 3) Normalizar linhas já existentes
-  const tbody = document.getElementById('resultsBody');
-  if (tbody) Array.from(tbody.children).forEach(normalizeRow);
-
-  // 4) Observar novas linhas adicionadas e normalizar automaticamente
-  if (tbody) {
-    const obs = new MutationObserver(muts => {
-      muts.forEach(m => m.addedNodes.forEach(n => normalizeRow(n)));
-    });
-    obs.observe(tbody, { childList: true });
-  }
-})();
