@@ -1,126 +1,79 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EXPRESSGLASS • Receção material</title>
-
-  <!-- Mantém o teu style.css se já o tens -->
-  <link rel="stylesheet" href="style.css" />
-
-  <style>
-    /* Só utilitários mínimos caso o style.css não esteja a aplicar */
-    :root{
-      --bg: #0c1a2b; --card:#0f1f33; --muted:#9fb3c8; --brand:#3b82f6;
-      --success:#22c55e; --danger:#ef4444;
-    }
-    body{margin:0;background:linear-gradient(180deg,#2f6cf5 0%,#0f3bd1 100%);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    header{padding:20px 24px;color:#fff}
-    .title{font-weight:800;font-size:40px;letter-spacing:3px}
-    .badge{float:right;background:#0d2242;color:#fff;padding:10px 16px;border-radius:20px;opacity:.95}
-    main{padding:0 16px 24px}
-    .card{max-width:980px;margin:0 auto;background:rgba(6,17,30,.88);color:#e6eef8;border-radius:28px;padding:22px 20px 28px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
-    .row{display:flex;align-items:center;gap:10px;margin:8px 0 18px}
-    .help-btn{margin-left:auto;background:#12263f;color:#e6eef8;border:none;border-radius:24px;padding:10px 16px;font-weight:700}
-    .camera-zone{position:relative;display:flex;justify-content:center}
-    .camera-btn{display:flex;align-items:center;justify-content:center;width:280px;height:160px;border-radius:16px;border:2px dashed rgba(120,161,255,.55);cursor:pointer;transition:.2s;background:rgba(255,255,255,.02)}
-    .camera-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.20)}
-    .camera-btn svg{opacity:.9}
-    .status{min-height:22px;margin:8px 0 0 0;color:#9fb3c8}
-    .status.error{background:#300;color:#fff;padding:6px 10px;border-radius:8px}
-    .progress{height:6px;background:#1c2942;border-radius:3px;overflow:hidden;margin-top:6px}
-    .progress>span{display:block;height:6px;background:#3b82f6;width:0}
-    h2{font-size:42px;margin:18px 8px 10px}
-    .sub{color:#b7c7da;margin:0 8px 24px}
-    .history-head{display:flex;align-items:center;gap:8px;margin:10px 6px 8px}
-    .btn-clear{margin-left:auto;background:#692c2a;color:#f2d7d6;border:none;border-radius:14px;padding:8px 14px}
-    #mobileHistoryList{display:flex;flex-direction:column;gap:10px;margin:8px 6px}
-    .h-item{background:#15253d;border-radius:14px;padding:12px 14px}
-    .h-time{color:#9fb3c8;font-size:12px;margin-bottom:6px}
-    .h-text{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    /* Desktop */
-    .desktop-only{display:none}
-    @media (min-width:900px){
-      .mobile-only{display:none}
-      .desktop-only{display:block}
-      .table{width:100%;border-collapse:separate;border-spacing:0 8px}
-      .table th,.table td{padding:10px 12px;background:#15253d}
-      .table th{color:#9fb3c8;font-weight:700}
-      .table td:first-child,.table th:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
-      .table td:last-child,.table th:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
-      .btn-icon{cursor:pointer;border:none;background:none;font-size:16px}
-    }
-    /* Toast simples */
-    #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:10px;opacity:0;pointer-events:none;transition:.2s}
-    #toast.show{opacity:1}
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"/>
+  <title>ExpressGlass - Receção Material</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-
-  <header>
-    <div class="title">EXPRESSGLASS</div>
-    <div class="badge" id="viewBadge">Mobile</div>
+  <header class="page-header">
+    <h1>EXPRESSGLASS</h1>
+    <span id="viewBadge" class="badge">Mobile</span>
   </header>
 
-  <main>
-    <!-- CARD MOBILE -->
-    <section id="mobileView" class="card mobile-only">
-      <div class="row">
-        <div style="color:#b7c7da">Receção material</div>
+  <main class="container">
+    <section class="card" id="mobileView">
+      <div class="card-header">
+        <h2 class="subtitle">Receção material</h2>
         <button id="helpBtn" class="help-btn">Instruções</button>
       </div>
 
-      <!-- ZONA CÂMARA (corrigida) -->
-      <div class="camera-zone">
-        <label id="btnCamera" for="cameraInput" class="camera-btn" aria-label="Tirar foto">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M4 7h3l1.2-2h7.6L17 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="12" cy="13" r="3.5" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
+      <!-- Bloco da câmara -->
+      <div class="camera-card">
+        <label for="cameraInput" class="camera-btn">
+          <img src="camera.svg" alt="camera" class="camera-icon" />
         </label>
-
-        <!-- NÃO usar hidden: alguns browsers mobile bloqueiam o click -->
-        <input id="cameraInput" type="file" accept="image/*" capture="environment"
-               style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" />
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+        <div id="mobileStatus" class="status">Aguardando captura...</div>
       </div>
 
-      <div id="mobileStatus" class="status">Aguardando captura…</div>
+      <!-- Texto explicativo (mais pequeno) -->
+      <p class="instructions">
+        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
+        Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
+      </p>
 
-      <h2>Receção de Material</h2>
-      <p class="sub">Tira uma foto à <strong>etiqueta</strong> do material.<br/>Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.</p>
-
-      <hr style="border:none;height:1px;background:#223552;margin:10px 0 14px" />
-
-      <div class="history-head">
-        <span>📋 <strong>Últimas Capturas</strong></span>
-        <button id="btnClear" class="btn-clear">Limpar</button>
+      <!-- Histórico -->
+      <div class="history">
+        <div class="history-header">
+          <span class="history-title">📋 Últimas Capturas</span>
+          <button id="btnClear" class="clear-btn">Limpar</button>
+        </div>
+        <div id="mobileHistoryList" class="history-list">
+          <p class="history-empty">Ainda não há capturas realizadas.</p>
+        </div>
       </div>
-      <div id="mobileHistoryList"></div>
     </section>
 
-    <!-- CARD DESKTOP -->
-    <section id="desktopView" class="card desktop-only">
-      <div class="row" style="margin-bottom:14px">
-        <button id="btnUpload" class="help-btn">Carregar imagem</button>
-        <input id="fileInput" type="file" accept="image/*" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-        <button id="btnExport" class="help-btn">Exportar CSV</button>
-        <button id="btnClearDesktop" class="help-btn" style="background:#642c2b">Limpar Tabela</button>
+    <!-- Versão desktop -->
+    <section class="card desktop-only" id="desktopView">
+      <h2>Receção de Material</h2>
+      <div class="actions">
+        <button id="btnCamera">📷 Capturar</button>
+        <input id="fileInput" type="file" accept="image/*" style="display:none;" />
+        <button id="btnUpload">⬆️ Upload</button>
+        <button id="btnExport">💾 Exportar</button>
       </div>
-
-      <table id="resultsTable" class="table" width="100%">
+      <div id="desktopStatus" class="status"></div>
+      <table id="resultsTable">
         <thead></thead>
         <tbody id="resultsBody"></tbody>
       </table>
-
-      <div id="desktopStatus" class="status" style="margin-top:10px"></div>
     </section>
   </main>
 
-  <!-- Toast -->
-  <div id="toast"></div>
+  <!-- Modal de ajuda -->
+  <div id="helpModal" class="modal">
+    <div class="modal-content">
+      <span id="helpClose" class="modal-close">&times;</span>
+      <h3>Instruções</h3>
+      <p>Tira uma foto clara da etiqueta, certifica-te que inclui a descrição e o código se possível.</p>
+    </div>
+  </div>
 
-  <!-- Modal de ajuda (opcional, mantém estrutura) -->
-  <div id="helpModal" style="display:none"></div>
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
 
   <script src="app.js"></script>
 </body>
