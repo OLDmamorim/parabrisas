@@ -594,3 +594,38 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
   .ocr-mode.btn{ height:98px }
   .ocr-mode.btn svg{ width:30px; height:30px }
 }
+<head>
+  ...
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    /* === Dois botões de câmara lado a lado === */
+    .mode-grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:12px;
+      margin:8px 0 16px;
+    }
+    .mode-btn{
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:6px;
+      height:96px;
+      border-radius:14px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      color:#fff;
+      transition: box-shadow .2s ease, transform .08s ease;
+    }
+    .mode-btn .emoji{ font-size:28px }
+    .mode-btn .mode-label{
+      color:#fff;
+      font-weight:700;
+      font-size:13px;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+    }
+    .mode-btn.selected{ box-shadow: inset 0 0 0 3px rgba(59,130,246,.35) }
+    .mode-btn:active{ transform: translateY(1px) }
+    .mode-grid .mode-btn{ width:100% }
+  </style>
+</head>
