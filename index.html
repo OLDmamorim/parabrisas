@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -16,11 +16,11 @@
 
   <!-- ===== MOBILE ===== -->
   <section id="mobileView" class="card card-main">
-    <button id="helpBtn" class="help-chip">?<span> Instruções</span></button>
+    <button id="helpBtn" class="help-chip" type="button">Instruções</button>
 
     <div class="camera-block">
       <button id="btnCamera" class="camera-btn pulse" type="button" aria-label="Tirar foto">
-        <!-- ÍCONE INLINE (não falha) -->
+        <!-- Ícone inline (não falha) -->
         <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/>
           <circle cx="12" cy="14" r="4"/>
@@ -40,7 +40,7 @@
 
     <div class="history-header">
       <h3 class="section-title">📋 Últimas Capturas</h3>
-      <button id="historyClearBtn" class="btn danger">Limpar</button>
+      <button id="historyClearBtn" class="btn danger" type="button">Limpar</button>
     </div>
     <div id="mobileHistoryList" class="history-list"></div>
 
@@ -50,11 +50,11 @@
   <!-- ===== DESKTOP ===== -->
   <section id="desktopView" class="card card-desktop">
     <div class="toolbar">
-      <button id="btnUpload" class="btn">Carregar imagem</button>
+      <button id="btnUpload" class="btn" type="button">Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*" hidden />
-      <button id="btnExport" class="btn">Exportar CSV</button>
-      <button id="btnClear" class="btn danger">Limpar Tabela</button>
-      <button id="helpBtnDesktop" class="btn ghost">Instruções</button>
+      <button id="btnExport" class="btn" type="button">Exportar CSV</button>
+      <button id="btnClear" class="btn danger" type="button">Limpar Tabela</button>
+      <button id="helpBtnDesktop" class="btn ghost" type="button">Instruções</button>
     </div>
 
     <div id="desktopStatus" class="status"></div>
@@ -68,7 +68,7 @@
   <!-- ===== MODAL ===== -->
   <div id="helpModal" class="modal">
     <div class="modal-content">
-      <button id="helpClose" class="modal-close">✕</button>
+      <button id="helpClose" class="modal-close" type="button">✕</button>
       <h3>Instruções</h3>
       <ol>
         <li>No <b>Mobile</b>, toca no botão da câmara e fotografa a etiqueta/descrição/código.</li>
