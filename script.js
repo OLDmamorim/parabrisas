@@ -1,62 +1,60 @@
-// Elementos principais
-const btnMain = document.querySelector('.btn-main');
-const fabExport = document.querySelector('.fab-export');
-const cardsCaptures = document.getElementById('cardsCaptures');
-const emptyState = document.getElementById('emptyState');
+const fileInput = document.getElementById('fileInput');
+const imageUrl = document.getElementById('imageUrl');
+const btnUrl = document.getElementById('btnUrl');
+const btnRun = document.getElementById('btnRun');
+const output = document.getElementById('output');
+const preview = document.getElementById('preview');
+const qrOnly = document.getElementById('qrOnly');
 
-// Estado da app
-let captures = []; // Exemplo [{dateTime, imgSrc, ocrText}]
+let payload = {};
 
-// Simulação de captura (substituir pelo real)
-btnMain.addEventListener('click', async () => {
-  // Aqui faria upload/captura. Simulação para teste visual.
-  const now = new Date();
-  const data = {
-    dateTime: now.toLocaleString(),
-    imgSrc: 'https://via.placeholder.com/70x70?text=ETQ', // Ou preview real
-    ocrText: 'Texto exemplo de código e descrição'
-  };
-  captures.unshift(data); // Mais recente primeiro
-  renderCaptures();
+btnUrl.addEventListener('click', () => {
+  if (!imageUrl.value) return;
+  payload = { imageUrl: imageUrl.value.trim() };
+  showPreviewURL(imageUrl.value.trim());
 });
 
-// Renderização dos cards de captura
-function renderCaptures() {
-  if (captures.length === 0) {
-    emptyState.style.display = '';
-    cardsCaptures.innerHTML = '';
+fileInput.addEventListener('change', async (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  const buf = await f.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const mime = f.type || 'image/png';
+  payload = { imageBase64: `data:${mime};base64,${base64}` };
+  showPreviewFile(f);
+});
+
+btnRun.addEventListener('click', async () => {
+  if (!payload.imageUrl && !payload.imageBase64) {
+    output.textContent = '⚠️ Escolhe um ficheiro ou cola um URL primeiro.';
     return;
   }
-  emptyState.style.display = 'none';
-  cardsCaptures.innerHTML = captures.map((cap, i) => `
-    <div class="card capture">
-      <span class="date-time">${cap.dateTime}</span>
-      <img src="${cap.imgSrc}" class="capture-img" alt="Etiqueta capturada">
-      <p class="ocr-text">Texto lido: ${cap.ocrText}</p>
-      <div class="actions">
-        <button class="btn-edit" title="Editar"><span class="icon-edit"></span></button>
-        <button class="btn-delete" title="Eliminar" onclick="deleteCapture(${i})"><span class="icon-delete"></span></button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// Eliminação de captura
-function deleteCapture(idx) {
-  captures.splice(idx, 1);
-  renderCaptures();
-}
-
-// Exportação CSV (simples para mobile)
-fabExport.addEventListener('click', () => {
-  if (captures.length === 0) return alert('Nenhuma captura disponível para exportar...');
-  const csv = captures.map(c => `"${c.dateTime}","${c.ocrText}"`).join('\n');
-  const blob = new Blob([csv], {type: 'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'capturas.csv';
-  a.click();
+  output.textContent = '⏳ A processar…';
+  try {
+    const res = await fetch('/.netlify/functions/ocr-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, qrOnly: qrOnly.checked })
+    });
+    const data = await res.json();
+    output.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    output.textContent = 'Erro: ' + err.message;
+  }
 });
 
-// Inicialização visual
-renderCaptures();
+function showPreviewURL(url){
+  preview.innerHTML = '';
+  const img = new Image();
+  img.src = url;
+  img.alt = 'preview';
+  preview.appendChild(img);
+}
+
+function showPreviewFile(file){
+  preview.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.onload = ()=> URL.revokeObjectURL(img.src);
+  preview.appendChild(img);
+}
