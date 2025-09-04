@@ -1,97 +1,202 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>EXPRESSGLASS • Receção material</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Captura de Etiquetas</title>
+  <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+    .topbar {
+      background: #fff;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(20, 30, 40, .04);
+    }
+    .logo {
+      font-weight: 600;
+      font-size: 1.2rem;
+      letter-spacing: .5px;
+      color: #3751ff;
+    }
+    .btn-export {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #3751ff;
+      cursor: pointer;
+    }
+    .container {
+      padding: 1.2rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 8px rgba(20, 30, 40, .08);
+      margin-bottom: 1.2rem;
+      padding: 1.2rem;
+    }
+    .card.tip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: .5rem;
+    }
+    .btn-main {
+      margin-top: 1rem;
+      padding: .75rem 2rem;
+      font-size: 1.1rem;
+      border-radius: 24px;
+      background: #3751ff;
+      color: #fff;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .18s;
+    }
+    .btn-main:hover {
+      background: #2334a8;
+    }
+    .cards-captures {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .card.capture {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      position: relative;
+    }
+    .card.capture .date-time {
+      font-size: .9rem;
+      font-weight: 400;
+      color: #666;
+      margin-bottom: .5rem;
+    }
+    .card.capture .capture-img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 9px;
+      margin-bottom: .5rem;
+      background: #e8eaee;
+    }
+    .card.capture .ocr-text {
+      font-size: 1rem;
+      color: #222;
+      word-break: break-word;
+      margin-bottom: .5rem;
+    }
+    .card.capture .actions {
+      display: flex;
+      gap: .8rem;
+      margin-top: .3rem;
+    }
+    .actions .btn-edit,
+    .actions .btn-delete {
+      background: none;
+      border: none;
+      color: #3751ff;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .actions .btn-delete { color: #f95e5a; }
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #999;
+      gap: .5rem;
+      margin: 2.5rem 0;
+    }
+    .empty i {
+      font-size: 2rem;
+      color: #e3e5ed;
+    }
+    .fab-export {
+      position: fixed;
+      right: 1.2rem;
+      bottom: 1.3rem;
+      font-size: 1.08rem;
+      padding: .9rem 2rem;
+      border-radius: 48px;
+      background: #3751ff;
+      color: #fff;
+      border: none;
+      font-weight: 600;
+      box-shadow: 0 3px 12px rgba(55,81,255,0.08);
+      cursor: pointer;
+      z-index: 999;
+      display: flex;
+      gap: .7rem;
+      align-items: center;
+    }
+    .help {
+      margin: 3rem 0 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      color: #888;
+      font-size: 1rem;
+    }
+    .btn-help {
+      background: none;
+      border: none;
+      color: #3751ff;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-left: .8rem;
+    }
+    /* Minimal icon implementation with emoji */
+    .icon-camera:before { content:'📷'; }
+    .icon-export:before { content:'📊'; }
+    .icon-edit:before { content:'✏️'; }
+    .icon-delete:before { content:'🗑️'; }
+    .icon-empty:before { content:'📄'; }
+    .icon-tip:before { content:'💡'; }
+  </style>
 </head>
 <body>
-  <!-- HEADER -->
-  <header class="header">
-    <div class="brand">
-      <h1 class="title">EXPRESSGLASS</h1>
-      <p class="subtitle">Receção material</p>
+  <div class="topbar">
+    <span class="logo">EtiquetasPro</span>
+    <button class="btn-export" title="Exportar CSV"><span class="icon-export"></span></button>
+  </div>
+  
+  <div class="container">
+    <div class="card tip">
+      <span class="icon-camera" style="font-size:2.2rem;"></span>
+      <p><strong>Tira uma foto clara da etiqueta do material</strong></p>
+      <p>Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível</p>
+      <button class="btn-main">Capturar Etiqueta</button>
     </div>
-    <div class="view-badge" id="viewBadge">Mobile</div>
-  </header>
-
-  <!-- MOBILE VIEW -->
-  <main id="mobileView" class="card mobile-only">
-    <!-- Botão de ajuda -->
-    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
     
-    <div class="mobile-cta">
-      <button id="btnCamera" class="btn-square pulse" aria-label="Tirar foto da etiqueta">
-        <span class="emoji">📷</span>
-      </button>
-      <p class="hint">
-        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
-        Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
-      </p>
+    <div class="cards-captures" id="cardsCaptures">
+      <!-- Cards das capturas serão adicionados aqui pelo JS -->
     </div>
-
-    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
-    <div id="mobileStatus" class="status"></div>
-
-    <!-- Histórico de Capturas -->
-    <div id="mobileHistory" class="history-section">
-      <h3 class="history-title">📋 Últimas Capturas</h3>
-      <div id="mobileHistoryList" class="history-list">
-        <p class="history-empty">Ainda não há capturas realizadas.</p>
-      </div>
-    </div>
-
-    <footer class="footnote">
-      <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
-    </footer>
-  </main>
-
-  <!-- DESKTOP VIEW -->
-  <section id="desktopView" class="card desktop-only">
-    <!-- Botão de ajuda -->
-    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
     
-    <div class="toolbar">
-      <button id="btnUpload" class="btn">📁 Carregar imagem</button>
-      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
-      <button id="btnExport" class="btn">📊 Exportar CSV</button>
-      <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
-    </div>
-
-    <div class="table-wrap">
-      <table id="resultsTable">
-        <thead>
-          <tr>
-            <th style="width:60px">#</th>
-            <th style="width:220px">Data/Hora</th>
-            <th style="width:auto">Texto lido (OCR)</th>
-            <th style="width:80px">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
-
-    <div id="desktopStatus" class="status"></div>
-  </section>
-
-  <!-- MODAL DE AJUDA -->
-  <div id="helpModal" class="help-modal">
-    <div class="help-content">
-      <button class="help-close" id="helpClose">&times;</button>
-      <h3>💡 Como usar</h3>
-      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
-      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
-      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
-      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
-      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+    <div class="empty" id="emptyState">
+      <span class="icon-empty"></span>
+      <p>Ainda não há capturas realizadas</p>
     </div>
   </div>
-
-  <!-- TOAST -->
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <script src="app.js"></script>
+  
+  <button class="fab-export" title="Exportar CSV"><span class="icon-export"></span> Exportar CSV</button>
+  
+  <div class="help">
+    <span class="icon-tip"></span>
+    <span>Certifica-te que a etiqueta está bem iluminada e focada.</span>
+    <button class="btn-help" onclick="alert('Dica: Utilize iluminação natural, evite reflexos e aproxime a câmara da etiqueta!')">Ajuda</button>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
