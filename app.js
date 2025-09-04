@@ -354,4 +354,55 @@ helpBtn?.addEventListener("click", showHelpModal);
 helpBtnDesktop?.addEventListener("click", showHelpModal);
 helpClose?.addEventListener("click", hideHelpModal);
 helpModal?.addEventListener("click", (e)=>{ if(e.target===helpModal) hideHelpModal(); });
-document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && helpModal?.classList.contains("show")) hideHelpModal(); });
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && helpModal?.classList.contains("show")) hideHelpModal(); }
+
+/* ====== MOBILE HISTORY: 5 itens, 50 caracteres ====== */
+const MOBILE_HISTORY_MAX = 5;
+const MOBILE_HISTORY_TEXT_MAX = 50;
+
+function truncateText50(t){
+  if(!t) return "";
+  const s = t.replace(/\s+/g, " ").trim();
+  return s.length > MOBILE_HISTORY_TEXT_MAX ? s.slice(0, MOBILE_HISTORY_TEXT_MAX) + "…" : s;
+}
+
+function renderHistory(){
+  const list = document.getElementById("mobileHistoryList");
+  if(!list) return;
+
+  // usa a variável global captureHistory se já existir; senão, nada
+  const src = (window.captureHistory || []).slice(0, MOBILE_HISTORY_MAX);
+
+  if(!src.length){
+    list.innerHTML = '<p class="history-empty">Ainda não há capturas realizadas.</p>';
+    return;
+  }
+
+  list.innerHTML = src.map(item => `
+    <div class="history-item">
+      <div class="history-item-time">
+        ${new Date(item.timestamp || item.ts || Date.now()).toLocaleString("pt-PT")}
+      </div>
+      <div class="history-item-text">${truncateText50(item.text || "")}</div>
+    </div>
+  `).join("");
+}
+
+/* re-render quando a página carrega e sempre que adicionares novas entradas */
+document.addEventListener("DOMContentLoaded", renderHistory);
+if (document.readyState !== "loading") renderHistory();
+
+/* se já tens uma função addCaptureToHistory no teu código, chama renderHistory() no fim dela */
+if (typeof window.addCaptureToHistory === "function") {
+  const _origAdd = window.addCaptureToHistory;
+  window.addCaptureToHistory = function(c){
+    _origAdd(c);
+    renderHistory();
+  };
+}
+
+/* limpar histórico (se já existir o botão) */
+document.getElementById("historyClearBtn")?.addEventListener("click", () => {
+  try { window.captureHistory = []; localStorage.setItem('expressglass_history','[]'); } catch(e){}
+  renderHistory();
+});
