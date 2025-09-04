@@ -574,3 +574,23 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
     font-size: 13px;
   }
 }
+/* === Modo OCR/Eurocode – dois botões lado a lado, tamanhos iguais === */
+.ocr-mode-wrap{
+  display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:10px 0 16px;
+}
+.ocr-mode.btn{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; height:110px; border-radius:14px; border:1px solid rgba(255,255,255,.08);
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.25));
+  color:#e5e7eb; cursor:pointer; transition:transform .08s ease, box-shadow .2s ease;
+}
+.ocr-mode.btn svg{ width:36px; height:36px; fill:currentColor; opacity:.9 }
+.ocr-mode.btn span{ font-weight:700; letter-spacing:.3px }
+.ocr-mode.btn:hover{ transform:translateY(-1px) }
+.ocr-mode.btn.selected{
+  outline:2px solid #3b82f6; box-shadow:0 0 0 4px rgba(59,130,246,.25) inset;
+}
+@media (max-width:380px){
+  .ocr-mode.btn{ height:98px }
+  .ocr-mode.btn svg{ width:30px; height:30px }
+}
