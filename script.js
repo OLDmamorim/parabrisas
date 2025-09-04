@@ -46,47 +46,56 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<
 function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 /* =========================
-   EUROCODE EXTRAÇÃO v9
+   EUROCODE EXTRAÇÃO v10
    ========================= */
 function sanitize(raw){ return String(raw||'').toUpperCase().replace(/\u00A0/g,' '); }
-function normalizeHeadDigits(head){ return head.replace(/[A-Z]/g, c => ({O:'0',Q:'0',D:'0',I:'1',L:'1',B:'8',S:'5',Z:'2'}[c]||c)); }
-function validEuro(code){ return /^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/.test(code); }
+
+// Normaliza apenas os 4 dígitos iniciais
+function normalizeHeadDigits(head){
+  return head
+    .replace(/[OQ]/g,'0')
+    .replace(/[IL]/g,'1')
+    .replace(/B/g,'8');
+    // retirado S→5 e Z→2 para não estragar sufixos
+}
+
+function validEuro(code){
+  return /^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/.test(code);
+}
 
 const STRICT_RE = /(?<![A-Z0-9])(\d{4})([A-Z]{2}[A-Z0-9]{0,5})(?![A-Z0-9])/g;
 function findStrict(text){
   const hits = [];
   for (const line of text.split(/\r?\n/)){
-    let m; 
-    while ((m=STRICT_RE.exec(line))!==null){
+    let m;
+    while((m=STRICT_RE.exec(line))!==null){
       const head = normalizeHeadDigits(m[1]);
-      const code = head+m[2];
+      const code = head + m[2];
       if (validEuro(code)) hits.push({code, idx:m.index});
     }
   }
   return hits;
 }
 
-// Fallback: colar tokens vizinhos
-function splitTokens(line){
-  return line.split(/[^A-Z0-9]+/).filter(Boolean);
+// Fallback entre tokens (mesmo entre linhas)
+function splitTokens(text){
+  return text.split(/[^A-Z0-9]+/).filter(Boolean);
 }
 function fallback(text){
-  for (const line of text.split(/\r?\n/)){
-    const toks = splitTokens(line);
-    for (let i=0;i<toks.length;i++){
-      const t = toks[i];
-      if (/^\d{4}$/.test(t)){ // só 4 dígitos
-        const head = normalizeHeadDigits(t);
-        const next = toks[i+1]||'';
-        if (/^[A-Z]{2,}/.test(next)){ // começa com ≥2 letras
-          let suffix = next.slice(0,7);
-          const code = head+suffix;
-          if (validEuro(code)) return code;
-        }
+  const toks = splitTokens(text);
+  for (let i=0;i<toks.length;i++){
+    const t = toks[i];
+    if (/^\d{4}$/.test(t)){ // só 4 dígitos
+      const head = normalizeHeadDigits(t);
+      const next = toks[i+1]||'';
+      if (/^[A-Z]{2,}/.test(next)){
+        let suffix = next.slice(0,7);
+        const code = head+suffix;
+        if (validEuro(code)) return code;
       }
-      if (/^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/.test(t)){
-        return t; // já está certinho
-      }
+    }
+    if (/^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/.test(t)){
+      return t; // já está correto
     }
   }
   return null;
@@ -111,7 +120,7 @@ async function doOCR(file){
     return "5350\nAGS MERCEDES SMART\n3999AGNV HONDA";
   }
   const fd = new FormData(); fd.append('file', file, 'photo.jpg');
-  const res = await fetch(OCR_ENDPOINT, {method:'POST', body:fd});
+  const res = await fetch(OCR_ENDPOINT,{method:'POST',body:fd});
   if (!res.ok) throw new Error(`OCR falhou (${res.status})`);
   const data = await res.json();
   return data?.text || data?.fullText || data?.ocr || '';
