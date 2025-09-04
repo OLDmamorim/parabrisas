@@ -1,65 +1,67 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"/>
-  <title>Receção de Material - ExpressGlass</title>
-  <link rel="stylesheet" href="style.css"/>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2563eb">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExpressGlass - Receção Material</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="page-header">
-    <h1>EXPRESSGLASS</h1>
-    <span id="viewBadge" class="view-badge">Mobile</span>
+  <!-- HEADER -->
+  <header class="header">
+    <h1 class="logo">EXPRESSGLASS</h1>
+    <span id="viewBadge" class="badge">Mobile</span>
   </header>
 
-  <main class="main-card" id="mobileView">
+  <!-- CARD PRINCIPAL -->
+  <main class="card">
     <div class="card-header">
-      <h2>Receção material</h2>
-      <button id="helpBtn" class="help-btn">Instruções</button>
+      <span class="subtitle">Receção material</span>
+      <button id="helpBtn" class="btn-help">Instruções</button>
     </div>
 
-    <div class="camera-box" id="cameraBox">
+    <!-- Botão da câmara -->
+    <div class="camera-box">
       <button id="btnCamera" class="camera-btn">
-        <img src="camera.svg" alt="camera" class="camera-icon"/>
+        <img src="camera-icon.svg" alt="Câmara" class="camera-icon">
       </button>
-      <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
-      <p id="mobileStatus" class="status-text">Aguardando captura...</p>
+      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+      <p id="mobileStatus" class="status">Aguardando captura...</p>
     </div>
 
-    <p class="hint">
-      Tira uma foto à <strong>etiqueta</strong> do material. <br/>
-      Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
+    <!-- Texto de instruções -->
+    <p class="instructions">
+      Tira uma foto à <b>etiqueta</b> do material.  
+      Inclui a <b>descrição</b> e o <b>código</b> se possível.
     </p>
 
-    <section class="history-section">
+    <!-- Histórico -->
+    <section class="history">
       <div class="history-header">
-        <h3>📋 Últimas Capturas</h3>
-        <button id="btnClear" class="clear-btn">Limpar</button>
+        <h2>📋 Últimas Capturas</h2>
+        <button id="btnClear" class="btn-clear">Limpar</button>
       </div>
-      <div id="mobileHistoryList" class="history-list">
-        <p class="history-empty">Ainda não há capturas realizadas.</p>
+      <div id="historyList" class="history-list">
+        <p class="empty">Ainda não há capturas realizadas.</p>
       </div>
     </section>
   </main>
 
-  <!-- Modal de ajuda -->
+  <!-- MODAL DE INSTRUÇÕES -->
   <div id="helpModal" class="modal">
     <div class="modal-content">
-      <span id="helpClose" class="close">&times;</span>
+      <button id="helpClose" class="close">×</button>
       <h2>Instruções</h2>
-      <p>
-        1. Carrega no botão da câmara.<br/>
-        2. Fotografa a etiqueta do material.<br/>
-        3. Garante que a descrição e código estão visíveis.<br/>
-        4. As tuas capturas aparecerão na lista abaixo.
-      </p>
+      <ol>
+        <li>Carrega no botão da câmara.</li>
+        <li>Fotografa a etiqueta do material.</li>
+        <li>Inclui descrição e código legíveis.</li>
+        <li>Verifica se a leitura ficou correta.</li>
+      </ol>
     </div>
   </div>
 
-  <div id="toast" class="toast"></div>
-
-  <script src="script.js"></script>
+  <!-- JS -->
+  <script src="app.js"></script>
 </body>
 </html>
