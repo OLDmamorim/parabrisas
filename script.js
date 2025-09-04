@@ -101,7 +101,7 @@ function clearResult(){
 }
 
 /* =========================
-   EUROCODE - EXTRAÇÃO ROBUSTA v2
+   EUROCODE - EXTRAÇÃO ROBUSTA v3 (hard stop)
    ========================= */
 // Regra final válida: 4 dígitos + 2–7 A-Z/0-9 (sem espaços/hífens)
 function normalizeDigitLike(c) {
@@ -113,6 +113,14 @@ function sanitizeForScan(raw) {
     .toUpperCase()
     .replace(/\u00A0/g, ' ');
 }
+
+/**
+ * Política v3:
+ * - Construir sufixo até ter >=2 chars.
+ * - Depois de válido (>=2), SÓ aceita tokens de 1 char (caso "A G N V").
+ * - Se aparecer token com tamanho >1, PARAR imediatamente (hard stop).
+ * - Corrigir O/I/L nos 4 dígitos.
+ */
 function extractEurocodeCandidates(rawText) {
   const txt = sanitizeForScan(rawText);
   const tokens = txt.split(/[^A-Z0-9]+/).filter(Boolean);
@@ -141,9 +149,12 @@ function extractEurocodeCandidates(rawText) {
           const take = Math.min(tk.length, 7 - suffix.length);
           suffix += tk.slice(0, take);
         } else {
-          // já temos um eurocode válido (>=2). Só juntar letras soltas (A G N V).
-          if (tk.length === 1) suffix += tk;
-          else break; // evita devorar 'PBL'/'HONDA' etc.
+          // já temos válido: aceitar apenas tokens de 1 char; senão parar (HARD STOP)
+          if (tk.length === 1) {
+            suffix += tk;
+          } else {
+            break; // evita apanhar PB1, PBL, HONDA, etc.
+          }
         }
         j++;
       }
@@ -167,8 +178,11 @@ function extractEurocodeCandidates(rawText) {
             const take = Math.min(tk.length, 7 - suffix.length);
             suffix += tk.slice(0, take);
           } else {
-            if (tk.length === 1) suffix += tk;
-            else break;
+            if (tk.length === 1) {
+              suffix += tk;
+            } else {
+              break; // HARD STOP
+            }
           }
           k++;
         }
@@ -185,6 +199,7 @@ function extractEurocodeCandidates(rawText) {
   }
   return Array.from(found);
 }
+
 function getBestEurocode(rawText) {
   const list = extractEurocodeCandidates(rawText);
   if (list.length === 0) return null;
@@ -336,7 +351,6 @@ if (el.retryBtn) {
    INIT
    ========================= */
 (function init(){
-  // por defeito, o botão destacado na tua UI era EUROCODE
-  setMode('EUROCODE');
+  setMode('EUROCODE'); // destaque inicial
   refreshList();
 })();
