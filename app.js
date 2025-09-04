@@ -15,62 +15,35 @@ const mobileStatus  = document.getElementById("mobileStatus");
 
 const uploadBtn     = document.getElementById("btnUpload");
 const fileInput     = document.getElementById("fileInput");
-
 const exportBtn     = document.getElementById("btnExport");
-const clearBtn      = document.getElementById("btnClear");
-const clearBtnDesk  = document.getElementById("btnClearDesktop");
-
+const clearBtn      = document.getElementById("btnClear");        // mobile
 const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-const mobileHistoryList = document.getElementById("mobileHistoryList");
-
-/* ===== CSS extra para OCR text ===== */
-(function(){
-  const id = "ocr-text-style";
-  if (document.getElementById(id)) return;
-  const s = document.createElement("style");
-  s.id = id;
-  s.textContent = `
-    .ocr-text{ white-space: normal; overflow-wrap:anywhere; line-height:1.4 }
-    .error { background:#300; color:#fff; padding:6px; border-radius:6px }
-    .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
-    .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
-    .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
-  `;
-  document.head.appendChild(s);
-})();
-
 /* ===== Estado ===== */
 let RESULTS = [];
 let lastFile = null;
-let captureHistory = []; // mobile history (mostrado no cartão)
 
-/* ===== Helpers UI ===== */
-function showToast(msg){
+/* ===== Helpers ===== */
+function showToast(msg,type='info'){
   toast.textContent = msg;
-  toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"), 2200);
+  toast.classList.remove('success','error');
+  if(type==='success') toast.classList.add('success');
+  if(type==='error') toast.classList.add('error');
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),2200);
 }
-function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
-function setStatus(html, opts={}) {
-  const el = statusEl();
-  el.classList.toggle("error", !!opts.error);
-  el.innerHTML = html || "";
-}
-function showProgress(label, pct=0, asError=false){
-  const el = statusEl();
-  el.classList.toggle("error", !!asError);
-  el.innerHTML = `
+const statusEl = () => (isDesktop ? desktopStatus : mobileStatus);
+function setStatus(html){ statusEl().innerHTML = html || ""; }
+function showProgress(label, pct=0){
+  statusEl().innerHTML = `
     <div>${label}</div>
     <div class="progress"><span style="width:${pct}%"></span></div>
   `;
 }
 function showError(message){
-  const el = statusEl();
-  el.classList.add("error");
-  el.innerHTML = `
+  statusEl().innerHTML = `
     <div>❌ ${message}</div>
     <div class="progress"><span style="width:0%"></span></div>
     <button class="retry-btn" id="retryBtn">🔄 Tentar novamente</button>
@@ -138,23 +111,20 @@ function renderTable(){
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
       <td><div class="ocr-text">${txt}</div></td>
-      <td>
-        <button class="btn-icon delBtn" title="Apagar" data-id="${r.id}">🗑️</button>
-      </td>
+      <td><button class="btn-icon delBtn" title="Apagar" data-id="${r.id}">🗑️</button></td>
     `;
     resultsBody.appendChild(tr);
   });
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
 
-/* Delegação para apagar (desktop) */
+/* delegação delete (desktop) */
 resultsBody?.addEventListener("click", async (e)=>{
   const btn = e.target.closest(".delBtn");
   if(!btn) return;
   const id = Number(btn.dataset.id);
   if(!id) return;
   if(!confirm("Apagar este registo da base de dados?")) return;
-
   const old = btn.textContent;
   btn.disabled = true; btn.textContent = "…";
   try{
@@ -163,7 +133,6 @@ resultsBody?.addEventListener("click", async (e)=>{
     renderTable();
     showToast("Registo apagado.");
   }catch(err){
-    console.error(err);
     btn.disabled = false; btn.textContent = old;
     showToast("Falha ao apagar: " + (err.message || "erro"));
   }
@@ -194,12 +163,12 @@ async function runOCR(file){
   return JSON.parse(t);
 }
 
-/* ===== Fluxo comum ===== */
+/* ===== Fluxo ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
     showProgress("A preparar imagem…", 10);
-    await new Promise(r=>setTimeout(r, 120));
+    await new Promise(r=>setTimeout(r, 150));
 
     showProgress("A otimizar…", 25);
     const prepped = await optimizeImageForOCR(file);
@@ -223,94 +192,43 @@ async function handleImage(file, origin="camera"){
     showProgress("A gravar no Neon…", 90);
     await persistToDB({ ts: row.ts, text: row.text, filename: row.filename, origin });
 
-    // Atualiza desktop
-    if (isDesktop){
-      RESULTS = await fetchServerRows();
-      renderTable();
-    }
-
-    // Atualiza histórico (mobile)
+    // histórico (mobile)
     addCaptureToHistory(row);
-    renderHistory();
+
+    RESULTS = await fetchServerRows();
+    renderTable();
 
     showProgress("Concluído ✅", 100);
     setTimeout(()=> setStatus(""), 400);
-    showToast("OCR concluído");
+    showToast("OCR concluído",'success');
   }catch(err){
-    console.error(err);
     showError(err.message || "Erro inesperado");
-    showToast("Falha no OCR");
+    showToast("Falha no OCR",'error');
   }
-}
-
-/* ===== Histórico (mobile) ===== */
-function loadHistory(){
-  try{
-    const s = localStorage.getItem('expressglass_history');
-    if (s) captureHistory = JSON.parse(s);
-    else captureHistory = [];
-  }catch{ captureHistory = []; }
-}
-function saveHistory(){
-  try{ localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }
-  catch{}
-}
-function addCaptureToHistory(capture){
-  const item = { timestamp:capture.ts, text:capture.text||'', filename:capture.filename||'' };
-  captureHistory.unshift(item);
-  if (captureHistory.length > 20) captureHistory = captureHistory.slice(0,20);
-  saveHistory();
-}
-function truncateForHistory(text){
-  if (!text) return "—";
-  const oneLine = text.replace(/\s+/g,' ').trim();
-  return oneLine.length > 50 ? oneLine.slice(0,50) + "…" : oneLine;
-}
-function renderHistory(){
-  if (!mobileHistoryList) return;
-  if (!captureHistory.length){
-    mobileHistoryList.innerHTML = `<div class="h-item"><div class="h-text" style="opacity:.7">Ainda não há capturas realizadas.</div></div>`;
-    return;
-  }
-  const max = 5; // mostra no máximo 5 itens
-  mobileHistoryList.innerHTML = captureHistory.slice(0,max).map(it=>`
-    <div class="h-item">
-      <div class="h-time">${new Date(it.timestamp).toLocaleString()}</div>
-      <div class="h-text">${truncateForHistory(it.text)}</div>
-    </div>
-  `).join("");
 }
 
 /* ===== Bootstrap ===== */
 (async function(){
-  loadHistory();
-  renderHistory();
-
-  if (isDesktop){
+  if(isDesktop){
     try { RESULTS = await fetchServerRows(); }
-    catch(e){ console.warn("Sem Neon:", e.message); RESULTS = []; }
+    catch(e){ RESULTS = []; }
     renderTable();
   }
 })();
 
 /* ===== Ações ===== */
-/* Botão de câmara — funciona via <label for>, mas deixo de backup */
-cameraBtn?.addEventListener("click", (e)=>{ e.preventDefault(); cameraInput?.click(); });
-cameraBtn?.addEventListener("touchend", (e)=>{ e.preventDefault(); cameraInput?.click(); });
-
+cameraBtn?.addEventListener("click", () => cameraInput.click());
 cameraInput?.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (file) handleImage(file, "camera");
-  cameraInput.value = ""; // permitir repetir mesma foto
+  cameraInput.value = "";
 });
-
 uploadBtn?.addEventListener("click", () => fileInput?.click());
 fileInput?.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (file) handleImage(file, "upload");
   fileInput.value = "";
 });
-
 exportBtn?.addEventListener("click", async () => {
   if(!RESULTS.length) return showToast("Nada para exportar");
   const header = ["idx","timestamp","text"];
@@ -327,17 +245,62 @@ exportBtn?.addEventListener("click", async () => {
   a.href = url; a.download = "express_ocr.csv"; a.click();
   URL.revokeObjectURL(url);
 });
-
-clearBtn?.addEventListener("click", ()=>{
-  captureHistory = [];
-  saveHistory();
-  renderHistory();
-  showToast("Histórico limpo.");
-});
-
-clearBtnDesk?.addEventListener("click", ()=>{
-  // limpa só a vista; os dados no Neon ficam
+document.getElementById("btnClearDesktop")?.addEventListener("click", ()=>{
   RESULTS = [];
   renderTable();
   showToast("Vista limpa (dados no Neon mantidos)");
 });
+clearBtn?.addEventListener("click", ()=>{
+  captureHistory = [];
+  saveHistory();
+  renderHistory();
+  showToast("Histórico limpo");
+});
+
+/* ===== Modal ajuda ===== */
+const helpModal = document.getElementById("helpModal");
+document.getElementById("helpBtn")?.addEventListener("click", ()=>helpModal.classList.add("show"));
+document.getElementById("helpClose")?.addEventListener("click", ()=>helpModal.classList.remove("show"));
+helpModal?.addEventListener("click",(e)=>{ if(e.target===helpModal) helpModal.classList.remove("show"); });
+
+/* ===== HISTÓRICO (mobile) ===== */
+let captureHistory = [];
+function saveHistory(){ try{ localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }catch{} }
+function loadHistory(){ try{ const s=localStorage.getItem('expressglass_history'); if(s) captureHistory=JSON.parse(s);}catch{} }
+loadHistory();
+
+const mobileHistoryList = document.getElementById("mobileHistoryList");
+
+function truncate50(s){
+  if(!s) return "";
+  const oneLine = String(s).replace(/\s+/g,' ').trim();
+  return oneLine.length > 50 ? oneLine.slice(0,50) + "…" : oneLine;
+}
+
+function renderHistory(){
+  if(!mobileHistoryList) return;
+  if(!captureHistory.length){
+    mobileHistoryList.innerHTML = '<p class="history-empty">Ainda não há capturas realizadas.</p>';
+    return;
+  }
+  const items = captureHistory.slice(0,5).map(item => `
+    <div class="history-item">
+      <span class="history-time">${new Date(item.timestamp || item.ts).toLocaleString()}</span>
+      <div class="history-text">${truncate50(item.text || '')}</div>
+    </div>
+  `).join('');
+  mobileHistoryList.innerHTML = items;
+}
+function addCaptureToHistory(row){
+  captureHistory.unshift({
+    id: row.id,
+    timestamp: row.ts,
+    filename: row.filename,
+    text: row.text || ''
+  });
+  if(captureHistory.length > 20) captureHistory = captureHistory.slice(0,20);
+  saveHistory();
+  renderHistory();
+}
+document.addEventListener('DOMContentLoaded', renderHistory);
+if (document.readyState !== 'loading') renderHistory();
