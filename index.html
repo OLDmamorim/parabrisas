@@ -21,22 +21,17 @@
     <button class="help-btn" id="helpBtn" aria-label="Ajuda" type="button">?</button>
 
     <div class="mobile-cta">
-      <!-- Dois botões lado a lado -->
+      <!-- Um só botão -->
       <div class="mode-grid">
         <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)" type="button">
           <span class="emoji">📷</span>
-          <span class="mode-label">OCR</span>
-        </button>
-
-        <button id="btnEurocode" class="btn-square mode-btn" aria-label="Tirar foto (Eurocode)" type="button">
-          <span class="emoji">📷</span>
-          <span class="mode-label">EUROCODE</span>
+          <span class="mode-label">Ler etiqueta (OCR)</span>
         </button>
       </div>
 
       <p class="hint">
         Tira uma foto à <strong>etiqueta</strong> do material.<br />
-        Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
+        O <strong>eurocode é extraído automaticamente</strong> do texto OCR.
       </p>
     </div>
 
@@ -74,7 +69,7 @@
             <th style="width:60px">#</th>
             <th style="width:220px">Data/Hora</th>
             <th style="width:auto">Texto lido (OCR)</th>
-            <th style="width:180px">Eurocode</th>
+            <th style="width:200px">Eurocode</th>
             <th style="width:140px">Ações</th>
           </tr>
         </thead>
@@ -91,44 +86,31 @@
       <button class="help-close" id="helpClose" type="button" aria-label="Fechar">&times;</button>
       <h3>💡 Como usar</h3>
       <p><strong>Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
-      <p><strong>Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>Texto:</strong> O sistema lê automaticamente o texto da etiqueta (OCR).</p>
+      <p><strong>Eurocode:</strong> É extraído automaticamente a partir do texto OCR.</p>
       <p><strong>Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
       <p><strong>Exportar:</strong> Podes exportar os dados em formato CSV.</p>
-      <p><strong>Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+      <p><strong>Dica:</strong> Garante boa iluminação e foco na etiqueta.</p>
     </div>
   </div>
 
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- JS para alternar modos -->
+  <!-- Script mínimo para 1 câmara (OCR) -->
   <script>
-    // Modo ativo (lido pelo app.js)
+    // Só há OCR
     window.OCR_MODE = 'ocr';
 
     (function () {
-      const btnOCR = document.getElementById('btnCamera');
-      const btnEURO = document.getElementById('btnEurocode');
-      const inputCam = document.getElementById('cameraInput');
+      const btnOCR   = document.getElementById('btnCamera');
+      const camInput = document.getElementById('cameraInput');
 
-      btnOCR.addEventListener('click', function () {
-        window.OCR_MODE = 'ocr';
-        btnOCR.classList.add('selected');
-        btnEURO.classList.remove('selected');
-        // o teu app.js já escuta o click no #btnCamera e abre o input
-      }, { capture: true });
-
-      btnEURO.addEventListener('click', function (e) {
-        e.preventDefault();
-        window.OCR_MODE = 'euro';
-        btnEURO.classList.add('selected');
-        btnOCR.classList.remove('selected');
-        // dispara o mesmo input para reaproveitar o fluxo existente
-        inputCam.click();
-      });
+      btnOCR?.addEventListener('click', () => camInput.click());
     })();
   </script>
 
-  <script src="app.js"></script>
+  <!-- O teu app principal (com cache-buster) -->
+  <script src="app.js?v=ocronly-1"></script>
 </body>
 </html>
