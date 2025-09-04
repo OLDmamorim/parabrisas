@@ -22,9 +22,20 @@
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
     
     <div class="mobile-cta">
-      <button id="btnCamera" class="btn-square pulse" aria-label="Tirar foto da etiqueta">
-        <span class="emoji">📷</span>
-      </button>
+      <!-- ===== NOVO: Dois botões de modo, lado a lado e mesmo tamanho ===== -->
+      <div class="mode-grid">
+        <!-- Mantém o ID original para não partir o teu app.js -->
+        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)">
+          <span class="emoji">📷</span>
+          <span class="mode-label">OCR</span>
+        </button>
+
+        <button id="btnEurocode" class="btn-square mode-btn" aria-label="Tirar foto (Eurocode)">
+          <span class="emoji">📷</span>
+          <span class="mode-label">Eurocode</span>
+        </button>
+      </div>
+
       <p class="hint">
         Tira uma foto à <strong>etiqueta</strong> do material.<br/>
         Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
@@ -91,6 +102,36 @@
 
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- ===== Script curto só para gerir o modo e não partir o teu app.js ===== -->
+  <script>
+    // Modo ativo visível globalmente para o app.js
+    window.OCR_MODE = 'ocr'; // 'ocr' | 'euro'
+
+    (function(){
+      const btnOCR   = document.getElementById('btnCamera');
+      const btnEURO  = document.getElementById('btnEurocode');
+      const inputCam = document.getElementById('cameraInput');
+
+      // garantir que o teu handler atual do #btnCamera continua a funcionar
+      btnOCR.addEventListener('click', () => {
+        window.OCR_MODE = 'ocr';
+        btnOCR.classList.add('selected');
+        btnEURO.classList.remove('selected');
+        // o teu app.js já trata do click no #btnCamera e abre o input
+      }, { capture: true });
+
+      // no botão Eurocode, só mudamos o modo e abrimos o MESMO input
+      btnEURO.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.OCR_MODE = 'euro';
+        btnEURO.classList.add('selected');
+        btnOCR.classList.remove('selected');
+        // usa o mesmo fluxo: dispara o input que o teu app.js já escuta
+        inputCam.click();
+      });
+    })();
+  </script>
 
   <script src="app.js"></script>
 </body>
