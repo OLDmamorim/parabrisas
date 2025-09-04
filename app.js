@@ -2,7 +2,8 @@
 const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
-const DELETE_URL   = "/api/delete-ocr";   // <— NOVO: endpoint para apagar no Neon
+const DELETE_URL   = "/api/delete-ocr";
+const UPDATE_URL   = "/api/update-ocr";   // <- NOVO: editar no Neon
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -86,7 +87,7 @@ function ensureActionsHeader() {
       <th style="width:60px">#</th>
       <th style="width:220px">Data/Hora</th>
       <th style="width:auto">Texto lido (OCR)</th>
-      <th style="width:80px">Ações</th>
+      <th style="width:110px">Ações</th>
     </tr>
   `;
 }
@@ -113,7 +114,6 @@ async function persistToDB({ ts, text, filename, origin }) {
   const txt = await resp.text().catch(()=>resp.statusText);
   if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
 }
-/* NOVO: apagar no Neon */
 async function deleteFromDB(id){
   const resp = await fetch(DELETE_URL, {
     method: 'POST',
@@ -121,10 +121,19 @@ async function deleteFromDB(id){
     body: JSON.stringify({ id })
   });
   const data = await resp.json().catch(()=>({}));
-  if (!resp.ok || data?.error) {
-    throw new Error(data?.error || ('HTTP ' + resp.status));
-  }
+  if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
   return true;
+}
+/* NOVO: atualizar no Neon */
+async function updateInDB(id, text){
+  const resp = await fetch(UPDATE_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id, text })
+  });
+  const data = await resp.json().catch(()=>({}));
+  if (!resp.ok || data?.error || !data?.ok) throw new Error(data?.error || ('HTTP ' + resp.status));
+  return data.row;
 }
 
 /* ===== Render da tabela ===== */
@@ -140,7 +149,8 @@ function renderTable(){
       <td>${new Date(r.ts).toLocaleString()}</td>
       <td><div class="ocr-text">${txt}</div></td>
       <td>
-        <button class="btn-icon delBtn" title="Apagar" data-id="${r.id}">🗑️</button>
+        <button class="btn-icon editBtn" title="Editar" data-id="${r.id}">✏️</button>
+        <button class="btn-icon delBtn"  title="Apagar" data-id="${r.id}">🗑️</button>
       </td>
     `;
     resultsBody.appendChild(tr);
@@ -148,25 +158,55 @@ function renderTable(){
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
 
-/* NOVO: delegação — trata os cliques no lixo e apaga no Neon */
+/* Delegação — editar e apagar */
 resultsBody?.addEventListener("click", async (e)=>{
-  const btn = e.target.closest(".delBtn");
-  if(!btn) return;
-  const id = Number(btn.dataset.id);
+  const editBtn = e.target.closest(".editBtn");
+  const delBtn  = e.target.closest(".delBtn");
+
+  // EDITAR
+  if (editBtn) {
+    const id = Number(editBtn.dataset.id);
+    if (!id) return;
+
+    const rowEl = editBtn.closest('tr');
+    const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
+
+    const newText = prompt('Editar texto lido (OCR):', currentText);
+    if (newText === null) return; // cancelou
+
+    try{
+      editBtn.disabled = true; editBtn.textContent = '…';
+      await updateInDB(id, newText);
+      RESULTS = await fetchServerRows();
+      renderTable();
+      showToast('Registo atualizado.');
+    }catch(err){
+      console.error(err);
+      showToast('Falha ao atualizar: ' + (err.message || 'erro'));
+    }finally{
+      editBtn.disabled = false; editBtn.textContent = '✏️';
+    }
+    return;
+  }
+
+  // APAGAR
+  if(!delBtn) return;
+  const id = Number(delBtn.dataset.id);
   if(!id) return;
   if(!confirm("Apagar este registo da base de dados?")) return;
 
-  const old = btn.textContent;
-  btn.disabled = true; btn.textContent = "…";
+  const old = delBtn.textContent;
+  delBtn.disabled = true; delBtn.textContent = "…";
   try{
-    await deleteFromDB(id);              // 1) apaga no Neon
-    RESULTS = await fetchServerRows();   // 2) sincroniza
-    renderTable();                       // 3) redesenha
+    await deleteFromDB(id);
+    RESULTS = await fetchServerRows();
+    renderTable();
     showToast("Registo apagado.");
   }catch(err){
     console.error(err);
-    btn.disabled = false; btn.textContent = old;
     showToast("Falha ao apagar: " + (err.message || "erro"));
+  }finally{
+    delBtn.disabled = false; delBtn.textContent = old;
   }
 });
 
@@ -286,12 +326,8 @@ const helpBtn = document.getElementById("helpBtn");
 const helpBtnDesktop = document.getElementById("helpBtnDesktop");
 const helpClose = document.getElementById("helpClose");
 
-function showHelpModal() {
-  helpModal?.classList.add("show");
-}
-function hideHelpModal() {
-  helpModal?.classList.remove("show");
-}
+function showHelpModal() { helpModal?.classList.add("show"); }
+function hideHelpModal() { helpModal?.classList.remove("show"); }
 helpBtn?.addEventListener("click", showHelpModal);
 helpBtnDesktop?.addEventListener("click", showHelpModal);
 helpClose?.addEventListener("click", hideHelpModal);
@@ -300,7 +336,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
 });
 
-/* ===== FEEDBACK VISUAL MELHORADO ===== */
+/* ===== FEEDBACK VISUAL MELHORADO (mantido) ===== */
 function showToastWithType(msg, type = 'info') {
   toast.textContent = msg;
   toast.classList.remove('success', 'error');
@@ -335,7 +371,6 @@ function animateCameraButton(state) {
     cameraBtn.style.transform = ''; cameraBtn.style.opacity = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse');
   }
 }
-/* overrides de feedback */
 const originalShowToast = showToast;
 showToast = function(msg, type = 'info') { showToastWithType(msg, type); };
 const originalSetStatus = setStatus;
@@ -359,7 +394,7 @@ showError = function(message) {
   setCardState('error'); animateCameraButton('error'); showToast(message, 'error');
 };
 
-/* ===== HISTÓRICO (se estiveres a usar) ===== */
+/* ===== HISTÓRICO (mantido) ===== */
 let captureHistory = [];
 function addToHistory(c){ captureHistory.unshift(c); if(captureHistory.length>10) captureHistory=captureHistory.slice(0,10); localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }
 function loadHistory(){ try{ const s=localStorage.getItem('expressglass_history'); if(s) captureHistory=JSON.parse(s);}catch(e){ captureHistory=[]; } }
