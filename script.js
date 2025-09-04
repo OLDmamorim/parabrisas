@@ -101,7 +101,7 @@ function clearResult(){
 }
 
 /* =========================
-   EUROCODE - EXTRAÇÃO ROBUSTA
+   EUROCODE - EXTRAÇÃO ROBUSTA v2
    ========================= */
 // Regra final válida: 4 dígitos + 2–7 A-Z/0-9 (sem espaços/hífens)
 function normalizeDigitLike(c) {
@@ -116,64 +116,87 @@ function sanitizeForScan(raw) {
 function extractEurocodeCandidates(rawText) {
   const txt = sanitizeForScan(rawText);
   const tokens = txt.split(/[^A-Z0-9]+/).filter(Boolean);
-  const out = new Set();
+  const found = new Set();
 
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
 
-    // Caso direto
+    // 1) Token já contém 4 dígitos + 2–7
     let m = t.match(/^(\d{4})([A-Z0-9]{2,7})$/);
-    if (m) { out.add(m[1] + m[2]); continue; }
+    if (m) { push(m[1] + m[2]); continue; }
 
-    // Token com 4 dígitos e sufixo quebrado
+    // 2) Token com 4 dígitos e sufixo parcial/ausente
     m = t.match(/^(\d{4})([A-Z0-9]{0,7})$/);
     if (m) {
-      let prefix = m[1], suffix = m[2] || '';
+      const prefix = m[1];
+      let suffix = m[2] || '';
       let j = i + 1;
-      while (suffix.length < 7 && j < tokens.length && /^[A-Z0-9]+$/.test(tokens[j])) {
-        const need = 7 - suffix.length;
-        suffix += tokens[j].slice(0, need);
+
+      while (suffix.length < 7 && j < tokens.length) {
+        const tk = tokens[j];
+        if (!/^[A-Z0-9]+$/.test(tk)) break;
+
+        if (suffix.length < 2) {
+          // completar mínimo: permite 1 token grande (ex.: 'AGNV')
+          const take = Math.min(tk.length, 7 - suffix.length);
+          suffix += tk.slice(0, take);
+        } else {
+          // já temos um eurocode válido (>=2). Só juntar letras soltas (A G N V).
+          if (tk.length === 1) suffix += tk;
+          else break; // evita devorar 'PBL'/'HONDA' etc.
+        }
         j++;
       }
-      if (suffix.length >= 2 && suffix.length <= 7) out.add(prefix + suffix);
+      if (suffix.length >= 2) push(prefix + suffix.slice(0, 7));
+      continue;
     }
 
-    // Dígitos partidos em vários tokens
+    // 3) Dígitos partidos em vários tokens (ex.: '3', '999', 'AG', 'NV')
     if (/^\d+$/.test(t)) {
       let num = t, k = i + 1;
-      while (num.length < 4 && k < tokens.length && /^\d+$/.test(tokens[k])) { num += tokens[k]; k++; }
+      while (num.length < 4 && k < tokens.length && /^\d+$/.test(tokens[k])) {
+        num += tokens[k]; k++;
+      }
       if (num.length === 4) {
-        let suf = '';
-        while (suf.length < 2 && k < tokens.length && /^[A-Z0-9]+$/.test(tokens[k])) {
-          suf += tokens[k]; k++;
+        let suffix = '';
+        while (suffix.length < 7 && k < tokens.length) {
+          const tk = tokens[k];
+          if (!/^[A-Z0-9]+$/.test(tk)) break;
+
+          if (suffix.length < 2) {
+            const take = Math.min(tk.length, 7 - suffix.length);
+            suffix += tk.slice(0, take);
+          } else {
+            if (tk.length === 1) suffix += tk;
+            else break;
+          }
+          k++;
         }
-        if (suf.length >= 2) {
-          suf = suf.slice(0, 7);
-          out.add(num + suf);
-        }
+        if (suffix.length >= 2) push(num + suffix.slice(0, 7));
       }
     }
   }
 
-  // Corrige confusões nos 4 primeiros (devem ser dígitos)
-  const fixed = [];
-  for (const cand of out) {
-    let head = cand.slice(0,4).replace(/[A-Z]/g, normalizeDigitLike);
-    let tail = cand.slice(4);
-    const fixedCand = head + tail;
-    if (/^\d{4}[A-Z0-9]{2,7}$/.test(fixedCand)) fixed.push(fixedCand);
+  function push(code) {
+    const head = code.slice(0, 4).replace(/[A-Z]/g, normalizeDigitLike); // corrige O/I/L nos 4 dígitos
+    const tail = code.slice(4);
+    const fixed = head + tail;
+    if (/^\d{4}[A-Z0-9]{2,7}$/.test(fixed)) found.add(fixed);
   }
-  return [...new Set(fixed)];
+  return Array.from(found);
 }
 function getBestEurocode(rawText) {
   const list = extractEurocodeCandidates(rawText);
   if (list.length === 0) return null;
-  return list.sort((a, b) => {
-    const len = b.length - a.length;
-    if (len !== 0) return len;
-    const letters = s => (s.slice(4).match(/[A-Z]/g) || []).length;
-    return letters(b) - letters(a);
-  })[0];
+
+  // Heurística: prefere sufixo de 4–5 (muito comum). Empate → primeiro.
+  const score = s => {
+    const tail = s.length - 4;
+    if (tail === 4 || tail === 5) return 2;
+    if (tail === 3 || tail === 6) return 1;
+    return 0;
+  };
+  return list.sort((a, b) => score(b) - score(a))[0];
 }
 
 /* =========================
