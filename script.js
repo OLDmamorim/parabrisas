@@ -45,23 +45,34 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<
 function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 /* =========================
-   EUROCODE - EXTRAÇÃO ROBUSTA v4
-   Regras:
-   - Forma válida final: ^\d{4}[A-Z0-9]{2,7}$ (sem hífens).
-   - Pode estar junto ou separado por ESPAÇOS/QUEBRAS; NÃO atravessa hífen.
-   - HARD STOP: assim que fica válido (>=2 no sufixo), só aceita tokens de 1 char; se vier token >1, pára.
-   - Corrige confusões O/I/L nos 4 dígitos.
+   EUROCODE - EXTRAÇÃO v5 (STRICT → FALLBACK)
    ========================= */
 function normalizeDigitLike(c){ const map={ 'O':'0','Q':'0','D':'0','I':'1','L':'1','B':'8','S':'5','Z':'2' }; return map[c]||c; }
 function sanitizeForScan(raw){ return String(raw||'').toUpperCase().replace(/\u00A0/g,' '); }
 
-/** Divide preservando separadores para sabermos se há hífen entre tokens */
+// ---- STRICT: procurar já contíguo, sem hífen
+function findStrictEurocodes(txt){
+  const re = /\b\d{4}[A-Z0-9]{2,7}\b/g; // não apanha hífen
+  const list = [];
+  let m;
+  while ((m = re.exec(txt)) !== null) list.push(m[0]);
+  return list;
+}
+function scoreStrict(code, txt){
+  const freq = (txt.match(new RegExp(code.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g')) || []).length;
+  const tail = code.slice(4);
+  const letters = (tail.match(/[A-Z]/g)||[]).length;
+  const digits  = (tail.match(/\d/g)||[]).length;
+  // preferir frequente e com mais letras no sufixo
+  return 100*freq + 10*letters - digits;
+}
+
+// ---- FALLBACK: mesma linha, sem hífen entre tokens, hard-stop
 function splitWithSeps(txt){
   const parts = [];
   const re = /[A-Z0-9]+|[^A-Z0-9]+/g;
   let m;
   while ((m = re.exec(txt)) !== null) parts.push(m[0]);
-  // construir array de {tok, sepAfter}
   const out = [];
   for (let i=0;i<parts.length;i++){
     if (/^[A-Z0-9]+$/.test(parts[i])) {
@@ -72,67 +83,45 @@ function splitWithSeps(txt){
   }
   return out;
 }
+function validTailHeuristic(tail){
+  const letters = (tail.match(/[A-Z]/g)||[]).length;
+  const digits  = (tail.match(/\d/g)||[]).length;
+  // pelo menos 2 letras e no máx. 2 dígitos no sufixo
+  return letters >= 2 && digits <= 2;
+}
 
-function extractEurocodeCandidates(rawText){
-  const txt = sanitizeForScan(rawText);
-  const seq = splitWithSeps(txt);           // mantém info do separador após cada token
+function extractEurocodeFallback(rawText){
+  const lines = sanitizeForScan(rawText).split(/\r?\n/);
   const found = new Set();
 
-  for (let i=0;i<seq.length;i++){
-    const cur = seq[i];
-    let m = cur.tok.match(/^(\d{4})([A-Z0-9]{2,7})$/);
-    if (m){ push(m[1]+m[2]); continue; }
+  for (const line of lines){
+    const seq = splitWithSeps(line);
+    for (let i=0;i<seq.length;i++){
+      const cur = seq[i];
 
-    m = cur.tok.match(/^(\d{4})([A-Z0-9]{0,7})$/);
-    if (m){
-      const prefix = m[1];
-      let suffix = m[2]||'';
-      let j = i;
-
-      // junta tokens respeitando separadores (NÃO atravessa hífen)
-      while (suffix.length < 7) {
-        // se já consumimos o token atual, avançar
-        if (suffix.length === (m[2]||'').length) {
-          // se separador a seguir ao token atual contém hífen, PARAR
-          if (seq[j].sepAfter && seq[j].sepAfter.includes('-')) break;
-        }
-
-        // escolher próximo token
-        const nxt = seq[j+1];
-        if (!nxt) break;
-
-        // se o separador entre cur e nxt tem hífen, PARAR
-        if (seq[j].sepAfter && seq[j].sepAfter.includes('-')) break;
-
-        const tk = nxt.tok;
-        if (!/^[A-Z0-9]+$/.test(tk)) break;
-
-        if (suffix.length < 2){
-          const take = Math.min(tk.length, 7 - suffix.length);
-          suffix += tk.slice(0,take);
-        } else {
-          if (tk.length === 1) suffix += tk;
-          else break; // HARD STOP
-        }
-
-        j++;
+      // 1) token com 4 dígitos + 2–7 já contíguo
+      let m = cur.tok.match(/^(\d{4})([A-Z0-9]{2,7})$/);
+      if (m){
+        const code = m[1]+m[2];
+        if (validTailHeuristic(m[2])) found.add(code);
+        continue;
       }
-      if (suffix.length >= 2) push(prefix + suffix.slice(0,7));
-      continue;
-    }
 
-    // dígitos repartidos em tokens (respeitando separadores sem '-')
-    if (/^\d+$/.test(cur.tok)){
-      let num = cur.tok, k = i;
-      while (num.length < 4 && seq[k].sepAfter && !seq[k].sepAfter.includes('-') && seq[k+1] && /^\d+$/.test(seq[k+1].tok)) {
-        num += seq[++k].tok;
-      }
-      if (num.length === 4){
-        let suffix = '';
+      // 2) 4 dígitos + sufixo parcial na mesma linha
+      m = cur.tok.match(/^(\d{4})([A-Z0-9]{0,7})$/);
+      if (m){
+        const prefix = m[1];
+        let suffix = m[2]||'';
+        let j = i;
+
         while (suffix.length < 7){
-          const sep = seq[k].sepAfter || '';
-          if (sep.includes('-')) break; // NÃO atravessa hífen
-          const nxt = seq[k+1]; if (!nxt) break;
+          // se separador após token atual tem hífen, parar
+          if (seq[j].sepAfter && seq[j].sepAfter.includes('-')) break;
+
+          const nxt = seq[j+1]; if (!nxt) break;
+          // se separador entre tokens tem hífen, parar
+          if (seq[j].sepAfter && seq[j].sepAfter.includes('-')) break;
+
           const tk = nxt.tok; if (!/^[A-Z0-9]+$/.test(tk)) break;
 
           if (suffix.length < 2){
@@ -142,35 +131,62 @@ function extractEurocodeCandidates(rawText){
             if (tk.length === 1) suffix += tk;
             else break; // HARD STOP
           }
-          k++;
+          j++;
         }
-        if (suffix.length >= 2) push(num + suffix.slice(0,7));
+
+        if (suffix.length >= 2){
+          const code = prefix + suffix.slice(0,7);
+          if (validTailHeuristic(code.slice(4))) found.add(code);
+        }
       }
     }
-  }
-
-  function push(code){
-    const head = code.slice(0,4).replace(/[A-Z]/g, normalizeDigitLike);
-    const tail = code.slice(4);
-    const fixed = head + tail;
-    if (/^\d{4}[A-Z0-9]{2,7}$/.test(fixed)) found.add(fixed);
   }
   return Array.from(found);
 }
 
 function getBestEurocode(rawText){
-  const list = extractEurocodeCandidates(rawText);
-  if (list.length === 0) return null;
-  // preferência por sufixo 4–5 (tipicamente AGNV/AGNY)
-  const score = s => { const t = s.length-4; if (t===4||t===5) return 2; if (t===3||t===6) return 1; return 0; };
-  return list.sort((a,b)=>score(b)-score(a))[0];
+  const txt = sanitizeForScan(rawText);
+
+  // 1) STRICT primeiro
+  const strict = findStrictEurocodes(txt)
+    .map(c=>{
+      // corrige O/I/L nos 4 primeiros (se OCR trocou)
+      const head = c.slice(0,4).replace(/[A-Z]/g, normalizeDigitLike);
+      const fixed = head + c.slice(4);
+      return /^\d{4}[A-Z0-9]{2,7}$/.test(fixed) ? fixed : null;
+    })
+    .filter(Boolean);
+
+  if (strict.length){
+    strict.sort((a,b)=>scoreStrict(b,txt)-scoreStrict(a,txt));
+    return strict[0];
+  }
+
+  // 2) FALLBACK (mesma linha, sem hífen, hard-stop)
+  const fb = extractEurocodeFallback(txt);
+  if (fb.length){
+    // prefere sufixo 4–5 letras
+    const score = s=>{
+      const t = s.slice(4);
+      const len = t.length;
+      const letters = (t.match(/[A-Z]/g)||[]).length;
+      return (len===4||len===5?20:0) + letters;
+    };
+    fb.sort((a,b)=>score(b)-score(a));
+    return fb[0];
+  }
+
+  return null;
 }
 
 /* =========================
    OCR
    ========================= */
 async function doOCR(fileOrBlob){
-  if (DEMO_MODE){ await wait(600); return "3999-AGNV\nPBL HONDA CIVIC HYBRID\nPB1-U44"; } // nota: hífen NÃO será aceite
+  if (DEMO_MODE){
+    await wait(400);
+    return "3999AGNV 20000000035046\nPBL HONDA CIVIC HYBRID 4P SD 06> VRD JNL\nPB1-U44";
+  }
   const fd = new FormData(); fd.append('file', fileOrBlob, 'photo.jpg');
   const res = await fetch(OCR_ENDPOINT, { method:'POST', body: fd });
   if (!res.ok) throw new Error(`OCR falhou (${res.status})`);
@@ -215,11 +231,11 @@ async function handleCapture(file){
     if (CURRENT_MODE === 'EUROCODE'){
       const euro = getBestEurocode(ocrText);
       if (euro){
-        showSuccess('EUROCODE encontrado', euro, 'Sem aceitar hífens.');
+        showSuccess('EUROCODE encontrado', euro, 'Deteção STRICT → FALLBACK (mesma linha).');
         await saveCapture({ type:'EUROCODE', eurocode:euro, raw: ocrText });
         refreshList();
       } else {
-        showError('Não encontrei um EUROCODE válido (4 dígitos + 2–7 A/Z/0–9, **sem hífen**).');
+        showError('Não encontrei um EUROCODE válido (4 dígitos + 2–7 A/Z/0–9, sem hífen).');
       }
     } else {
       const maybe = getBestEurocode(ocrText);
