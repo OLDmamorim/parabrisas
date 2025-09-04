@@ -1,13 +1,13 @@
 /* =========================
- * CONFIG (só backend)
+ * CONFIG (backend only)
  * ========================= */
 const ENDPOINTS = {
-  OCR:   "/api/ocr-proxy",
-  LIST:  "/api/list-ocr",
-  SAVE:  "/api/save-ocr",
-  DEL:   "/api/delete-ocr",
-  UPDATE:"/api/update-ocr",
-  CLEAR: "/api/clear-ocr" // opcional; se não existir, comento o uso lá em baixo
+  OCR:   "/.netlify/functions/ocr-proxy",
+  LIST:  "/.netlify/functions/list-ocr",
+  SAVE:  "/.netlify/functions/save-ocr",
+  DEL:   "/.netlify/functions/delete-ocr",
+  UPDATE:"/.netlify/functions/update-ocr",
+  CLEAR: "/.netlify/functions/clear-ocr" // opcional: comenta o uso se não existir
 };
 
 /* =========================
@@ -26,13 +26,13 @@ const els = {
   helpBtn2:   document.getElementById('helpBtnDesktop'),
   helpModal:  document.getElementById('helpModal'),
   helpClose:  document.getElementById('helpClose'),
+  viewBadge:  document.getElementById('viewBadge'),
 };
 
 /* =========================
  * EUROCODE PARSER (único)
  * Regra: 4 dígitos + 2 letras + 0–5 alfanuméricos,
  * e o sufixo final precisa ter pelo menos 1 letra.
- * Funciona mesmo com quebras de linha e separadores.
  * ========================= */
 function parseEurocode(raw){
   const text = String(raw||'').toUpperCase();
@@ -49,7 +49,7 @@ function parseEurocode(raw){
   for (let i=0;i<tokens.length-1;i++){
     const a = tokens[i], b = tokens[i+1];
     if (/^\d{4}$/.test(a) && /^[A-Z]{2}/.test(b)){
-      const code = (a+b).slice(0,11); // 4 + (2..7)
+      const code = (a+b).slice(0,11); // 4 + (2..7) = máx 11
       if (VALID.test(code) && hasLetterInTail(code)) return code;
     }
   }
@@ -57,7 +57,7 @@ function parseEurocode(raw){
 }
 
 /* =========================
- * HELPERS UI
+ * UI helpers
  * ========================= */
 let toastTimer;
 function toast(msg, kind='ok'){
@@ -92,8 +92,8 @@ function renderTable(rows){
   els.tbody.innerHTML = rows.map((r,idx)=>`
     <tr>
       <td>${rows.length-idx}</td>
-      <td>${fmtDate(r.created_at)}</td>
-      <td class="ocr-cell"><pre>${escapeHtml(r.ocr_text||'')}</pre></td>
+      <td>${fmtDate(r.ts)}</td>
+      <td class="ocr-cell"><pre>${escapeHtml(r.text||'')}</pre></td>
       <td class="euro-cell"><span class="eurocode">${r.eurocode?escapeHtml(r.eurocode):'—'}</span></td>
       <td>
         <button class="mini" data-edit="${r.id}">✏️</button>
@@ -110,9 +110,9 @@ function renderMobile(rows){
   }
   els.mobileList.innerHTML = rows.slice(0,20).map(r=>`
     <div class="cap-row">
-      <div class="cap-time">${fmtDate(r.created_at)}</div>
+      <div class="cap-time">${fmtDate(r.ts)}</div>
       <div class="cap-euro">${r.eurocode?`<strong>${escapeHtml(r.eurocode)}</strong>`:'—'}</div>
-      <div class="cap-text">${escapeHtml((r.ocr_text||'').slice(0,160))}${(r.ocr_text||'').length>160?'…':''}</div>
+      <div class="cap-text">${escapeHtml((r.text||'').slice(0,160))}${(r.text||'').length>160?'…':''}</div>
     </div>
   `).join('');
 }
@@ -121,9 +121,9 @@ function renderMobile(rows){
  * BACKEND
  * ========================= */
 async function apiList(){
-  const r = await fetch(ENDPOINTS.LIST, { cache: 'no-store' });
+  const r = await fetch(ENDPOINTS.LIST, { cache:'no-store' });
   if(!r.ok) throw new Error('Falha ao listar registos');
-  return await r.json();
+  return await r.json(); // [{id, ts, text, eurocode}, ...]
 }
 async function apiSave(row){
   const r = await fetch(ENDPOINTS.SAVE, {
@@ -131,7 +131,7 @@ async function apiSave(row){
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify(row)
   });
-  if(!r.ok) throw new Error('Falha ao guardar registo');
+  if(!r.ok) throw new Error('Falha ao guardar');
   return await r.json(); // { ok:true, id }
 }
 async function apiDelete(id){
@@ -140,7 +140,7 @@ async function apiDelete(id){
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ id })
   });
-  if(!r.ok) throw new Error('Falha ao apagar registo');
+  if(!r.ok) throw new Error('Falha ao apagar');
   return await r.json();
 }
 async function apiUpdate(id, patch){
@@ -149,13 +149,13 @@ async function apiUpdate(id, patch){
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ id, ...patch })
   });
-  if(!r.ok) throw new Error('Falha ao atualizar registo');
+  if(!r.ok) throw new Error('Falha ao atualizar');
   return await r.json();
 }
 async function apiClear(){
-  // Se não tiveres este endpoint, comenta a chamada onde é usada.
-  const r = await fetch(ENDPOINTS.CLEAR, { method: 'POST' });
-  if(!r.ok) throw new Error('Falha ao limpar registos');
+  // Se não existir no backend, comenta a chamada onde for usada.
+  const r = await fetch(ENDPOINTS.CLEAR, { method:'POST' });
+  if(!r.ok) throw new Error('Falha ao limpar');
   return await r.json();
 }
 
@@ -180,13 +180,12 @@ function toCSV(rows){
   const total = rows.length;
   rows.forEach((r,idx)=>{
     const num = total-idx;
-    const cols = [
+    lines.push([
       num,
-      fmtDate(r.created_at).replaceAll(';',','),
-      (r.ocr_text||'').replaceAll('\n',' ').replaceAll(';',','),
+      fmtDate(r.ts).replaceAll(';',','),
+      (r.text||'').replaceAll('\n',' ').replaceAll(';',','),
       r.eurocode||''
-    ];
-    lines.push(cols.join(';'));
+    ].join(';'));
   });
   return lines.join('\n');
 }
@@ -205,6 +204,7 @@ function download(filename, text){
 async function refresh(){
   try{
     const rows = await apiList();
+    if (els.viewBadge) els.viewBadge.textContent = `Mobile • ${rows.length} registos`;
     renderTable(rows);
     renderMobile(rows);
     wireRowActions();
@@ -259,8 +259,8 @@ async function handleFiles(files){
     const euro = parseEurocode(text);
 
     const row = {
-      created_at: new Date().toISOString(),
-      ocr_text: text,
+      ts: new Date().toISOString(),
+      text: text,
       eurocode: euro
     };
     await apiSave(row);
