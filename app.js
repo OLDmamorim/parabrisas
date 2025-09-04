@@ -599,3 +599,49 @@ function pushToDesktopTable({ raw, euro, when }) {
     }
   });
 }
+
+/* ===== HOTFIX: garantir coluna "Eurocode" no desktop ===== */
+(function ensureEuroDesktop(){
+  const table = document.getElementById('resultsTable');
+  if (!table) return;
+
+  // 1) Cabeçalho: acrescentar "Eurocode" antes da coluna Ações se ainda não existir
+  const headRow = table.querySelector('thead tr');
+  if (headRow) {
+    const hasEuro = Array.from(headRow.children).some(th =>
+      th.textContent.trim().toLowerCase().includes('eurocode')
+    );
+    if (!hasEuro) {
+      const th = document.createElement('th');
+      th.style.width = '180px';
+      th.textContent = 'Eurocode';
+      headRow.insertBefore(th, headRow.lastElementChild); // antes de "Ações"
+    }
+  }
+
+  // 2) Função para normalizar uma linha do tbody (inserir TD do Eurocode se faltar)
+  const normalizeRow = (tr) => {
+    if (!tr || tr.tagName !== 'TR') return;
+    const tds = tr.children;
+    // Esperado: #, Data/Hora, OCR, Eurocode, Ações => 5 TDs
+    // Se só houver 4 (sem Eurocode), inserimos a meio.
+    if (tds.length === 4) {
+      const euroTd = document.createElement('td');
+      euroTd.className = 'col-euro';
+      euroTd.innerHTML = `<div class="cell-wrap" data-field="euro"></div>`;
+      tr.insertBefore(euroTd, tds[3]); // antes de "Ações"
+    }
+  };
+
+  // 3) Normalizar linhas já existentes
+  const tbody = document.getElementById('resultsBody');
+  if (tbody) Array.from(tbody.children).forEach(normalizeRow);
+
+  // 4) Observar novas linhas adicionadas e normalizar automaticamente
+  if (tbody) {
+    const obs = new MutationObserver(muts => {
+      muts.forEach(m => m.addedNodes.forEach(n => normalizeRow(n)));
+    });
+    obs.observe(tbody, { childList: true });
+  }
+})();
