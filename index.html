@@ -1,105 +1,96 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EXPRESSGLASS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
   <!-- HEADER -->
-  <header class="site-header">
-    <div class="header-inner">
-      <h1 class="brand">EXPRESSGLASS</h1>
-      <span id="viewBadge" class="view-badge">Mobile</span>
+  <header class="header">
+    <div class="brand">
+      <h1 class="title">EXPRESSGLASS</h1>
+      <p class="subtitle">Receção material</p>
     </div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <main class="wrap">
-
-    <!-- MOBILE -->
-    <section id="mobileView" class="panel mobile-only">
-      <div class="panel-head">
-        <h2 class="panel-title">Receção material</h2>
-        <button id="helpBtn" class="pill">Instruções</button>
-      </div>
-
-      <!-- Área da câmara com INPUT sobreposto (abre sempre) -->
-      <div class="cam-wrap">
-        <button id="btnCamera" class="cam-box" type="button" aria-label="Tirar foto">
-          <svg class="cam-ico" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9.5 5.5h5l1 1.5h2.5A2 2 0 0 1 20 9v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2.5l1-1.5zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
-          </svg>
-        </button>
-
-        <!-- ESTE input fica por cima e recebe o toque -->
-        <input
-          id="cameraInput"
-          class="camera-overlay"
-          type="file"
-          accept="image/*"
-          capture="environment"
-        />
-      </div>
-
-      <p id="mobileStatus" class="status muted">Aguardando captura…</p>
-
+  <!-- MOBILE VIEW -->
+  <main id="mobileView" class="card mobile-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    
+    <div class="mobile-cta">
+      <button id="btnCamera" class="btn-square pulse" aria-label="Tirar foto da etiqueta">
+        <span class="emoji">📷</span>
+      </button>
       <p class="hint">
-        Tira uma foto à <strong>etiqueta</strong> do material. Inclui a
-        <strong>descrição</strong> e o <strong>código</strong> se possível.
+        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
+        Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
       </p>
+    </div>
 
-      <hr class="sep" />
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <div id="mobileStatus" class="status"></div>
 
-      <div class="history-head">
-        <h3 class="history-title">📝 Últimas Capturas</h3>
-        <button id="btnClear" class="pill pill-danger">Limpar</button>
-      </div>
-
+    <!-- Histórico de Capturas -->
+    <div id="mobileHistory" class="history-section">
+      <h3 class="history-title">📋 Últimas Capturas</h3>
       <div id="mobileHistoryList" class="history-list">
         <p class="history-empty">Ainda não há capturas realizadas.</p>
       </div>
-    </section>
+    </div>
 
-    <!-- DESKTOP -->
-    <section id="desktopView" class="panel desktop-only">
-      <div class="toolbar">
-        <button id="btnUpload" class="btn">Carregar imagem</button>
-        <input id="fileInput" type="file" accept="image/*" hidden />
-        <button id="btnExport" class="btn">Exportar CSV</button>
-        <button id="btnClearDesktop" class="btn btn-ghost" onclick="document.getElementById('btnClear')?.click()">Limpar Tabela (local)</button>
-        <button id="helpBtnDesktop" class="btn btn-ghost">Instruções</button>
-        <div class="flex-spacer"></div>
-        <span id="desktopStatus" class="status muted">—</span>
-      </div>
-
-      <div class="table-wrap">
-        <table id="resultsTable" class="tbl">
-          <thead></thead>
-          <tbody id="resultsBody"></tbody>
-        </table>
-      </div>
-    </section>
-
+    <footer class="footnote">
+      <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
+    </footer>
   </main>
+
+  <!-- DESKTOP VIEW -->
+  <section id="desktopView" class="card desktop-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
+    
+    <div class="toolbar">
+      <button id="btnUpload" class="btn">📁 Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+      <button id="btnExport" class="btn">📊 Exportar CSV</button>
+      <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th style="width:60px">#</th>
+            <th style="width:220px">Data/Hora</th>
+            <th style="width:auto">Texto lido (OCR)</th>
+            <th style="width:80px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div id="desktopStatus" class="status"></div>
+  </section>
+
+  <!-- MODAL DE AJUDA -->
+  <div id="helpModal" class="help-modal">
+    <div class="help-content">
+      <button class="help-close" id="helpClose">&times;</button>
+      <h3>💡 Como usar</h3>
+      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+    </div>
+  </div>
 
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <!-- MODAL -->
-  <div id="helpModal" class="modal">
-    <div class="modal-card">
-      <button id="helpClose" class="modal-close" aria-label="Fechar">×</button>
-      <h3>Instruções</h3>
-      <ol class="help-list">
-        <li>Carrega no botão da câmara.</li>
-        <li>Fotografa a etiqueta do material.</li>
-        <li>Garante que descrição e código estão visíveis.</li>
-        <li>Confirma o texto lido e repete se necessário.</li>
-      </ol>
-    </div>
-  </div>
 
   <script src="app.js"></script>
 </body>
