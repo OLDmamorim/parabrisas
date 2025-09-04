@@ -9,7 +9,6 @@
   --radius:16px;
 }
 
-/* ===== Reset e fundo ===== */
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -21,50 +20,26 @@ body{
     linear-gradient(135deg,#1852f0 0%,#1d4ed8 100%);
 }
 
-/* ===== Header ===== */
-.site-header{
-  position:sticky; top:0; z-index:10;
-  background:linear-gradient(180deg,#0f172aee,#0f172a99 80%,transparent);
-  backdrop-filter:blur(4px);
-}
-.header-inner{
-  max-width:1200px; margin:0 auto; padding:14px 16px;
-  display:flex; align-items:center; gap:12px;
-}
-.brand{
-  margin:0; font-weight:800; letter-spacing:.08em;
-  font-size:clamp(24px,4.8vw,44px);
-  text-transform:uppercase;
-}
-.view-badge{
-  margin-left:auto; padding:6px 12px; border-radius:18px;
-  background:#111827; color:#eaf2ff; border:1px solid #ffffff22; font-weight:700;
-}
+/* Header */
+.site-header{position:sticky; top:0; z-index:10; background:linear-gradient(180deg,#0f172aee,#0f172a99 80%,transparent); backdrop-filter:blur(4px)}
+.header-inner{max-width:1200px; margin:0 auto; padding:14px 16px; display:flex; align-items:center; gap:12px}
+.brand{margin:0; font-weight:800; letter-spacing:.08em; font-size:clamp(24px,4.8vw,44px); text-transform:uppercase}
+.view-badge{margin-left:auto; padding:6px 12px; border-radius:18px; background:#111827; color:#eaf2ff; border:1px solid #ffffff22; font-weight:700}
 
-/* ===== Layout ===== */
+/* Layout */
 .wrap{max-width:1200px; margin:16px auto; padding:0 12px}
-.panel{
-  background:var(--panel); border:1px solid #ffffff18; border-radius:var(--radius);
-  box-shadow:0 10px 30px #00000035 inset, 0 8px 20px #00000030;
-  padding:18px; margin:14px 0;
-}
+.panel{background:var(--panel); border:1px solid #ffffff18; border-radius:var(--radius); box-shadow:0 10px 30px #00000035 inset, 0 8px 20px #00000030; padding:18px; margin:14px 0}
 .panel-head{display:flex; align-items:center; gap:12px}
 .panel-title{margin:0; font-size:clamp(20px,3.6vw,28px)}
-.pill{
-  border:1px solid #ffffff26; background:#111827; color:#dbeafe;
-  padding:8px 14px; border-radius:999px; font-weight:700; cursor:pointer;
-}
+.pill{border:1px solid #ffffff26; background:#111827; color:#dbeafe; padding:8px 14px; border-radius:999px; font-weight:700; cursor:pointer}
 .pill-danger{ background:#3b0c0c; border-color:#ffb4b444; color:#ffdbdb }
-.btn,.btn-ghost{
-  border:1px solid #ffffff22; background:#111827; color:#e5e7eb;
-  padding:8px 12px; border-radius:10px; cursor:pointer; margin-right:8px;
-}
+.btn,.btn-ghost{border:1px solid #ffffff22; background:#111827; color:#e5e7eb; padding:8px 12px; border-radius:10px; cursor:pointer; margin-right:8px}
 .btn-ghost{background:transparent}
 .flex-spacer{flex:1}
 .sep{border:none; height:1px; background:#ffffff18; margin:12px 0}
 
-/* ===== Área da câmara (pequena e centrada) ===== */
-.cam-wrap{display:flex; justify-content:center; margin:10px 0 6px}
+/* Câmara */
+.cam-wrap{position:relative; display:flex; justify-content:center; margin:10px 0 6px}
 .cam-box{
   width:min(62vw, 240px);
   height:min(36vw, 150px);
@@ -72,16 +47,24 @@ body{
   border:2px dashed #4b77ff55;
   border-radius:14px;
   display:grid; place-items:center;
-  cursor:pointer;
+  pointer-events:none; /* o clique vai para o input por cima */
 }
 .cam-ico{width:min(12vw, 44px); height:min(12vw, 44px); fill:#9db7ff}
 
-/* ===== Texto e status ===== */
+/* INPUT transparente por cima da área */
+.camera-overlay{
+  position:absolute; inset:0; margin:auto;
+  width:min(62vw, 240px);
+  height:min(36vw, 150px);
+  opacity:0; cursor:pointer; z-index:2;
+}
+
+/* Texto e status */
 .status{margin:6px 0 10px}
 .muted{color:var(--muted)}
 .hint{color:#cdd8ffcc; margin:2px 0 10px}
 
-/* ===== Histórico (mobile) ===== */
+/* Histórico */
 .history-head{display:flex; align-items:center; gap:10px}
 .history-title{margin:0}
 .history-list{display:flex; flex-direction:column; gap:10px}
@@ -90,46 +73,32 @@ body{
 .h-time{font-size:12px; color:#a8b3c7; margin-bottom:6px}
 .h-text{font-size:14px; color:#e5e7eb; overflow:hidden; white-space:nowrap; text-overflow:ellipsis}
 
-/* ===== Tabela (desktop) ===== */
+/* Tabela desktop */
 .desktop-only .table-wrap{overflow:auto}
 .tbl{width:100%; border-collapse:separate; border-spacing:0}
-.tbl thead th{
-  text-align:left; font-weight:700; background:#0f162e; color:#cfe3ff;
-  position:sticky; top:0; z-index:1;
-  padding:10px 12px; border-bottom:1px solid #ffffff1e;
-}
-.tbl tbody td{
-  padding:10px 12px; border-bottom:1px solid #ffffff12; vertical-align:top
-}
+.tbl thead th{ text-align:left; font-weight:700; background:#0f162e; color:#cfe3ff; position:sticky; top:0; z-index:1; padding:10px 12px; border-bottom:1px solid #ffffff1e }
+.tbl tbody td{ padding:10px 12px; border-bottom:1px solid #ffffff12; vertical-align:top }
 .tbl tbody tr:hover{background:#ffffff08}
 .btn-icon{cursor:pointer; border:none; background:none; font-size:16px}
 
-/* ===== Toast ===== */
-.toast{
-  position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
-  background:#0b1228; color:#fff; border:1px solid #ffffff2a;
-  padding:10px 14px; border-radius:10px; opacity:0; pointer-events:none;
-  transition:.25s; z-index:20;
-}
+/* Toast */
+.toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#0b1228; color:#fff; border:1px solid #ffffff2a; padding:10px 14px; border-radius:10px; opacity:0; pointer-events:none; transition:.25s; z-index:20 }
 .toast.show{opacity:1}
 
-/* ===== Modal ===== */
+/* Modal */
 .modal{position:fixed; inset:0; background:#0008; display:none; place-items:center; z-index:30}
 .modal.show{display:grid}
-.modal-card{
-  width:min(92vw,520px); background:#0b1228; border:1px solid #ffffff22;
-  border-radius:14px; padding:18px; position:relative;
-}
-.modal-close{position:absolute; right:12px; top:10px; background:none; border:none; color:#fff; font-size:24px; cursor:pointer}
+.modal-card{ width:min(92vw,520px); background:#0b1228; border:1px solid #ffffff22; border-radius:14px; padding:18px; position:relative }
+.modal-close{ position:absolute; right:12px; top:10px; background:none; border:none; color:#fff; font-size:24px; cursor:pointer }
 .help-list{margin:10px 0 0 18px}
 
-/* ===== Classes que o teu JS usa ===== */
+/* Classes usadas pelo app.js */
 .ocr-text{ white-space:normal; overflow-wrap:anywhere; line-height:1.4 }
 .progress{ background:#222; height:6px; border-radius:3px; margin-top:4px }
 .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
 .error{ background:#300; color:#fff; padding:6px; border-radius:6px }
 
-/* ===== Responsivo ===== */
+/* Responsivo */
 .mobile-only{display:block}
 .desktop-only{display:none}
 @media (min-width:900px){
