@@ -629,3 +629,16 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
     .mode-grid .mode-btn{ width:100% }
   </style>
 </head>
+
+/* Forçar os botões OCR/EUROCODE lado a lado */
+.mode-grid {
+  display: flex;
+  justify-content: center;
+  gap: 16px;       /* espaço entre eles */
+  margin: 8px 0 16px;
+}
+
+.mode-grid .mode-btn {
+  flex: 1;              /* cada botão ocupa metade */
+  max-width: 140px;     /* não ficam gigantes em ecrãs largos */
+}
