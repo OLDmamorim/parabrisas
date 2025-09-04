@@ -3,7 +3,6 @@ const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
 const DELETE_URL   = "/api/delete-ocr";
-const UPDATE_URL   = "/api/update-ocr";   // editar no Neon
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -21,7 +20,12 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== CSS inject ===== */
+const helpModal     = document.getElementById("helpModal");
+const helpBtn       = document.getElementById("helpBtn");
+const helpBtnDesktop= document.getElementById("helpBtnDesktop");
+const helpClose     = document.getElementById("helpClose");
+
+/* ===== CSS extra injetado ===== */
 (function(){
   const id = "ocr-text-style";
   if (document.getElementById(id)) return;
@@ -33,14 +37,6 @@ const toast         = document.getElementById("toast");
     .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
     .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
     .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
-
-    /* edição inline */
-    .actions { display:flex; gap:8px; align-items:center; justify-content:center }
-    .editArea { width:100%; min-height:84px; font:inherit; padding:8px; border-radius:8px; border:1px solid #d1d5db; }
-    .muted { opacity:.6 }
-
-    /* histórico (mobile) */
-    .history-item-text{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   `;
   document.head.appendChild(s);
 })();
@@ -50,28 +46,15 @@ let RESULTS = [];
 let lastFile = null;
 
 /* ===== Helpers UI ===== */
-function showToast(msg){
-  toast.textContent = msg;
-  toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"), 2200);
-}
+function showToast(msg){ toast.textContent = msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"), 2200); }
 function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
-function setStatus(html, opts={}) {
-  const el = statusEl();
-  el.classList.toggle("error", !!opts.error);
-  el.innerHTML = html || "";
-}
+function setStatus(html, opts={}){ const el = statusEl(); el.classList.toggle("error", !!opts.error); el.innerHTML = html || ""; }
 function showProgress(label, pct=0, asError=false){
-  const el = statusEl();
-  el.classList.toggle("error", !!asError);
-  el.innerHTML = `
-    <div>${label}</div>
-    <div class="progress"><span style="width:${pct}%"></span></div>
-  `;
+  const el = statusEl(); el.classList.toggle("error", !!asError);
+  el.innerHTML = `<div>${label}</div><div class="progress"><span style="width:${pct}%"></span></div>`;
 }
 function showError(message){
-  const el = statusEl();
-  el.classList.add("error");
+  const el = statusEl(); el.classList.add("error");
   el.innerHTML = `
     <div>❌ ${message}</div>
     <div class="progress"><span style="width:0%"></span></div>
@@ -80,17 +63,16 @@ function showError(message){
   document.getElementById("retryBtn")?.addEventListener("click", ()=> lastFile && handleImage(lastFile, "retry"));
 }
 
-/* ===== Cabeçalho da tabela ===== */
+/* ===== Cabeçalho Desktop ===== */
 function ensureActionsHeader() {
   if (!isDesktop) return;
-  const thead = document.querySelector("#resultsTable thead");
-  if (!thead) return;
+  const thead = document.querySelector("#resultsTable thead"); if (!thead) return;
   thead.innerHTML = `
     <tr>
       <th style="width:60px">#</th>
       <th style="width:220px">Data/Hora</th>
       <th style="width:auto">Texto lido (OCR)</th>
-      <th style="width:110px">Ações</th>
+      <th style="width:80px">Ações</th>
     </tr>
   `;
 }
@@ -108,37 +90,25 @@ async function fetchServerRows(){
     source: x.source || ''
   }));
 }
-async function persistToDB({ ts, text, filename, origin }) {
+async function persistToDB({ ts, text, filename, origin }){
   const resp = await fetch(SAVE_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    method:'POST', headers:{'content-type':'application/json'},
     body: JSON.stringify({ ts, text, filename, source: origin })
   });
   const txt = await resp.text().catch(()=>resp.statusText);
-  if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
+  if(!resp.ok) throw new Error(txt || ('HTTP '+resp.status));
 }
 async function deleteFromDB(id){
   const resp = await fetch(DELETE_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    method:'POST', headers:{'content-type':'application/json'},
     body: JSON.stringify({ id })
   });
   const data = await resp.json().catch(()=>({}));
-  if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
+  if(!resp.ok || data?.error) throw new Error(data?.error || ('HTTP '+resp.status));
   return true;
 }
-async function updateInDB(id, text){
-  const resp = await fetch(UPDATE_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ id, text })
-  });
-  const data = await resp.json().catch(()=>({}));
-  if (!resp.ok || data?.error || !data?.ok) throw new Error(data?.error || ('HTTP ' + resp.status));
-  return data.row;
-}
 
-/* ===== Render Desktop ===== */
+/* ===== Tabela Desktop ===== */
 function renderTable(){
   if(!isDesktop) return;
   ensureActionsHeader();
@@ -149,105 +119,27 @@ function renderTable(){
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
-      <td class="cell-text"><div class="ocr-text">${txt}</div></td>
-      <td class="actions">
-        <button class="btn-icon editBtn" title="Editar" data-id="${r.id}">✏️</button>
-        <button class="btn-icon delBtn"  title="Apagar" data-id="${r.id}">🗑️</button>
-      </td>
+      <td><div class="ocr-text">${txt}</div></td>
+      <td><button class="btn-icon delBtn" title="Apagar" data-id="${r.id}">🗑️</button></td>
     `;
     resultsBody.appendChild(tr);
   });
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
-
-/* ===== Delegação: Editar / Guardar / Cancelar / Apagar ===== */
 resultsBody?.addEventListener("click", async (e)=>{
-  const editBtn   = e.target.closest(".editBtn");
-  const saveBtn   = e.target.closest(".saveBtn");
-  const cancelBtn = e.target.closest(".cancelBtn");
-  const delBtn    = e.target.closest(".delBtn");
-
-  // APAGAR
-  if (delBtn) {
-    const id = Number(delBtn.dataset.id);
-    if(!id) return;
-    if(!confirm("Apagar este registo da base de dados?")) return;
-
-    const old = delBtn.textContent;
-    delBtn.disabled = true; delBtn.textContent = "…";
-    try{
-      await deleteFromDB(id);
-      RESULTS = await fetchServerRows();
-      renderTable();
-      showToast("Registo apagado.");
-    }catch(err){
-      console.error(err);
-      showToast("Falha ao apagar: " + (err.message || "erro"));
-    }finally{
-      delBtn.disabled = false; delBtn.textContent = old;
-    }
-    return;
-  }
-
-  // ENTRAR EM MODO EDIÇÃO
-  if (editBtn) {
-    const id = Number(editBtn.dataset.id);
-    if (!id) return;
-
-    const row = editBtn.closest("tr");
-    const textCellWrap = row.querySelector(".cell-text");
-    const current = row.querySelector(".ocr-text")?.innerText || "";
-
-    // textarea em vez do texto
-    textCellWrap.innerHTML = `<textarea class="editArea">${current}</textarea>`;
-
-    // trocar botões por guardar/cancelar
-    const actions = row.querySelector(".actions");
-    actions.innerHTML = `
-      <button class="btn-icon saveBtn"   data-id="${id}" title="Guardar">💾</button>
-      <button class="btn-icon cancelBtn" data-id="${id}" title="Cancelar">✖️</button>
-    `;
-
-    const ta = textCellWrap.querySelector(".editArea");
-    ta.focus();
-    ta.addEventListener("keydown", (ke)=>{
-      if (ke.key === "Enter" && (ke.ctrlKey || ke.metaKey)) {
-        actions.querySelector(".saveBtn")?.click();
-      }
-    });
-    return;
-  }
-
-  // GUARDAR EDIÇÃO
-  if (saveBtn) {
-    const id = Number(saveBtn.dataset.id);
-    const row = saveBtn.closest("tr");
-    const ta  = row.querySelector(".editArea");
-    const newText = (ta?.value || "").trim();
-
-    if (newText.length === 0 && !confirm("Estás a guardar texto vazio. Continuar?")) return;
-
-    saveBtn.disabled = true; saveBtn.textContent = "…";
-    const actions = row.querySelector(".actions"); actions.classList.add("muted");
-
-    try{
-      await updateInDB(id, newText);      // grava no Neon
-      RESULTS = await fetchServerRows();  // sincroniza
-      renderTable();                      // redesenha
-      showToast("Registo atualizado.");
-    }catch(err){
-      console.error(err);
-      showToast("Falha ao guardar: " + (err.message || "erro"));
-      saveBtn.disabled = false; saveBtn.textContent = "💾";
-      actions.classList.remove("muted");
-    }
-    return;
-  }
-
-  // CANCELAR EDIÇÃO
-  if (cancelBtn) {
+  const btn = e.target.closest(".delBtn"); if(!btn) return;
+  const id = Number(btn.dataset.id); if(!id) return;
+  if(!confirm("Apagar este registo da base de dados?")) return;
+  const old = btn.textContent; btn.disabled = true; btn.textContent = "…";
+  try{
+    await deleteFromDB(id);
+    RESULTS = await fetchServerRows();
     renderTable();
-    return;
+    showToast("Registo apagado.");
+  }catch(err){
+    console.error(err);
+    btn.disabled = false; btn.textContent = old;
+    showToast("Falha ao apagar: " + (err.message || "erro"));
   }
 });
 
@@ -260,28 +152,74 @@ async function optimizeImageForOCR(file){
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d'); ctx.drawImage(bmp, 0, 0, w, h);
   const out = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
-  return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
+  return new File([out], (file.name || 'foto') + '.jpg', { type:'image/jpeg' });
 }
 async function runOCR(file){
-  if (DEMO_MODE){
-    await new Promise(r=>setTimeout(r, 500));
-    return { text: "DEMO: Texto simulado de OCR\nLinha 2: 123 ABC" };
-  }
+  if (DEMO_MODE){ await new Promise(r=>setTimeout(r, 500)); return { text:"DEMO: Texto simulado de OCR\nLinha 2: 123 ABC" }; }
   const optimized = await optimizeImageForOCR(file);
-  const fd = new FormData();
-  fd.append("file", optimized, optimized.name);
+  const fd = new FormData(); fd.append("file", optimized, optimized.name);
   const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
   const t = await res.text().catch(()=>res.statusText);
   if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
   return JSON.parse(t);
 }
 
+/* ===== HISTÓRICO (MOBILE) ===== */
+const mobileHistoryList = document.getElementById("mobileHistoryList");
+const historyClearBtn   = document.getElementById("historyClearBtn");
+const MAX_HISTORY_SHOW  = 5;    // mostrar até 5
+const MAX_TEXT_CHARS    = 120;  // truncar texto (além do clamp de 2 linhas)
+
+let captureHistory = [];
+
+function truncateText(s){
+  if(!s) return "";
+  const oneLine = s.replace(/\s+/g," ").trim();
+  return oneLine.length > MAX_TEXT_CHARS ? oneLine.slice(0, MAX_TEXT_CHARS) + "…" : oneLine;
+}
+function loadHistory(){
+  try{ const s = localStorage.getItem('expressglass_history'); captureHistory = s ? JSON.parse(s) : []; }
+  catch{ captureHistory = []; }
+}
+function saveHistory(){ try{ localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }catch{} }
+function renderHistory(){
+  if(!mobileHistoryList) return;
+  if(!captureHistory.length){
+    mobileHistoryList.innerHTML = `<p class="history-empty">Ainda não há capturas realizadas.</p>`;
+    return;
+  }
+  const toShow = captureHistory.slice(0, MAX_HISTORY_SHOW);
+  mobileHistoryList.innerHTML = toShow.map(h => `
+    <div class="history-item">
+      <div class="history-item-time">${new Date(h.timestamp).toLocaleString()}</div>
+      <div class="history-item-text">${truncateText(h.text)}</div>
+    </div>
+  `).join("");
+}
+function addToHistory(item){
+  captureHistory.unshift({
+    timestamp: item.ts,
+    text: item.text || "",
+    filename: item.filename || "",
+    id: item.id || null
+  });
+  saveHistory();
+  renderHistory();
+}
+historyClearBtn?.addEventListener("click", ()=>{
+  if(!confirm("Limpar histórico local do telemóvel?")) return;
+  captureHistory = [];
+  saveHistory();
+  renderHistory();
+  showToast("Histórico limpo.");
+});
+
 /* ===== Fluxo ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
     showProgress("A preparar imagem…", 10);
-    await new Promise(r=>setTimeout(r, 150));
+    await new Promise(r=>setTimeout(r, 120));
 
     showProgress("A otimizar…", 25);
     const prepped = await optimizeImageForOCR(file);
@@ -305,6 +243,10 @@ async function handleImage(file, origin="camera"){
     showProgress("A gravar no Neon…", 90);
     await persistToDB({ ts: row.ts, text: row.text, filename: row.filename, origin });
 
+    // Histórico mobile
+    addToHistory(row);
+
+    // Desktop: sincroniza tabela
     RESULTS = await fetchServerRows();
     renderTable();
 
@@ -319,11 +261,13 @@ async function handleImage(file, origin="camera"){
 }
 
 /* ===== Bootstrap ===== */
-(async function(){
-  if(!isDesktop) return;
-  try { RESULTS = await fetchServerRows(); }
-  catch(e){ console.warn("Sem Neon:", e.message); RESULTS = []; }
-  renderTable();
+(function(){
+  if(isDesktop){
+    fetchServerRows().then(rows => { RESULTS = rows; renderTable(); })
+      .catch(()=>{ RESULTS = []; renderTable(); });
+  }
+  loadHistory();
+  renderHistory();
 })();
 
 /* ===== Ações ===== */
@@ -361,152 +305,11 @@ clearBtn?.addEventListener("click", ()=>{
   showToast("Vista limpa (dados no Neon mantidos)");
 });
 
-/* ===== Modal de ajuda (se existir no HTML) ===== */
-const helpModal = document.getElementById("helpModal");
-const helpBtn = document.getElementById("helpBtn");
-const helpBtnDesktop = document.getElementById("helpBtnDesktop");
-const helpClose = document.getElementById("helpClose");
-function showHelpModal() { helpModal?.classList.add("show"); }
-function hideHelpModal() { helpModal?.classList.remove("show"); }
-helpBtn?.addEventListener("click", showHelpModal);
-helpBtnDesktop?.addEventListener("click", showHelpModal);
-helpClose?.addEventListener("click", hideHelpModal);
-helpModal?.addEventListener("click", (e) => { if (e.target === helpModal) hideHelpModal(); });
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
-});
-
-/* ===== HISTÓRICO (MOBILE) ===== */
-let captureHistory = [];
-
-function addToHistory(c){
-  captureHistory.unshift(c);
-  if(captureHistory.length>20) captureHistory=captureHistory.slice(0,20);
-  localStorage.setItem('expressglass_history', JSON.stringify(captureHistory));
-}
-function loadHistory(){
-  try{
-    const s=localStorage.getItem('expressglass_history');
-    if(s) captureHistory=JSON.parse(s);
-  }catch(e){ captureHistory=[]; }
-}
-
-const mobileHistoryList = document.getElementById("mobileHistoryList");
-
-function renderHistory() {
-  if (!mobileHistoryList) return;
-
-  if (captureHistory.length === 0) {
-    mobileHistoryList.innerHTML = '<p class="history-empty">Ainda não há capturas realizadas.</p>';
-    return;
-  }
-
-  // MOSTRAR NO MÁXIMO 5
-  mobileHistoryList.innerHTML = captureHistory.slice(0, 5).map((capture, index) => {
-    const text = capture.text || '';
-    const shortText = text.length > 10 ? text.slice(0, 10) + '...' : text;
-
-    return `
-      <div class="history-item" data-index="${index}">
-        <div class="history-item-header">
-          <span class="history-item-time">${formatTime(capture.timestamp)}</span>
-          <div class="history-item-actions">
-            <button class="history-action-btn copy-btn"   title="Copiar texto" data-index="${index}">📋</button>
-            <button class="history-action-btn resend-btn" title="Reenviar"     data-index="${index}">🔄</button>
-            <button class="history-action-btn delete-btn" title="Apagar"       data-index="${index}">🗑️</button>
-          </div>
-        </div>
-        <div class="history-item-text">${shortText}</div>
-        <div class="history-item-filename">${capture.filename || ''}</div>
-      </div>
-    `;
-  }).join('');
-
-  addHistoryEventListeners();
-}
-
-function addHistoryEventListeners() {
-  // Copiar
-  mobileHistoryList.querySelectorAll('.copy-btn').forEach(btn=>{
-    btn.addEventListener('click', async (e)=>{
-      e.stopPropagation();
-      const idx = Number(btn.dataset.index);
-      const cap = captureHistory[idx];
-      const txt = cap?.text || '';
-      try {
-        await navigator.clipboard.writeText(txt);
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = txt; document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); document.body.removeChild(ta);
-      }
-      showToast('Texto copiado!');
-    });
-  });
-
-  // Reenviar
-  mobileHistoryList.querySelectorAll('.resend-btn').forEach(btn=>{
-    btn.addEventListener('click', async (e)=>{
-      e.stopPropagation();
-      const idx = Number(btn.dataset.index);
-      const cap = captureHistory[idx];
-      try{
-        showProgress("A reenviar captura…", 50);
-        await persistToDB({
-          ts: Date.now(),
-          text: cap.text || '',
-          filename: (cap.filename || 'imagem') + ' (reenviado)',
-          origin: 'resend'
-        });
-        RESULTS = await fetchServerRows();
-        renderTable();
-        showProgress("Concluído", 100);
-        setTimeout(()=>setStatus(""), 400);
-        showToast('Captura reenviada!');
-      }catch(err){
-        showError('Erro ao reenviar: ' + err.message);
-      }
-    });
-  });
-
-  // Apagar do histórico (local)
-  mobileHistoryList.querySelectorAll('.delete-btn').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const idx = Number(btn.dataset.index);
-      if (confirm('Apagar esta captura do histórico?')) {
-        captureHistory.splice(idx, 1);
-        saveHistory();
-        renderHistory();
-        showToast('Captura removida do histórico');
-      }
-    });
-  });
-}
-
-function saveHistory(){
-  try{
-    localStorage.setItem('expressglass_history', JSON.stringify(captureHistory));
-  }catch(e){}
-}
-
-function formatTime(timestamp) {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'Agora mesmo';
-  if (diffMins < 60) return `${diffMins}m atrás`;
-  if (diffHours < 24) return `${diffHours}h atrás`;
-  if (diffDays < 7) return `${diffDays}d atrás`;
-
-  return date.toLocaleDateString('pt-PT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-}
-
-/* carregar histórico */
-loadHistory();
-document.addEventListener('DOMContentLoaded', renderHistory);
-if (document.readyState !== 'loading') renderHistory();
+/* ===== Modal ajuda ===== */
+function showHelp(){ helpModal?.classList.add("show"); }
+function hideHelp(){ helpModal?.classList.remove("show"); }
+helpBtn?.addEventListener("click", showHelp);
+helpBtnDesktop?.addEventListener("click", showHelp);
+helpClose?.addEventListener("click", hideHelp);
+helpModal?.addEventListener("click", (e)=>{ if(e.target===helpModal) hideHelp(); });
+document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && helpModal?.classList.contains("show")) hideHelp(); });
