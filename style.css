@@ -665,3 +665,10 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
   width:auto !important; 
   margin:0 !important; 
 }
+
+/* Ajustar largura dos botões OCR/EUROCODE */
+.mode-grid .mode-btn {
+  flex: 1 1 0 !important;
+  min-width: 120px !important;  /* largura mínima */
+  max-width: 180px !important;  /* limite para não ficarem gigantes */
+}
