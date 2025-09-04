@@ -46,21 +46,27 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<
 function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 /* =========================
-   EUROCODE EXTRAÇÃO v10
+   EUROCODE EXTRAÇÃO v11
    ========================= */
 function sanitize(raw){ return String(raw||'').toUpperCase().replace(/\u00A0/g,' '); }
 
-// Normaliza apenas os 4 dígitos iniciais
 function normalizeHeadDigits(head){
   return head
     .replace(/[OQ]/g,'0')
     .replace(/[IL]/g,'1')
     .replace(/B/g,'8');
-    // retirado S→5 e Z→2 para não estragar sufixos
+}
+
+// check final sufixo: não pode ser só dígitos
+function isValidSuffix(suffix){
+  if (!suffix) return true;
+  return /[A-Z]/.test(suffix); // precisa ter pelo menos uma letra
 }
 
 function validEuro(code){
-  return /^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/.test(code);
+  if (!/^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/.test(code)) return false;
+  const suffix = code.slice(6); // depois dos 4 dígitos + 2 letras
+  return isValidSuffix(suffix);
 }
 
 const STRICT_RE = /(?<![A-Z0-9])(\d{4})([A-Z]{2}[A-Z0-9]{0,5})(?![A-Z0-9])/g;
@@ -77,7 +83,6 @@ function findStrict(text){
   return hits;
 }
 
-// Fallback entre tokens (mesmo entre linhas)
 function splitTokens(text){
   return text.split(/[^A-Z0-9]+/).filter(Boolean);
 }
@@ -85,17 +90,17 @@ function fallback(text){
   const toks = splitTokens(text);
   for (let i=0;i<toks.length;i++){
     const t = toks[i];
-    if (/^\d{4}$/.test(t)){ // só 4 dígitos
+    if (/^\d{4}$/.test(t)){ 
       const head = normalizeHeadDigits(t);
       const next = toks[i+1]||'';
       if (/^[A-Z]{2,}/.test(next)){
         let suffix = next.slice(0,7);
-        const code = head+suffix;
+        let code = head+suffix;
         if (validEuro(code)) return code;
       }
     }
-    if (/^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/.test(t)){
-      return t; // já está correto
+    if (/^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/.test(t) && validEuro(t)){
+      return t; 
     }
   }
   return null;
@@ -117,7 +122,7 @@ function getBestEurocode(raw){
 async function doOCR(file){
   if (DEMO_MODE){
     await wait(300);
-    return "5350\nAGS MERCEDES SMART\n3999AGNV HONDA";
+    return "5350\nAGS\nMERCEDES SMART";
   }
   const fd = new FormData(); fd.append('file', file, 'photo.jpg');
   const res = await fetch(OCR_ENDPOINT,{method:'POST',body:fd});
@@ -163,7 +168,7 @@ async function handleCapture(file){
     if (CURRENT_MODE==='EUROCODE'){
       const euro = getBestEurocode(ocrText);
       if (euro){
-        showSuccess('EUROCODE encontrado', euro, 'Formato: 4 dígitos + 2 letras + até 5 chars');
+        showSuccess('EUROCODE encontrado', euro, 'Formato: 4 dígitos + 2 letras + até 5 chars (pelo menos 1 letra)');
         await saveCapture({type:'EUROCODE', eurocode:euro, raw:ocrText});
         refreshList();
       } else showError('Não encontrei um EUROCODE válido.');
