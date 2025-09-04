@@ -140,8 +140,9 @@ async function updateInDB(id, text){
 }
 
 /* ===== Extração de EUROCODE a partir do texto OCR ===== */
+/* Regra pedida: 4 dígitos + 2 a 9 caracteres alfanuméricos (A–Z/0–9) */
 function extractEurocode(text='') {
-  const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{5,8}$/;
+  const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{2,9}$/;
   const normalize = (s) => s.toUpperCase()
     .replaceAll('O','0').replaceAll('I','1').replaceAll('S','5').replaceAll('B','8')
     .replace(/[^A-Z0-9\s]/g,' ');
@@ -278,7 +279,7 @@ async function ocrImageEuro(file) {
   const { data } = await worker.recognize(prepped);
   await worker.clear();
   const raw = (data.text || '').trim();
-  const euro = extractEurocode(raw);
+  const euro = extractEurocode(raw); // usa a regra 4 dígitos + 2..9
   const conf = (data.confidence || 0) / 100;
   return { raw, euro, conf };
 }
@@ -350,7 +351,7 @@ cameraInput?.addEventListener("change", async (e) => {
       const { raw, euro, conf } = await ocrImageEuro(file);
 
       if (!euro) {
-        showError('Não encontrei um EUROCODE válido (4 dígitos + 5–8 A/Z/0–9).');
+        showError('Não encontrei um EUROCODE válido (4 dígitos + 2–9 A/Z/0–9).');
         showToast('⚠️ EUROCODE não detetado', 'error');
         e.target.value = "";
         return;
