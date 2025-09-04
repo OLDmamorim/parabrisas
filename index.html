@@ -1,79 +1,95 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"/>
-  <title>ExpressGlass - Receção Material</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EXPRESSGLASS · Receção material</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="page-header">
-    <h1>EXPRESSGLASS</h1>
-    <span id="viewBadge" class="badge">Mobile</span>
+
+  <header class="site-header">
+    <div class="container">
+      <h1 class="brand">EXPRESSGLASS</h1>
+      <span id="viewBadge" class="badge">Mobile</span>
+    </div>
   </header>
 
   <main class="container">
-    <section class="card" id="mobileView">
-      <div class="card-header">
-        <h2 class="subtitle">Receção material</h2>
-        <button id="helpBtn" class="help-btn">Instruções</button>
+
+    <!-- MOBILE CARD -->
+    <section id="mobileView" class="card mobile-only">
+      <div class="card-head">
+        <h2 class="card-title">Receção material</h2>
+        <button id="helpBtn" class="pill-btn">Instruções</button>
       </div>
 
-      <!-- Bloco da câmara -->
-      <div class="camera-card">
-        <label for="cameraInput" class="camera-btn">
-          <img src="camera.svg" alt="camera" class="camera-icon" />
-        </label>
-        <input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-        <div id="mobileStatus" class="status">Aguardando captura...</div>
-      </div>
+      <!-- Área da câmara -->
+      <button id="btnCamera" class="camera-box" type="button">
+        <!-- SVG embutido (pequeno) -->
+        <svg class="camera-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9.5 5.5h5l1.2 1.8H19a2 2 0 0 1 2 2v7.2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.3a2 2 0 0 1 2-2h3.3L9.5 5.5Zm2.5 4.3a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4Zm0 2a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Z" />
+        </svg>
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+      </button>
 
-      <!-- Texto explicativo (mais pequeno) -->
-      <p class="instructions">
-        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
+      <p id="mobileStatus" class="hint">Aguardando captura…</p>
+
+      <p class="tiny-help">
+        Tira uma foto à <strong>etiqueta</strong> do material.
         Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
       </p>
 
-      <!-- Histórico -->
-      <div class="history">
-        <div class="history-header">
-          <span class="history-title">📋 Últimas Capturas</span>
-          <button id="btnClear" class="clear-btn">Limpar</button>
-        </div>
-        <div id="mobileHistoryList" class="history-list">
-          <p class="history-empty">Ainda não há capturas realizadas.</p>
-        </div>
+      <hr class="divider" />
+
+      <div class="history-head">
+        <h3 class="subtle-title">📋 Últimas Capturas</h3>
+        <button id="btnClear" class="clear-btn">Limpar</button>
+      </div>
+
+      <div id="mobileHistoryList" class="history-list">
+        <p class="history-empty">Ainda não há capturas realizadas.</p>
       </div>
     </section>
 
-    <!-- Versão desktop -->
-    <section class="card desktop-only" id="desktopView">
-      <h2>Receção de Material</h2>
-      <div class="actions">
-        <button id="btnCamera">📷 Capturar</button>
-        <input id="fileInput" type="file" accept="image/*" style="display:none;" />
-        <button id="btnUpload">⬆️ Upload</button>
-        <button id="btnExport">💾 Exportar</button>
+    <!-- DESKTOP VIEW (tabela) -->
+    <section id="desktopView" class="card desktop-only">
+      <div class="card-head">
+        <div class="actions">
+          <button id="btnUpload" class="btn">Carregar imagem</button>
+          <input id="fileInput" type="file" accept="image/*" hidden />
+          <button id="btnExport" class="btn">Exportar CSV</button>
+          <button id="btnClearDesktop" class="btn btn-ghost">Limpar Tabela</button>
+        </div>
       </div>
+
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+
       <div id="desktopStatus" class="status"></div>
-      <table id="resultsTable">
-        <thead></thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
     </section>
-  </main>
 
-  <!-- Modal de ajuda -->
-  <div id="helpModal" class="modal">
-    <div class="modal-content">
-      <span id="helpClose" class="modal-close">&times;</span>
-      <h3>Instruções</h3>
-      <p>Tira uma foto clara da etiqueta, certifica-te que inclui a descrição e o código se possível.</p>
-    </div>
-  </div>
+  </main>
 
   <!-- Toast -->
   <div id="toast" class="toast"></div>
+
+  <!-- Modal de ajuda -->
+  <div id="helpModal" class="modal">
+    <div class="modal-card">
+      <button id="helpClose" class="close">&times;</button>
+      <h3>Instruções</h3>
+      <ol>
+        <li>Fotografa a <strong>etiqueta</strong> e a <strong>descrição</strong>.</li>
+        <li>Inclui também o <strong>Eurocode/código</strong>, se existir.</li>
+        <li>Evita reflexos e move o telefone para focar.</li>
+      </ol>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
