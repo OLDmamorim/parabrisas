@@ -1,39 +1,60 @@
-// ===== EUROCODE DETECTION v13 =====
+const fileInput = document.getElementById('fileInput');
+const imageUrl = document.getElementById('imageUrl');
+const btnUrl = document.getElementById('btnUrl');
+const btnRun = document.getElementById('btnRun');
+const output = document.getElementById('output');
+const preview = document.getElementById('preview');
+const qrOnly = document.getElementById('qrOnly');
 
-// Função para limpar e validar eurocodes
-function extractEurocodes(text) {
-  if (!text) return [];
+let payload = {};
 
-  // 1) Normalizar o texto: remover símbolos que não interessam
-  const cleaned = text.replace(/[^A-Z0-9\s]/gi, " ");
-
-  // 2) Procurar potenciais eurocodes
-  const regex = /\b(\d{4}[A-Z]{2}[A-Z0-9]{0,6})\b/g;
-  const matches = [];
-  let match;
-
-  while ((match = regex.exec(cleaned)) !== null) {
-    matches.push(match[1]);
-  }
-
-  return matches;
-}
-
-// Exemplo de uso (para testes locais)
-const exemplos = [
-  "5427ACL1C",
-  "7249ACCMV1M",
-  "5350AGS",
-  "7289BGNM",
-  "7249ACCM.V1M",
-  "3999AGNV-P8L"
-];
-
-exemplos.forEach(txt => {
-  console.log(txt, "->", extractEurocodes(txt));
+btnUrl.addEventListener('click', () => {
+  if (!imageUrl.value) return;
+  payload = { imageUrl: imageUrl.value.trim() };
+  showPreviewURL(imageUrl.value.trim());
 });
 
-// ===== Integração no teu fluxo =====
-// No ponto onde recebes o texto do OCR:
-//   const eurocodes = extractEurocodes(textoOCR);
-//   guarda apenas eurocodes[0] (primeiro válido encontrado)
+fileInput.addEventListener('change', async (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  const buf = await f.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const mime = f.type || 'image/png';
+  payload = { imageBase64: `data:${mime};base64,${base64}` };
+  showPreviewFile(f);
+});
+
+btnRun.addEventListener('click', async () => {
+  if (!payload.imageUrl && !payload.imageBase64) {
+    output.textContent = '⚠️ Escolhe um ficheiro ou cola um URL primeiro.';
+    return;
+  }
+  output.textContent = '⏳ A processar…';
+  try {
+    const res = await fetch('/.netlify/functions/ocr-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, qrOnly: qrOnly.checked })
+    });
+    const data = await res.json();
+    output.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    output.textContent = 'Erro: ' + err.message;
+  }
+});
+
+function showPreviewURL(url){
+  preview.innerHTML = '';
+  const img = new Image();
+  img.src = url;
+  img.alt = 'preview';
+  preview.appendChild(img);
+}
+
+function showPreviewFile(file){
+  preview.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.onload = ()=> URL.revokeObjectURL(img.src);
+  preview.appendChild(img);
+}
