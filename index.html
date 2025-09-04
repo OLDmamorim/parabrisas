@@ -25,13 +25,22 @@
         <button id="helpBtn" class="pill">Instruções</button>
       </div>
 
+      <!-- Área da câmara com INPUT sobreposto (abre sempre) -->
       <div class="cam-wrap">
-        <button id="btnCamera" class="cam-box" aria-label="Tirar foto">
+        <button id="btnCamera" class="cam-box" type="button" aria-label="Tirar foto">
           <svg class="cam-ico" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M9.5 5.5h5l1 1.5h2.5A2 2 0 0 1 20 9v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2.5l1-1.5zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
           </svg>
         </button>
-        <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+
+        <!-- ESTE input fica por cima e recebe o toque -->
+        <input
+          id="cameraInput"
+          class="camera-overlay"
+          type="file"
+          accept="image/*"
+          capture="environment"
+        />
       </div>
 
       <p id="mobileStatus" class="status muted">Aguardando captura…</p>
