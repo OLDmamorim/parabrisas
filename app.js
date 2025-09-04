@@ -139,61 +139,73 @@ async function updateInDB(id, text){
 }
 
 /* ===== EUROCODE helpers ===== */
-/* Regra: 4 dígitos + 2..9 A/Z/0–9, aceitando 1 separador espaço ou hífen entre partes */
-const EURO_SEP_REGEX = /^([0-9]{4})[-\s]?([A-Z0-9]{2,9})$/;
+/* Regra base: 4 dígitos + 2..7 chars (A/Z/0–9) e pelo menos 1 letra; aceita 1 espaço/hífen */
+const EURO_SEP_REGEX = /^([0-9]{4})[-\s]?([A-Z0-9]{2,7})$/;
 
-/* normalização típica de OCR em etiquetas */
 function euroNormalize(s='') {
   return s.toUpperCase()
     .replaceAll('O','0').replaceAll('I','1').replaceAll('S','5').replaceAll('B','8')
     .replace(/[^\w-\s]/g,' '); // mantém letras, números, underscore, hífen e espaços
 }
 
+function hasLetter(s=''){ return /[A-Z]/.test(s); }
+
 /* devolve TODOS os candidatos encontrados (normalizados sem separador) */
 function extractEuroCandidates(text='') {
   const cands = new Set();
   const raw = euroNormalize(text);
-
-  // 1) tokens “brutos” e também tokens com hífen/espaço
   const tokens = raw.split(/[\s\r\n]+/).filter(Boolean);
 
-  // testar tokens isolados
+  // tokens isolados
   for (const t of tokens) {
     const m = t.match(EURO_SEP_REGEX);
-    if (m) cands.add(m[1] + m[2]);
+    if (m && hasLetter(m[2])) cands.add(m[1] + m[2]);
   }
-
-  // testar pares adjacentes (para casos “3999” “AGNV” separados)
+  // pares adjacentes (ex.: "3999" "AGNV")
   for (let i=0;i<tokens.length-1;i++){
     const pair = `${tokens[i]}${tokens[i+1]}`;
     const m1 = pair.match(EURO_SEP_REGEX);
-    if (m1) cands.add(m1[1] + m1[2]);
+    if (m1 && hasLetter(m1[2])) cands.add(m1[1] + m1[2]);
 
-    // com separador no meio
     const withSep = `${tokens[i]}-${tokens[i+1]}`;
     const m2 = withSep.match(EURO_SEP_REGEX);
-    if (m2) cands.add(m2[1] + m2[2]);
+    if (m2 && hasLetter(m2[2])) cands.add(m2[1] + m2[2]);
   }
-
   return Array.from(cands);
 }
 
-/* devolve o primeiro candidato (para render e CSV) */
-function extractEurocode(text='') {
-  const list = extractEuroCandidates(text);
-  return list[0] || '';
+/* scoring automático: mais letras primeiro, depois mais comprido */
+function scoreEuro(c){
+  const tail = c.slice(4);
+  const letters = (tail.match(/[A-Z]/g)||[]).length;
+  return letters*100 + c.length; // peso maior para letras
 }
 
-/* quando há vários candidatos, perguntar ao utilizador qual quer gravar/mostrar */
+function selectBestEurocode(cands){
+  if (!cands.length) return { best:'', ties:[] };
+  const scored = cands.map(c => ({ c, s: scoreEuro(c) }))
+                      .sort((a,b)=> b.s - a.s);
+  const bestScore = scored[0].s;
+  const top = scored.filter(x => x.s === bestScore).map(x => x.c);
+  return { best: top[0], ties: top };
+}
+
+function extractEurocode(text='') {
+  const cands = extractEuroCandidates(text);
+  const { best } = selectBestEurocode(cands);
+  return best || '';
+}
+
+/* perguntar só se houver empate entre os melhores */
 async function chooseEurocode(cands) {
-  if (!cands.length) return '';
-  if (cands.length === 1) return cands[0];
-  // prompt simples numerado
-  const numbered = cands.map((c,i)=>`${i+1}. ${c}`).join('\n');
-  const ans = prompt(`Foram encontrados vários EUROCODEs. Escolhe 1:\n${numbered}\n\nEscreve o número da opção:`, '1');
-  if (!ans) return cands[0];
+  const { best, ties } = selectBestEurocode(cands);
+  if (!best) return '';
+  if (ties.length <= 1) return best;
+  const list = ties.map((c,i)=>`${i+1}. ${c}`).join('\n');
+  const ans = prompt(`Foram encontrados vários EUROCODEs.\nEscolhe 1:\n${list}\n\nEscreve o número da opção:`, '1');
+  if (!ans) return best;
   const idx = parseInt(ans,10)-1;
-  return cands[idx] || cands[0];
+  return ties[idx] || best;
 }
 
 /* ===== Render da tabela ===== */
@@ -393,7 +405,7 @@ cameraInput?.addEventListener("change", async (e) => {
       const { raw, euro, conf, cands } = await ocrImageEuro(file);
 
       if (!euro) {
-        showError('Não encontrei um EUROCODE válido (4 dígitos + 2–9 A/Z/0–9).');
+        showError('Não encontrei um EUROCODE válido (4 dígitos + 2–7 A/Z/0–9, pode ter espaço/hífen).');
         showToast('⚠️ EUROCODE não detetado', 'error');
         e.target.value = "";
         return;
