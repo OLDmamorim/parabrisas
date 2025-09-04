@@ -5,13 +5,15 @@ const SAVE_URL     = "/api/save-ocr";
 const DELETE_URL   = "/api/delete-ocr";
 const DEMO_MODE    = false;
 
-/* ===== Elements ===== */
+/* ===== ELEMENTOS ===== */
 const isDesktop = window.matchMedia("(min-width: 900px)").matches;
-document.getElementById("viewBadge").textContent = isDesktop ? "Desktop" : "Mobile";
+const viewBadge = document.getElementById("viewBadge");
+if (viewBadge) viewBadge.textContent = isDesktop ? "Desktop" : "Mobile";
 
 const cameraBtn     = document.getElementById("btnCamera");
 const cameraInput   = document.getElementById("cameraInput");
 const mobileStatus  = document.getElementById("mobileStatus");
+
 const uploadBtn     = document.getElementById("btnUpload");
 const fileInput     = document.getElementById("fileInput");
 const exportBtn     = document.getElementById("btnExport");
@@ -20,41 +22,52 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-const helpModal     = document.getElementById("helpModal");
-const helpBtn       = document.getElementById("helpBtn");
-const helpBtnDesktop= document.getElementById("helpBtnDesktop");
-const helpClose     = document.getElementById("helpClose");
-
-/* ===== CSS extra injetado ===== */
-(function(){
-  const id = "ocr-text-style";
+/* ===== (pequeno CSS util) ===== */
+(() => {
+  const id = "ocr-inline-css";
   if (document.getElementById(id)) return;
   const s = document.createElement("style");
   s.id = id;
   s.textContent = `
     .ocr-text{ white-space: normal; overflow-wrap:anywhere; line-height:1.4 }
-    .error { background:#300; color:#fff; padding:6px; border-radius:6px }
-    .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
-    .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
-    .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
+    .status.error{ background:#300; color:#fff; padding:6px 8px; border-radius:8px }
+    .progress{ background:#222; height:6px; border-radius:3px; margin-top:4px }
+    .progress>span{ display:block; height:100%; background:#3b82f6; border-radius:3px; width:0% }
+    .btn-icon{ cursor:pointer; border:none; background:none; font-size:16px }
+    .toast.show{ opacity:1 }
   `;
   document.head.appendChild(s);
 })();
 
-/* ===== Estado ===== */
+/* ===== ESTADO ===== */
 let RESULTS = [];
 let lastFile = null;
+let captureHistory = []; // histórico mobile
 
-/* ===== Helpers UI ===== */
-function showToast(msg){ toast.textContent = msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"), 2200); }
+/* ===== HELPERS UI ===== */
+function showToast(msg){
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"), 2200);
+}
 function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
-function setStatus(html, opts={}){ const el = statusEl(); el.classList.toggle("error", !!opts.error); el.innerHTML = html || ""; }
+function setStatus(html="", opts={}){
+  const el = statusEl(); if (!el) return;
+  el.classList.toggle("error", !!opts.error);
+  el.innerHTML = html;
+}
 function showProgress(label, pct=0, asError=false){
-  const el = statusEl(); el.classList.toggle("error", !!asError);
-  el.innerHTML = `<div>${label}</div><div class="progress"><span style="width:${pct}%"></span></div>`;
+  const el = statusEl(); if (!el) return;
+  el.classList.toggle("error", !!asError);
+  el.innerHTML = `
+    <div>${label}</div>
+    <div class="progress"><span style="width:${Math.max(0,Math.min(100,pct))}%"></span></div>
+  `;
 }
 function showError(message){
-  const el = statusEl(); el.classList.add("error");
+  const el = statusEl(); if (!el) return;
+  el.classList.add("error");
   el.innerHTML = `
     <div>❌ ${message}</div>
     <div class="progress"><span style="width:0%"></span></div>
@@ -63,10 +76,11 @@ function showError(message){
   document.getElementById("retryBtn")?.addEventListener("click", ()=> lastFile && handleImage(lastFile, "retry"));
 }
 
-/* ===== Cabeçalho Desktop ===== */
+/* ===== CABEÇALHO TABELA (desktop) ===== */
 function ensureActionsHeader() {
   if (!isDesktop) return;
-  const thead = document.querySelector("#resultsTable thead"); if (!thead) return;
+  const thead = document.querySelector("#resultsTable thead");
+  if (!thead) return;
   thead.innerHTML = `
     <tr>
       <th style="width:60px">#</th>
@@ -77,7 +91,7 @@ function ensureActionsHeader() {
   `;
 }
 
-/* ===== API Neon ===== */
+/* ===== API NEON ===== */
 async function fetchServerRows(){
   const r = await fetch(LIST_URL);
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -90,27 +104,31 @@ async function fetchServerRows(){
     source: x.source || ''
   }));
 }
-async function persistToDB({ ts, text, filename, origin }){
+async function persistToDB({ ts, text, filename, origin }) {
   const resp = await fetch(SAVE_URL, {
-    method:'POST', headers:{'content-type':'application/json'},
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ ts, text, filename, source: origin })
   });
   const txt = await resp.text().catch(()=>resp.statusText);
-  if(!resp.ok) throw new Error(txt || ('HTTP '+resp.status));
+  if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
 }
 async function deleteFromDB(id){
   const resp = await fetch(DELETE_URL, {
-    method:'POST', headers:{'content-type':'application/json'},
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ id })
   });
   const data = await resp.json().catch(()=>({}));
-  if(!resp.ok || data?.error) throw new Error(data?.error || ('HTTP '+resp.status));
+  if (!resp.ok || data?.error) {
+    throw new Error(data?.error || ('HTTP ' + resp.status));
+  }
   return true;
 }
 
-/* ===== Tabela Desktop ===== */
+/* ===== RENDER TABELA (desktop) ===== */
 function renderTable(){
-  if(!isDesktop) return;
+  if(!isDesktop || !resultsBody) return;
   ensureActionsHeader();
   resultsBody.innerHTML = "";
   RESULTS.forEach((r,i)=>{
@@ -124,17 +142,23 @@ function renderTable(){
     `;
     resultsBody.appendChild(tr);
   });
-  desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
+  if (desktopStatus) desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
+
+/* Delegação para apagar */
 resultsBody?.addEventListener("click", async (e)=>{
-  const btn = e.target.closest(".delBtn"); if(!btn) return;
-  const id = Number(btn.dataset.id); if(!id) return;
+  const btn = e.target.closest(".delBtn");
+  if(!btn) return;
+  const id = Number(btn.dataset.id);
+  if(!id) return;
   if(!confirm("Apagar este registo da base de dados?")) return;
-  const old = btn.textContent; btn.disabled = true; btn.textContent = "…";
+
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = "…";
   try{
-    await deleteFromDB(id);
-    RESULTS = await fetchServerRows();
-    renderTable();
+    await deleteFromDB(id);            // 1) apaga no Neon
+    RESULTS = await fetchServerRows(); // 2) sincroniza
+    renderTable();                     // 3) redesenha
     showToast("Registo apagado.");
   }catch(err){
     console.error(err);
@@ -152,69 +176,78 @@ async function optimizeImageForOCR(file){
   const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d'); ctx.drawImage(bmp, 0, 0, w, h);
   const out = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
-  return new File([out], (file.name || 'foto') + '.jpg', { type:'image/jpeg' });
+  return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
 }
 async function runOCR(file){
-  if (DEMO_MODE){ await new Promise(r=>setTimeout(r, 500)); return { text:"DEMO: Texto simulado de OCR\nLinha 2: 123 ABC" }; }
+  if (DEMO_MODE){
+    await new Promise(r=>setTimeout(r, 500));
+    return { text: "DEMO: Texto simulado de OCR\nLinha 2: 123 ABC" };
+  }
   const optimized = await optimizeImageForOCR(file);
-  const fd = new FormData(); fd.append("file", optimized, optimized.name);
+  const fd = new FormData();
+  fd.append("file", optimized, optimized.name);
   const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
   const t = await res.text().catch(()=>res.statusText);
   if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
   return JSON.parse(t);
 }
 
-/* ===== HISTÓRICO (MOBILE) ===== */
+/* ===== HISTÓRICO (MOBILE) — máx. 5 itens, texto 10 chars + "…" ===== */
 const mobileHistoryList = document.getElementById("mobileHistoryList");
 const historyClearBtn   = document.getElementById("historyClearBtn");
-const MAX_HISTORY_SHOW  = 5;    // mostrar até 5
-const MAX_TEXT_CHARS    = 120;  // truncar texto (além do clamp de 2 linhas)
 
-let captureHistory = [];
+function loadHistory() {
+  try {
+    const saved = localStorage.getItem('expressglass_history');
+    if (saved) captureHistory = JSON.parse(saved);
+  } catch { captureHistory = []; }
+}
+function saveHistory() {
+  try { localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }
+  catch {}
+}
+function trunc10(s) {
+  const t = (s || '').replace(/\s+/g, ' ').trim();
+  return t.length > 10 ? t.slice(0, 10) + '…' : t;
+}
+function formatTime(ts) {
+  return new Date(ts).toLocaleString('pt-PT', { hour12:false });
+}
+function renderHistory() {
+  if (!mobileHistoryList) return;
 
-function truncateText(s){
-  if(!s) return "";
-  const oneLine = s.replace(/\s+/g," ").trim();
-  return oneLine.length > MAX_TEXT_CHARS ? oneLine.slice(0, MAX_TEXT_CHARS) + "…" : oneLine;
-}
-function loadHistory(){
-  try{ const s = localStorage.getItem('expressglass_history'); captureHistory = s ? JSON.parse(s) : []; }
-  catch{ captureHistory = []; }
-}
-function saveHistory(){ try{ localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }catch{} }
-function renderHistory(){
-  if(!mobileHistoryList) return;
-  if(!captureHistory.length){
-    mobileHistoryList.innerHTML = `<p class="history-empty">Ainda não há capturas realizadas.</p>`;
+  if (!captureHistory.length) {
+    mobileHistoryList.innerHTML = '<p class="history-empty">Ainda não há capturas realizadas.</p>';
     return;
   }
-  const toShow = captureHistory.slice(0, MAX_HISTORY_SHOW);
-  mobileHistoryList.innerHTML = toShow.map(h => `
-    <div class="history-item">
-      <div class="history-item-time">${new Date(h.timestamp).toLocaleString()}</div>
-      <div class="history-item-text">${truncateText(h.text)}</div>
+
+  const display = captureHistory.slice(0, 5); // <= máximo 5
+  mobileHistoryList.innerHTML = display.map((c, i) => `
+    <div class="history-item" data-index="${i}">
+      <div class="history-item-time">${formatTime(c.timestamp || c.ts || Date.now())}</div>
+      <div class="history-item-text">${trunc10(c.text)}</div>
     </div>
-  `).join("");
+  `).join('');
 }
-function addToHistory(item){
-  captureHistory.unshift({
-    timestamp: item.ts,
-    text: item.text || "",
-    filename: item.filename || "",
-    id: item.id || null
-  });
+function addCaptureToHistory(capture) {
+  const item = {
+    timestamp: capture.ts || Date.now(),
+    text: capture.text || '',
+    filename: capture.filename || ''
+  };
+  captureHistory.unshift(item);
+  if (captureHistory.length > 20) captureHistory = captureHistory.slice(0, 20);
   saveHistory();
   renderHistory();
 }
-historyClearBtn?.addEventListener("click", ()=>{
-  if(!confirm("Limpar histórico local do telemóvel?")) return;
+historyClearBtn?.addEventListener('click', () => {
+  if (!confirm('Limpar histórico local do telemóvel?')) return;
   captureHistory = [];
   saveHistory();
   renderHistory();
-  showToast("Histórico limpo.");
 });
 
-/* ===== Fluxo ===== */
+/* ===== FLUXO ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
@@ -243,12 +276,14 @@ async function handleImage(file, origin="camera"){
     showProgress("A gravar no Neon…", 90);
     await persistToDB({ ts: row.ts, text: row.text, filename: row.filename, origin });
 
-    // Histórico mobile
-    addToHistory(row);
+    // histórico (mobile)
+    addCaptureToHistory(row);
 
-    // Desktop: sincroniza tabela
-    RESULTS = await fetchServerRows();
-    renderTable();
+    // desktop: atualizar tabela
+    if (isDesktop) {
+      RESULTS = await fetchServerRows();
+      renderTable();
+    }
 
     showProgress("Concluído ✅", 100);
     setTimeout(()=> setStatus(""), 400);
@@ -260,24 +295,28 @@ async function handleImage(file, origin="camera"){
   }
 }
 
-/* ===== Bootstrap ===== */
-(function(){
-  if(isDesktop){
-    fetchServerRows().then(rows => { RESULTS = rows; renderTable(); })
-      .catch(()=>{ RESULTS = []; renderTable(); });
-  }
+/* ===== BOOTSTRAP ===== */
+(async function(){
+  // mobile: carregar histórico
   loadHistory();
   renderHistory();
+
+  // desktop: ler Neon
+  if(isDesktop){
+    try { RESULTS = await fetchServerRows(); }
+    catch(e){ console.warn("Sem Neon:", e.message); RESULTS = []; }
+    renderTable();
+  }
 })();
 
-/* ===== Ações ===== */
-cameraBtn?.addEventListener("click", () => cameraInput.click());
+/* ===== AÇÕES ===== */
+cameraBtn?.addEventListener("click", () => cameraInput?.click());
 cameraInput?.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (file) handleImage(file, "camera");
   cameraInput.value = "";
 });
-uploadBtn?.addEventListener("click", () => fileInput.click());
+uploadBtn?.addEventListener("click", () => fileInput?.click());
 fileInput?.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (file) handleImage(file, "upload");
@@ -305,11 +344,17 @@ clearBtn?.addEventListener("click", ()=>{
   showToast("Vista limpa (dados no Neon mantidos)");
 });
 
-/* ===== Modal ajuda ===== */
-function showHelp(){ helpModal?.classList.add("show"); }
-function hideHelp(){ helpModal?.classList.remove("show"); }
-helpBtn?.addEventListener("click", showHelp);
-helpBtnDesktop?.addEventListener("click", showHelp);
-helpClose?.addEventListener("click", hideHelp);
-helpModal?.addEventListener("click", (e)=>{ if(e.target===helpModal) hideHelp(); });
-document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && helpModal?.classList.contains("show")) hideHelp(); });
+/* ===== MODAL DE AJUDA ===== */
+const helpModal = document.getElementById("helpModal");
+const helpBtn = document.getElementById("helpBtn");
+const helpBtnDesktop = document.getElementById("helpBtnDesktop");
+const helpClose = document.getElementById("helpClose");
+
+function showHelpModal() { helpModal?.classList.add("show"); }
+function hideHelpModal() { helpModal?.classList.remove("show"); }
+
+helpBtn?.addEventListener("click", showHelpModal);
+helpBtnDesktop?.addEventListener("click", showHelpModal);
+helpClose?.addEventListener("click", hideHelpModal);
+helpModal?.addEventListener("click", (e)=>{ if(e.target===helpModal) hideHelpModal(); });
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && helpModal?.classList.contains("show")) hideHelpModal(); });
