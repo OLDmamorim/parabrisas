@@ -22,9 +22,8 @@
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
     
     <div class="mobile-cta">
-      <!-- ===== NOVO: Dois botões de modo, lado a lado e mesmo tamanho ===== -->
+      <!-- Dois botões lado a lado -->
       <div class="mode-grid">
-        <!-- Mantém o ID original para não partir o teu app.js -->
         <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)">
           <span class="emoji">📷</span>
           <span class="mode-label">OCR</span>
@@ -32,7 +31,7 @@
 
         <button id="btnEurocode" class="btn-square mode-btn" aria-label="Tirar foto (Eurocode)">
           <span class="emoji">📷</span>
-          <span class="mode-label">Eurocode</span>
+          <span class="mode-label">EUROCODE</span>
         </button>
       </div>
 
@@ -103,34 +102,29 @@
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- ===== Script curto só para gerir o modo e não partir o teu app.js ===== -->
+  <!-- JS para alternar modos -->
   <script>
-    // Modo ativo visível globalmente para o app.js
-    window.OCR_MODE = 'ocr'; // 'ocr' | 'euro'
+    window.OCR_MODE = 'ocr'; // modo ativo inicial
 
-    (function(){
-      const btnOCR   = document.getElementById('btnCamera');
-      const btnEURO  = document.getElementById('btnEurocode');
-      const inputCam = document.getElementById('cameraInput');
+    const btnOCR   = document.getElementById('btnCamera');
+    const btnEURO  = document.getElementById('btnEurocode');
+    const inputCam = document.getElementById('cameraInput');
 
-      // garantir que o teu handler atual do #btnCamera continua a funcionar
-      btnOCR.addEventListener('click', () => {
-        window.OCR_MODE = 'ocr';
-        btnOCR.classList.add('selected');
-        btnEURO.classList.remove('selected');
-        // o teu app.js já trata do click no #btnCamera e abre o input
-      }, { capture: true });
+    btnOCR.addEventListener('click', () => {
+      window.OCR_MODE = 'ocr';
+      btnOCR.classList.add('selected');
+      btnEURO.classList.remove('selected');
+      // o teu app.js já trata do fluxo do #btnCamera
+    }, { capture: true });
 
-      // no botão Eurocode, só mudamos o modo e abrimos o MESMO input
-      btnEURO.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.OCR_MODE = 'euro';
-        btnEURO.classList.add('selected');
-        btnOCR.classList.remove('selected');
-        // usa o mesmo fluxo: dispara o input que o teu app.js já escuta
-        inputCam.click();
-      });
-    })();
+    btnEURO.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.OCR_MODE = 'euro';
+      btnEURO.classList.add('selected');
+      btnOCR.classList.remove('selected');
+      // dispara o mesmo input para reaproveitar o teu app.js
+      inputCam.click();
+    });
   </script>
 
   <script src="app.js"></script>
