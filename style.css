@@ -672,3 +672,11 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
   min-width: 120px !important;  /* largura mínima */
   max-width: 180px !important;  /* limite para não ficarem gigantes */
 }
+
+.cell-wrap.editing{
+  outline: 2px solid #3b82f6;
+  border-radius: 6px;
+  padding: 2px 4px;
+  background: rgba(59,130,246,.08);
+}
+.col-actions .btn.btn-mini{ margin-right:6px }
