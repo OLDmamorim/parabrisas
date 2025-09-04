@@ -3,72 +3,67 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>EXPRESSGLASS • Receção de Material</title>
+  <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- HEADER COM GRADIENTE -->
-  <header class="eg-header">
-    <div class="eg-header-pill">
-      <h1>EXPRESSGLASS</h1>
-      <span class="eg-badge">Mobile</span>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand">
+      <h1 class="title">EXPRESSGLASS</h1>
+      <p class="subtitle">Receção material</p>
     </div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- CARTÃO BRANCO (sem ?, sem switch, sem instruções) -->
-  <main id="mobileView" class="eg-card">
-    <!-- O “botão” é um LABEL ligado ao input; abre a câmara mesmo sem JS -->
-    <label id="btnCamera" class="eg-camera" for="cameraInput" aria-label="Capturar">
-      <!-- ícone câmara SVG com contorno + glow -->
-      <svg viewBox="0 0 64 64" width="76" height="76" aria-hidden="true">
-        <defs>
-          <linearGradient id="camGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"  stop-color="#2d5bff"/>
-            <stop offset="100%" stop-color="#86b3ff"/>
-          </linearGradient>
-          <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="6" result="glow"/>
-            <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-        <rect x="6" y="6" width="52" height="52" rx="18" fill="#f6faff" stroke="#d7e5ff" stroke-width="2" filter="url(#softGlow)"/>
-        <path d="M24 18h16l3 4h9a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V26a4 4 0 0 1 4-4h9l3-4z"
-              fill="none" stroke="url(#camGrad)" stroke-width="2.5" stroke-linejoin="round"/>
-        <circle cx="32" cy="38" r="10" fill="none" stroke="url(#camGrad)" stroke-width="2.5"/>
-        <circle cx="32" cy="38" r="4" fill="url(#camGrad)"/>
-      </svg>
-    </label>
+  <!-- MOBILE VIEW -->
+  <main id="mobileView" class="card mobile-only">
+    <div class="mobile-cta">
+      <button id="btnCamera" class="btn-square" aria-label="Tirar foto da etiqueta">
+        <span class="emoji">📷</span>
+      </button>
+      <p class="hint">
+        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
+        Se conseguires, inclui a <strong>descrição</strong> e o <strong>Eurocode</strong>.
+      </p>
+    </div>
 
-    <h2 class="eg-title">Receção de Material</h2>
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <div id="mobileStatus" class="status"></div>
 
-    <!-- Mensagem de sucesso (o teu JS pode trocar este conteúdo) -->
-    <p id="mobileStatus" class="eg-ok">
-      <span class="eg-tick"></span>
-      A receção foi concluída<br/>com sucesso
-    </p>
-
-    <!-- input nativo da câmara -->
-    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden/>
+    <footer class="footnote">
+      <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
+    </footer>
   </main>
 
-  <!-- HISTÓRICO OCR (logo abaixo do cartão) -->
-  <section class="eg-card eg-history">
-    <h3>Histórico OCR</h3>
-    <div class="eg-table-wrap">
-      <table id="resultsTable" class="eg-table">
+  <!-- DESKTOP VIEW -->
+  <section id="desktopView" class="card desktop-only">
+    <div class="toolbar">
+      <button id="btnUpload" class="btn">Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+      <button id="btnExport" class="btn">Exportar CSV</button>
+      <button id="btnClear" class="btn danger">Limpar Tabela</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultsTable">
         <thead>
           <tr>
-            <th class="col-n">#</th>
-            <th class="col-dt">Data/Hora</th>
-            <th class="col-texto">Texto lido</th>
+            <th style="width:60px">#</th>
+            <th style="width:220px">Data/Hora</th>
+            <th style="width:auto">Texto lido (OCR)</th>
           </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
       </table>
     </div>
+
+    <div id="desktopStatus" class="status"></div>
   </section>
 
-  <!-- O teu JS original -->
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
   <script src="app.js"></script>
 </body>
 </html>
