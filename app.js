@@ -3,7 +3,7 @@ const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
 const DELETE_URL   = "/api/delete-ocr";
-const UPDATE_URL   = "/api/update-ocr";   // <- NOVO: editar no Neon
+const UPDATE_URL   = "/api/update-ocr";   // editar no Neon
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -21,7 +21,7 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== CSS para texto corrido ===== */
+/* ===== CSS inject ===== */
 (function(){
   const id = "ocr-text-style";
   if (document.getElementById(id)) return;
@@ -33,6 +33,11 @@ const toast         = document.getElementById("toast");
     .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
     .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
     .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
+
+    /* edição inline */
+    .actions { display:flex; gap:8px; align-items:center; justify-content:center }
+    .editArea { width:100%; min-height:84px; font:inherit; padding:8px; border-radius:8px; border:1px solid #d1d5db; }
+    .muted { opacity:.6 }
   `;
   document.head.appendChild(s);
 })();
@@ -60,11 +65,6 @@ function showProgress(label, pct=0, asError=false){
     <div>${label}</div>
     <div class="progress"><span style="width:${pct}%"></span></div>
   `;
-}
-function updateProgress(pct){
-  const el = statusEl();
-  const bar = el.querySelector(".progress > span");
-  if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
 }
 function showError(message){
   const el = statusEl();
@@ -124,7 +124,6 @@ async function deleteFromDB(id){
   if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
   return true;
 }
-/* NOVO: atualizar no Neon */
 async function updateInDB(id, text){
   const resp = await fetch(UPDATE_URL, {
     method: 'POST',
@@ -136,7 +135,7 @@ async function updateInDB(id, text){
   return data.row;
 }
 
-/* ===== Render da tabela ===== */
+/* ===== Render Desktop ===== */
 function renderTable(){
   if(!isDesktop) return;
   ensureActionsHeader();
@@ -147,8 +146,8 @@ function renderTable(){
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
-      <td><div class="ocr-text">${txt}</div></td>
-      <td>
+      <td class="cell-text"><div class="ocr-text">${txt}</div></td>
+      <td class="actions">
         <button class="btn-icon editBtn" title="Editar" data-id="${r.id}">✏️</button>
         <button class="btn-icon delBtn"  title="Apagar" data-id="${r.id}">🗑️</button>
       </td>
@@ -158,55 +157,94 @@ function renderTable(){
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
 
-/* Delegação — editar e apagar */
+/* ===== Delegação: Editar / Guardar / Cancelar / Apagar ===== */
 resultsBody?.addEventListener("click", async (e)=>{
-  const editBtn = e.target.closest(".editBtn");
-  const delBtn  = e.target.closest(".delBtn");
+  const editBtn   = e.target.closest(".editBtn");
+  const saveBtn   = e.target.closest(".saveBtn");
+  const cancelBtn = e.target.closest(".cancelBtn");
+  const delBtn    = e.target.closest(".delBtn");
 
-  // EDITAR
-  if (editBtn) {
-    const id = Number(editBtn.dataset.id);
-    if (!id) return;
+  // APAGAR
+  if (delBtn) {
+    const id = Number(delBtn.dataset.id);
+    if(!id) return;
+    if(!confirm("Apagar este registo da base de dados?")) return;
 
-    const rowEl = editBtn.closest('tr');
-    const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
-
-    const newText = prompt('Editar texto lido (OCR):', currentText);
-    if (newText === null) return; // cancelou
-
+    const old = delBtn.textContent;
+    delBtn.disabled = true; delBtn.textContent = "…";
     try{
-      editBtn.disabled = true; editBtn.textContent = '…';
-      await updateInDB(id, newText);
+      await deleteFromDB(id);
       RESULTS = await fetchServerRows();
       renderTable();
-      showToast('Registo atualizado.');
+      showToast("Registo apagado.");
     }catch(err){
       console.error(err);
-      showToast('Falha ao atualizar: ' + (err.message || 'erro'));
+      showToast("Falha ao apagar: " + (err.message || "erro"));
     }finally{
-      editBtn.disabled = false; editBtn.textContent = '✏️';
+      delBtn.disabled = false; delBtn.textContent = old;
     }
     return;
   }
 
-  // APAGAR
-  if(!delBtn) return;
-  const id = Number(delBtn.dataset.id);
-  if(!id) return;
-  if(!confirm("Apagar este registo da base de dados?")) return;
+  // ENTRAR EM MODO EDIÇÃO
+  if (editBtn) {
+    const id = Number(editBtn.dataset.id);
+    if (!id) return;
 
-  const old = delBtn.textContent;
-  delBtn.disabled = true; delBtn.textContent = "…";
-  try{
-    await deleteFromDB(id);
-    RESULTS = await fetchServerRows();
+    const row = editBtn.closest("tr");
+    const textCellWrap = row.querySelector(".cell-text");
+    const current = row.querySelector(".ocr-text")?.innerText || "";
+
+    // troca conteúdo por textarea
+    textCellWrap.innerHTML = `<textarea class="editArea">${current}</textarea>`;
+
+    // troca botões por guardar/cancelar
+    const actions = row.querySelector(".actions");
+    actions.innerHTML = `
+      <button class="btn-icon saveBtn"   data-id="${id}" title="Guardar">💾</button>
+      <button class="btn-icon cancelBtn" data-id="${id}" title="Cancelar">✖️</button>
+    `;
+
+    const ta = textCellWrap.querySelector(".editArea");
+    ta.focus();
+    ta.addEventListener("keydown", (ke)=>{
+      if (ke.key === "Enter" && (ke.ctrlKey || ke.metaKey)) {
+        actions.querySelector(".saveBtn")?.click();
+      }
+    });
+    return;
+  }
+
+  // GUARDAR EDIÇÃO
+  if (saveBtn) {
+    const id = Number(saveBtn.dataset.id);
+    const row = saveBtn.closest("tr");
+    const ta  = row.querySelector(".editArea");
+    const newText = (ta?.value || "").trim();
+
+    if (newText.length === 0 && !confirm("Estás a guardar texto vazio. Continuar?")) return;
+
+    saveBtn.disabled = true; saveBtn.textContent = "…";
+    const actions = row.querySelector(".actions"); actions.classList.add("muted");
+
+    try{
+      await updateInDB(id, newText);      // grava no Neon
+      RESULTS = await fetchServerRows();  // sincroniza
+      renderTable();                      // redesenha
+      showToast("Registo atualizado.");
+    }catch(err){
+      console.error(err);
+      showToast("Falha ao guardar: " + (err.message || "erro"));
+      saveBtn.disabled = false; saveBtn.textContent = "💾";
+      actions.classList.remove("muted");
+    }
+    return;
+  }
+
+  // CANCELAR EDIÇÃO
+  if (cancelBtn) {
     renderTable();
-    showToast("Registo apagado.");
-  }catch(err){
-    console.error(err);
-    showToast("Falha ao apagar: " + (err.message || "erro"));
-  }finally{
-    delBtn.disabled = false; delBtn.textContent = old;
+    return;
   }
 });
 
@@ -320,12 +358,11 @@ clearBtn?.addEventListener("click", ()=>{
   showToast("Vista limpa (dados no Neon mantidos)");
 });
 
-/* ===== MODAL DE AJUDA ===== */
+/* ===== Modal de ajuda (se existir no HTML) ===== */
 const helpModal = document.getElementById("helpModal");
 const helpBtn = document.getElementById("helpBtn");
 const helpBtnDesktop = document.getElementById("helpBtnDesktop");
 const helpClose = document.getElementById("helpClose");
-
 function showHelpModal() { helpModal?.classList.add("show"); }
 function hideHelpModal() { helpModal?.classList.remove("show"); }
 helpBtn?.addEventListener("click", showHelpModal);
@@ -335,67 +372,3 @@ helpModal?.addEventListener("click", (e) => { if (e.target === helpModal) hideHe
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
 });
-
-/* ===== FEEDBACK VISUAL MELHORADO (mantido) ===== */
-function showToastWithType(msg, type = 'info') {
-  toast.textContent = msg;
-  toast.classList.remove('success', 'error');
-  if (type === 'success') toast.classList.add('success');
-  else if (type === 'error') toast.classList.add('error');
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 2500);
-}
-function setCardState(state) {
-  const card = isDesktop ? document.getElementById("desktopView") : document.getElementById("mobileView");
-  card.classList.remove('success', 'error');
-  if (state === 'success') { card.classList.add('success'); setTimeout(() => card.classList.remove('success'), 3000); }
-  else if (state === 'error') { card.classList.add('error'); setTimeout(() => card.classList.remove('error'), 3000); }
-}
-function addFeedbackIcon(message, type) {
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-  return `<span class="feedback-icon">${icons[type] || icons.info}</span>${message}`;
-}
-function animateCameraButton(state) {
-  if (!cameraBtn) return;
-  cameraBtn.classList.remove('pulse');
-  if (state === 'processing') {
-    cameraBtn.style.transform = 'scale(0.95)';
-    cameraBtn.style.opacity = '0.7';
-  } else if (state === 'success') {
-    cameraBtn.style.transform = 'scale(1.05)'; cameraBtn.style.borderColor = 'var(--success)';
-    setTimeout(() => { cameraBtn.style.transform = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse'); }, 1000);
-  } else if (state === 'error') {
-    cameraBtn.style.transform = 'scale(1.05)'; cameraBtn.style.borderColor = 'var(--danger)';
-    setTimeout(() => { cameraBtn.style.transform = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse'); }, 1000);
-  } else {
-    cameraBtn.style.transform = ''; cameraBtn.style.opacity = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse');
-  }
-}
-const originalShowToast = showToast;
-showToast = function(msg, type = 'info') { showToastWithType(msg, type); };
-const originalSetStatus = setStatus;
-setStatus = function(html, opts = {}) {
-  const el = statusEl();
-  el.classList.toggle("error", !!opts.error);
-  if (opts.error) { html = addFeedbackIcon(html, 'error'); setCardState('error'); }
-  else if (opts.success) { html = addFeedbackIcon(html, 'success'); setCardState('success'); }
-  el.innerHTML = html || "";
-};
-const originalShowError = showError;
-showError = function(message) {
-  const el = statusEl();
-  el.classList.add("error");
-  el.innerHTML = `
-    <div>${addFeedbackIcon(message, 'error')}</div>
-    <div class="progress"><span style="width:0%"></span></div>
-    <button class="retry-btn" id="retryBtn">🔄 Tentar novamente</button>
-  `;
-  document.getElementById("retryBtn")?.addEventListener("click", () => lastFile && handleImage(lastFile, "retry"));
-  setCardState('error'); animateCameraButton('error'); showToast(message, 'error');
-};
-
-/* ===== HISTÓRICO (mantido) ===== */
-let captureHistory = [];
-function addToHistory(c){ captureHistory.unshift(c); if(captureHistory.length>10) captureHistory=captureHistory.slice(0,10); localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }
-function loadHistory(){ try{ const s=localStorage.getItem('expressglass_history'); if(s) captureHistory=JSON.parse(s);}catch(e){ captureHistory=[]; } }
-loadHistory();
