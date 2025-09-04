@@ -1,150 +1,107 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-PT">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EXPRESSGLASS · Receção material</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css" />
-  <style>
-    /* === layout & header === */
-    :root{
-      --bg1:#1e55e6; --bg2:#0b3fb2;
-      --card:#0b1320; --muted:#cfe0ff; --line:#263251;
-      --chip:#1a2640; --chip-b:#2b3b62;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 80%);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#eaf2ff}
-    .wrap{max-width:960px;margin:0 auto;padding:16px}
-    header{display:flex;align-items:center;justify-content:space-between}
-    header h1{font-size:40px;letter-spacing:3px;margin:16px 0 0}
-    .badge{background:rgba(255,255,255,.2);padding:8px 14px;border-radius:999px;font-weight:700}
-
-    /* === card === */
-    .card{background:var(--card);border-radius:24px;padding:20px;margin-top:18px;box-shadow:0 14px 40px rgba(0,0,0,.25)}
-    .card-inner{max-width:760px;margin:0 auto}
-    .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px}
-
-    /* === camera box === */
-    .cam-box{display:flex;justify-content:center;align-items:center;margin:6px auto 14px}
-    #btnCamera{
-      width:200px;height:140px;border:2px dashed #5e7bb8;border-radius:20px;
-      background:rgba(255,255,255,.03);cursor:pointer;display:flex;align-items:center;justify-content:center
-    }
-    /* ÍCONE MENOR (40px) */
-    #btnCamera svg{width:40px;height:40px;stroke:#9fc0ff;opacity:.9}
-
-    .pill{border-radius:14px;background:var(--chip);color:var(--muted);padding:10px 16px;cursor:pointer;border:1px solid var(--chip-b)}
-    .danger{background:#4d2020;border-color:#6a2a2a}
-
-    /* === textos menores === */
-    h2.title{font-size:28px;margin:2px 0 4px;text-align:center}
-    .hint{opacity:.9;text-align:center;margin:0 6px 14px;font-size:.95rem}  /* menor */
-
-    .status{min-height:24px;margin:8px 0}
-
-    /* histórico mobile */
-    #mobileHistoryList .history-item{background:#121b2f;border:1px solid var(--line);border-radius:14px;padding:8px 12px;margin-bottom:10px}
-    .history-item-time{opacity:.75;font-size:.8rem;margin-bottom:2px}
-    .history-item-text{font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-    /* desktop */
-    #desktopView{display:none}
-    @media(min-width:900px){#mobileView{display:none}#desktopView{display:block}}
-    table{width:100%;border-collapse:collapse}
-    thead th{background:#0e1a33;color:#bcd3ff;padding:10px;text-align:left}
-    tbody td{border-top:1px solid #213055;padding:10px;vertical-align:top}
-    .ocr-text{white-space:normal;overflow-wrap:anywhere;line-height:1.4}
-    .btn{background:var(--chip);border:1px solid var(--chip-b);color:var(--muted);padding:8px 12px;border-radius:10px;cursor:pointer}
-    .btn-icon{cursor:pointer;border:none;background:none;font-size:16px}
-
-    /* modal */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:20px}
-    .modal.show{display:flex}
-    .modal .box{background:var(--card);border:1px solid #223155;border-radius:18px;max-width:680px;width:100%;padding:18px}
-    .modal .box h3{margin:6px 0 12px}
-    .close-x{float:right;background:var(--chip);border:1px solid var(--chip-b);border-radius:10px;color:var(--muted);padding:6px 10px;cursor:pointer}
-
-    /* toast */
-    #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#111a2e;border:1px solid var(--chip-b);color:#dfeaff;padding:10px 14px;border-radius:10px;opacity:0;transition:opacity .2s}
-    #toast.show{opacity:1}
-  </style>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>EXPRESSGLASS</h1>
-      <span class="badge" id="viewBadge">Mobile</span>
-    </header>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <h1 class="app-title">EXPRESSGLASS</h1>
+      <span id="viewBadge" class="badge">Mobile</span>
+    </div>
+  </header>
 
-    <!-- MOBILE -->
-    <section id="mobileView" class="card">
-      <div class="card-inner">
-        <div class="row-between" style="margin-bottom:8px;">
-          <span style="opacity:.85">Receção material</span>
-          <button class="pill" id="helpBtn">Instruções</button>
-        </div>
-
-        <div class="cam-box">
-          <button id="btnCamera" title="Tirar foto">
-            <!-- SVG inline (não falha no deploy) -->
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
-              <path d="M3 7h4l2-3h6l2 3h4v13H3z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
-          </button>
-          <input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none" />
-        </div>
-
-        <h2 class="title">Receção de Material</h2>
-        <p class="hint">Tira uma foto à <b>etiqueta</b> do material. Inclui a <b>descrição</b> e o <b>código</b> se possível.</p>
-
-        <div id="mobileStatus" class="status"></div>
-
-        <div class="row-between">
-          <div class="section-title">📋 Últimas Capturas</div>
-          <button id="historyClearBtn" class="pill danger">Limpar</button>
-        </div>
-        <div id="mobileHistoryList"></div>
+  <!-- MOBILE VIEW -->
+  <main id="mobileView" class="view container">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-subtitle">Receção material</div>
+        <button id="helpBtn" class="chip">Instruções</button>
       </div>
-    </section>
 
-    <!-- DESKTOP -->
-    <section id="desktopView" class="card">
-      <div class="card-inner">
-        <div class="row-between" style="margin-bottom:10px;">
-          <div class="section-title" style="margin:0">Express OCR</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn" id="btnUpload">Carregar imagem</button>
-            <input id="fileInput" type="file" accept="image/*" style="display:none" />
-            <button class="btn" id="btnExport">Exportar CSV</button>
-            <button class="btn" id="btnClear">Limpar Tabela</button>
-            <button class="pill" id="helpBtnDesktop">Instruções</button>
-          </div>
-        </div>
+      <!-- Zona da câmara -->
+      <div class="camera-zone">
+        <button id="btnCamera" type="button" class="camera-btn" aria-label="Tirar foto">
+          <!-- Ícone SVG pequeno e centrado -->
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 7h3l1.2-2h7.6L17 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.5" />
+            <circle cx="12" cy="13" r="3.5" stroke="currentColor" stroke-width="1.5" />
+          </svg>
+        </button>
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+      </div>
 
-        <div id="desktopStatus" class="status"></div>
-        <table id="resultsTable">
+      <!-- Instruções (texto pequeno) -->
+      <p class="hint">
+        Tira uma foto à <b>etiqueta</b> do material. Inclui a <b>descrição</b> e o <b>código</b> se possível.
+      </p>
+
+      <!-- Status mobile (para progressos/erros) -->
+      <div id="mobileStatus" class="status"></div>
+
+      <hr class="divider" />
+
+      <!-- Histórico Mobile -->
+      <div class="history-head">
+        <h3 class="section-title">📋 Últimas Capturas</h3>
+        <button id="mobileHistoryClear" class="btn btn-danger outline">Limpar</button>
+      </div>
+
+      <!-- Lista de histórico (o app.js preenche) -->
+      <div id="mobileHistoryList" class="history-list">
+        <p class="history-empty">Ainda não há capturas realizadas.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- DESKTOP VIEW -->
+  <section id="desktopView" class="view container" style="display:none;">
+    <div class="card">
+      <div class="toolbar">
+        <button id="btnUpload" class="btn">Carregar imagem</button>
+        <input id="fileInput" type="file" accept="image/*" hidden />
+        <button id="btnExport" class="btn">Exportar CSV</button>
+        <button id="btnClear" class="btn btn-danger">Limpar Tabela</button>
+        <span class="spacer"></span>
+        <button id="helpBtnDesktop" class="chip">Instruções</button>
+        <span id="desktopStatus" class="status"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table id="resultsTable" class="table">
           <thead></thead>
           <tbody id="resultsBody"></tbody>
         </table>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
 
-  <!-- Modal Instruções -->
-  <div class="modal" id="helpModal" aria-hidden="true">
-    <div class="box">
-      <button id="helpClose" class="close-x">Fechar</button>
-      <h3>Instruções</h3>
-      <ol>
-        <li>Toque na câmara para tirar a foto.</li>
-        <li>Garanta que a etiqueta e o texto estão focados.</li>
-        <li>Se possível inclua o Eurocode/código.</li>
-      </ol>
+  <!-- Modal de Ajuda -->
+  <div id="helpModal" class="modal">
+    <div class="modal__dialog">
+      <div class="modal__head">
+        <h3>Como tirar a foto</h3>
+        <button id="helpClose" class="btn-icon" aria-label="Fechar">✖</button>
+      </div>
+      <div class="modal__body">
+        <ul class="help-list">
+          <li>Fotografa de frente, com a etiqueta legível.</li>
+          <li>Inclui a <b>descrição</b> e, se possível, o <b>Eurocode</b>.</li>
+          <li>Evita reflexos e desfocagem.</li>
+        </ul>
+      </div>
     </div>
   </div>
 
-  <div id="toast" role="status" aria-live="polite"></div>
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Scripts -->
   <script src="app.js"></script>
 </body>
 </html>
