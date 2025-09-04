@@ -1,94 +1,101 @@
 <!doctype html>
-<html lang="pt-PT">
+<html lang="pt">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>EXPRESSGLASS · Receção material</title>
-  <link rel="stylesheet" href="/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EXPRESSGLASS</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- HEADER -->
-  <header class="header">
-    <h1 class="brand">EXPRESSGLASS</h1>
-    <span id="viewBadge" class="badge">Mobile</span>
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="header-inner">
+      <h1 class="brand">EXPRESSGLASS</h1>
+      <span id="viewBadge" class="view-badge">Mobile</span>
+    </div>
   </header>
 
-  <!-- ===== MOBILE CARD ===== -->
-  <main id="mobileView" class="card">
-    <div class="card-head">
-      <h2 class="card-title">Receção material</h2>
-      <button id="helpBtn" class="help-btn">Instruções</button>
-    </div>
+  <!-- ===== MAIN ===== -->
+  <main class="wrap">
 
-    <!-- CAMERA AREA -->
-    <div class="camera-wrap">
-      <button id="btnCamera" class="cam-btn" aria-label="Tirar foto">
-        <!-- ícone inline para não falhar -->
-        <svg viewBox="0 0 24 24" class="cam-icon" aria-hidden="true">
-          <path d="M9.5 6 8 8H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-3l-1.5-2h-5ZM12 17.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/>
-        </svg>
-      </button>
-      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
-      <div id="mobileStatus" class="status">Aguardando captura…</div>
+    <!-- ===== MOBILE CARD ===== -->
+    <section id="mobileView" class="panel mobile-only">
+      <div class="panel-head">
+        <h2 class="panel-title">Receção material</h2>
+        <button id="helpBtn" class="pill">Instruções</button>
+      </div>
 
-      <p class="instructions">
-        Tira uma foto à <b>etiqueta</b> do material.<br/>
-        Inclui a <b>descrição</b> e o <b>código</b> se possível.
+      <!-- CÂMARA (botão invisible + área visual pequena) -->
+      <div class="cam-wrap">
+        <button id="btnCamera" class="cam-box" aria-label="Tirar foto">
+          <svg viewBox="0 0 24 24" class="cam-ico" aria-hidden="true">
+            <path d="M9.5 5.5h5l1 1.5h2.5A2 2 0 0 1 20 9v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2.5l1-1.5zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+          </svg>
+        </button>
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+      </div>
+
+      <p id="mobileStatus" class="status muted">Aguardando captura…</p>
+
+      <p class="hint">
+        Tira uma foto à <strong>etiqueta</strong> do material.
+        Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
       </p>
-    </div>
 
-    <!-- HISTÓRICO (MOBILE) -->
-    <section class="history">
-      <h3>
-        <span>📋 Últimas Capturas</span>
-        <button id="btnClear" class="clear-btn">Limpar</button>
-      </h3>
+      <hr class="sep" />
+
+      <!-- HISTÓRICO -->
+      <div class="history-head">
+        <h3 class="history-title">📝 Últimas Capturas</h3>
+        <button id="btnClear" class="pill pill-danger">Limpar</button>
+      </div>
+
       <div id="mobileHistoryList" class="history-list">
         <p class="history-empty">Ainda não há capturas realizadas.</p>
       </div>
     </section>
+
+    <!-- ===== DESKTOP TABLE ===== -->
+    <section id="desktopView" class="panel desktop-only">
+      <div class="toolbar">
+        <button id="btnUpload" class="btn">Carregar imagem</button>
+        <input id="fileInput" type="file" accept="image/*" hidden />
+        <button id="btnExport" class="btn">Exportar CSV</button>
+        <button id="btnClearDesktop" class="btn btn-ghost" onclick="document.getElementById('btnClear')?.click()">Limpar Tabela (local)</button>
+        <button id="helpBtnDesktop" class="btn btn-ghost">Instruções</button>
+        <div class="flex-spacer"></div>
+        <span id="desktopStatus" class="status muted">—</span>
+      </div>
+
+      <div class="table-wrap">
+        <table id="resultsTable" class="tbl">
+          <thead></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 
-  <!-- ===== DESKTOP VIEW ===== -->
-  <section id="desktopView" class="desktop hidden">
-    <div class="toolbar">
-      <button id="btnUpload" class="btn">Carregar imagem</button>
-      <input id="fileInput" type="file" accept="image/*" hidden />
-      <button id="btnExport" class="btn">Exportar CSV</button>
-      <button id="btnClearDesktop" class="btn btn-muted">Limpar Tabela (local)</button>
-      <button id="helpBtnDesktop" class="btn btn-muted">Instruções</button>
-      <span id="desktopStatus" class="desk-status"></span>
-    </div>
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <div class="table-wrap">
-      <table id="resultsTable">
-        <thead></thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- TOAST -->
-  <div id="toast" class="toast"></div>
-
-  <!-- MODAL INSTRUÇÕES -->
+  <!-- ===== MODAL INSTRUÇÕES ===== -->
   <div id="helpModal" class="modal">
-    <div class="modal-dialog">
-      <div class="modal-head">
-        <h4>Instruções</h4>
-        <button id="helpClose" class="modal-close">×</button>
-      </div>
-      <div class="modal-body">
-        <ol>
-          <li>Carrega no botão da câmara.</li>
-          <li>Fotografa a <b>etiqueta</b> do material.</li>
-          <li>Garante que a <b>descrição</b> e o <b>código</b> estão visíveis.</li>
-        </ol>
-      </div>
+    <div class="modal-card">
+      <button id="helpClose" class="modal-close" aria-label="Fechar">×</button>
+      <h3>Instruções</h3>
+      <ol class="help-list">
+        <li>Carrega no botão da câmara.</li>
+        <li>Fotografa a etiqueta do material.</li>
+        <li>Garante que descrição e código estão visíveis.</li>
+        <li>Confirma o texto lido e repete se necessário.</li>
+      </ol>
     </div>
   </div>
 
-  <script src="/app.js" defer></script>
+  <!-- ===== SCRIPTS ===== -->
+  <script src="app.js"></script>
 </body>
 </html>
