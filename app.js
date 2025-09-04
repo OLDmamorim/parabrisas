@@ -22,7 +22,7 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== (pequeno CSS util) ===== */
+/* ===== CSS extra ===== */
 (() => {
   const id = "ocr-inline-css";
   if (document.getElementById(id)) return;
@@ -35,6 +35,7 @@ const toast         = document.getElementById("toast");
     .progress>span{ display:block; height:100%; background:#3b82f6; border-radius:3px; width:0% }
     .btn-icon{ cursor:pointer; border:none; background:none; font-size:16px }
     .toast.show{ opacity:1 }
+    .history-item-text{ font-size: 0.85rem; } /* fonte mais pequena no histórico */
   `;
   document.head.appendChild(s);
 })();
@@ -192,7 +193,7 @@ async function runOCR(file){
   return JSON.parse(t);
 }
 
-/* ===== HISTÓRICO (MOBILE) — máx. 5 itens, texto 10 chars + "…" ===== */
+/* ===== HISTÓRICO (MOBILE) ===== */
 const mobileHistoryList = document.getElementById("mobileHistoryList");
 const historyClearBtn   = document.getElementById("historyClearBtn");
 
@@ -206,9 +207,9 @@ function saveHistory() {
   try { localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }
   catch {}
 }
-function trunc10(s) {
+function trunc20(s) {
   const t = (s || '').replace(/\s+/g, ' ').trim();
-  return t.length > 10 ? t.slice(0, 10) + '…' : t;
+  return t.length > 20 ? t.slice(0, 20) + '…' : t;
 }
 function formatTime(ts) {
   return new Date(ts).toLocaleString('pt-PT', { hour12:false });
@@ -225,7 +226,7 @@ function renderHistory() {
   mobileHistoryList.innerHTML = display.map((c, i) => `
     <div class="history-item" data-index="${i}">
       <div class="history-item-time">${formatTime(c.timestamp || c.ts || Date.now())}</div>
-      <div class="history-item-text">${trunc10(c.text)}</div>
+      <div class="history-item-text">${trunc20(c.text)}</div>
     </div>
   `).join('');
 }
@@ -297,11 +298,8 @@ async function handleImage(file, origin="camera"){
 
 /* ===== BOOTSTRAP ===== */
 (async function(){
-  // mobile: carregar histórico
   loadHistory();
   renderHistory();
-
-  // desktop: ler Neon
   if(isDesktop){
     try { RESULTS = await fetchServerRows(); }
     catch(e){ console.warn("Sem Neon:", e.message); RESULTS = []; }
@@ -352,7 +350,6 @@ const helpClose = document.getElementById("helpClose");
 
 function showHelpModal() { helpModal?.classList.add("show"); }
 function hideHelpModal() { helpModal?.classList.remove("show"); }
-
 helpBtn?.addEventListener("click", showHelpModal);
 helpBtnDesktop?.addEventListener("click", showHelpModal);
 helpClose?.addEventListener("click", hideHelpModal);
