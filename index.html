@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <!-- ===== HEADER ===== -->
+  <!-- HEADER -->
   <header class="site-header">
     <div class="header-inner">
       <h1 class="brand">EXPRESSGLASS</h1>
@@ -16,20 +16,18 @@
     </div>
   </header>
 
-  <!-- ===== MAIN ===== -->
   <main class="wrap">
 
-    <!-- ===== MOBILE CARD ===== -->
+    <!-- MOBILE -->
     <section id="mobileView" class="panel mobile-only">
       <div class="panel-head">
         <h2 class="panel-title">Receção material</h2>
         <button id="helpBtn" class="pill">Instruções</button>
       </div>
 
-      <!-- CÂMARA (botão invisible + área visual pequena) -->
       <div class="cam-wrap">
         <button id="btnCamera" class="cam-box" aria-label="Tirar foto">
-          <svg viewBox="0 0 24 24" class="cam-ico" aria-hidden="true">
+          <svg class="cam-ico" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M9.5 5.5h5l1 1.5h2.5A2 2 0 0 1 20 9v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2.5l1-1.5zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
           </svg>
         </button>
@@ -39,13 +37,12 @@
       <p id="mobileStatus" class="status muted">Aguardando captura…</p>
 
       <p class="hint">
-        Tira uma foto à <strong>etiqueta</strong> do material.
-        Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
+        Tira uma foto à <strong>etiqueta</strong> do material. Inclui a
+        <strong>descrição</strong> e o <strong>código</strong> se possível.
       </p>
 
       <hr class="sep" />
 
-      <!-- HISTÓRICO -->
       <div class="history-head">
         <h3 class="history-title">📝 Últimas Capturas</h3>
         <button id="btnClear" class="pill pill-danger">Limpar</button>
@@ -56,7 +53,7 @@
       </div>
     </section>
 
-    <!-- ===== DESKTOP TABLE ===== -->
+    <!-- DESKTOP -->
     <section id="desktopView" class="panel desktop-only">
       <div class="toolbar">
         <button id="btnUpload" class="btn">Carregar imagem</button>
@@ -78,10 +75,10 @@
 
   </main>
 
-  <!-- ===== TOAST ===== -->
+  <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- ===== MODAL INSTRUÇÕES ===== -->
+  <!-- MODAL -->
   <div id="helpModal" class="modal">
     <div class="modal-card">
       <button id="helpClose" class="modal-close" aria-label="Fechar">×</button>
@@ -95,7 +92,6 @@
     </div>
   </div>
 
-  <!-- ===== SCRIPTS ===== -->
   <script src="app.js"></script>
 </body>
 </html>
