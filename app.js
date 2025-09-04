@@ -3,7 +3,7 @@ const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
 const DELETE_URL   = "/api/delete-ocr";
-const UPDATE_URL   = "/api/update-ocr";   // <- editar no Neon
+const UPDATE_URL   = "/api/update-ocr";
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
@@ -21,7 +21,7 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== CSS para texto corrido ===== */
+/* ===== CSS extra rápido ===== */
 (function(){
   const id = "ocr-text-style";
   if (document.getElementById(id)) return;
@@ -127,7 +127,6 @@ async function deleteFromDB(id){
   if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
   return true;
 }
-/* Atualizar no Neon */
 async function updateInDB(id, text){
   const resp = await fetch(UPDATE_URL, {
     method: 'POST',
@@ -139,18 +138,62 @@ async function updateInDB(id, text){
   return data.row;
 }
 
-/* ===== Extração de EUROCODE a partir do texto OCR ===== */
-/* Regra pedida: 4 dígitos + 2 a 9 caracteres alfanuméricos (A–Z/0–9) */
-function extractEurocode(text='') {
-  const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{2,9}$/;
-  const normalize = (s) => s.toUpperCase()
+/* ===== EUROCODE helpers ===== */
+/* Regra: 4 dígitos + 2..9 A/Z/0–9, aceitando 1 separador espaço ou hífen entre partes */
+const EURO_SEP_REGEX = /^([0-9]{4})[-\s]?([A-Z0-9]{2,9})$/;
+
+/* normalização típica de OCR em etiquetas */
+function euroNormalize(s='') {
+  return s.toUpperCase()
     .replaceAll('O','0').replaceAll('I','1').replaceAll('S','5').replaceAll('B','8')
-    .replace(/[^A-Z0-9\s]/g,' ');
-  const toks = (text||'').toUpperCase().split(/[\s\r\n]+/).filter(Boolean);
-  let hit = toks.find(t => EUROCODE_REGEX.test(t));
-  if (hit) return hit;
-  const clean = normalize(text);
-  return clean.split(/\s+/).find(t => EUROCODE_REGEX.test(t)) || '';
+    .replace(/[^\w-\s]/g,' '); // mantém letras, números, underscore, hífen e espaços
+}
+
+/* devolve TODOS os candidatos encontrados (normalizados sem separador) */
+function extractEuroCandidates(text='') {
+  const cands = new Set();
+  const raw = euroNormalize(text);
+
+  // 1) tokens “brutos” e também tokens com hífen/espaço
+  const tokens = raw.split(/[\s\r\n]+/).filter(Boolean);
+
+  // testar tokens isolados
+  for (const t of tokens) {
+    const m = t.match(EURO_SEP_REGEX);
+    if (m) cands.add(m[1] + m[2]);
+  }
+
+  // testar pares adjacentes (para casos “3999” “AGNV” separados)
+  for (let i=0;i<tokens.length-1;i++){
+    const pair = `${tokens[i]}${tokens[i+1]}`;
+    const m1 = pair.match(EURO_SEP_REGEX);
+    if (m1) cands.add(m1[1] + m1[2]);
+
+    // com separador no meio
+    const withSep = `${tokens[i]}-${tokens[i+1]}`;
+    const m2 = withSep.match(EURO_SEP_REGEX);
+    if (m2) cands.add(m2[1] + m2[2]);
+  }
+
+  return Array.from(cands);
+}
+
+/* devolve o primeiro candidato (para render e CSV) */
+function extractEurocode(text='') {
+  const list = extractEuroCandidates(text);
+  return list[0] || '';
+}
+
+/* quando há vários candidatos, perguntar ao utilizador qual quer gravar/mostrar */
+async function chooseEurocode(cands) {
+  if (!cands.length) return '';
+  if (cands.length === 1) return cands[0];
+  // prompt simples numerado
+  const numbered = cands.map((c,i)=>`${i+1}. ${c}`).join('\n');
+  const ans = prompt(`Foram encontrados vários EUROCODEs. Escolhe 1:\n${numbered}\n\nEscreve o número da opção:`, '1');
+  if (!ans) return cands[0];
+  const idx = parseInt(ans,10)-1;
+  return cands[idx] || cands[0];
 }
 
 /* ===== Render da tabela ===== */
@@ -182,17 +225,13 @@ resultsBody?.addEventListener("click", async (e)=>{
   const editBtn = e.target.closest(".editBtn");
   const delBtn  = e.target.closest(".delBtn");
 
-  // EDITAR
   if (editBtn) {
     const id = Number(editBtn.dataset.id);
     if (!id) return;
-
     const rowEl = editBtn.closest('tr');
     const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
-
     const newText = prompt('Editar texto lido (OCR):', currentText);
-    if (newText === null) return; // cancelou
-
+    if (newText === null) return;
     try{
       editBtn.disabled = true; editBtn.textContent = '…';
       await updateInDB(id, newText);
@@ -208,7 +247,6 @@ resultsBody?.addEventListener("click", async (e)=>{
     return;
   }
 
-  // APAGAR
   if(!delBtn) return;
   const id = Number(delBtn.dataset.id);
   if(!id) return;
@@ -229,7 +267,7 @@ resultsBody?.addEventListener("click", async (e)=>{
   }
 });
 
-/* ===== OCR ===== */
+/* ===== OCR (via endpoint) ===== */
 async function optimizeImageForOCR(file){
   const srcBlob = file instanceof Blob ? file : new Blob([file]);
   const bmp = await createImageBitmap(srcBlob);
@@ -254,7 +292,7 @@ async function runOCR(file){
   return JSON.parse(t);
 }
 
-/* ===== OCR EUROCODE local (Tesseract) ===== */
+/* ===== OCR EUROCODE local (Tesseract v5) ===== */
 async function ensureTesseract() {
   if (window.Tesseract) return;
   await new Promise((res, rej) => {
@@ -265,26 +303,31 @@ async function ensureTesseract() {
   });
 }
 let _tessWorker = null;
+let _tessReady  = false;
+
 async function ocrImageEuro(file) {
   await ensureTesseract();
-  const worker = _tessWorker || ( _tessWorker = await window.Tesseract.createWorker() );
-  await worker.loadLanguage('eng');
-  await worker.initialize('eng');
-  await worker.setParameters({
-    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-    user_defined_dpi: '300',
-    preserve_interword_spaces: '1'
-  });
+  if (!_tessWorker) _tessWorker = await window.Tesseract.createWorker();
+  if (!_tessReady) {
+    await _tessWorker.loadLanguage('eng');
+    await _tessWorker.initialize('eng');
+    await _tessWorker.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+      user_defined_dpi: '300',
+      preserve_interword_spaces: '1'
+    });
+    _tessReady = true;
+  }
   const prepped = await optimizeImageForOCR(file);
-  const { data } = await worker.recognize(prepped);
-  await worker.clear();
-  const raw = (data.text || '').trim();
-  const euro = extractEurocode(raw); // usa a regra 4 dígitos + 2..9
+  const { data } = await _tessWorker.recognize(prepped);
+  const raw  = (data.text || '').trim();
+  const cands = extractEuroCandidates(raw);
+  const euro = await chooseEurocode(cands);
   const conf = (data.confidence || 0) / 100;
-  return { raw, euro, conf };
+  return { raw, euro, conf, cands };
 }
 
-/* ===== Fluxo ===== */
+/* ===== Fluxo (desktop + mobile) ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
@@ -346,9 +389,8 @@ cameraInput?.addEventListener("change", async (e) => {
 
   try{
     if (mode === 'euro') {
-      // OCR local com Tesseract e extração do Eurocode
       showProgress("EUROCODE: a ler localmente…", 40);
-      const { raw, euro, conf } = await ocrImageEuro(file);
+      const { raw, euro, conf, cands } = await ocrImageEuro(file);
 
       if (!euro) {
         showError('Não encontrei um EUROCODE válido (4 dígitos + 2–9 A/Z/0–9).');
@@ -357,17 +399,15 @@ cameraInput?.addEventListener("change", async (e) => {
         return;
       }
 
-      // Guardar apenas o texto completo no Neon (como antes)
       await persistToDB({ ts: when, text: raw, filename: file.name || "captura.jpg", origin: "camera-euro" });
 
-      // Atualizar vista
       RESULTS = await fetchServerRows();
       renderTable();
 
       setStatus("Concluído ✅", { success:true });
-      showToast(`EUROCODE: ${euro} • ${Math.round(conf*100)}%`, 'success');
+      const plural = cands && cands.length > 1 ? ` (entre ${cands.length} candidatos)` : '';
+      showToast(`EUROCODE: ${euro}${plural} • ${Math.round(conf*100)}%`, 'success');
     } else {
-      // Fluxo normal (endpoint)
       await handleImage(file, "camera");
     }
   }catch(err){
@@ -432,7 +472,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
 });
 
-/* ===== FEEDBACK VISUAL MELHORADO (mantido) ===== */
+/* ===== FEEDBACK VISUAL ===== */
 function showToastWithType(msg, type = 'info') {
   toast.textContent = msg;
   toast.classList.remove('success', 'error');
