@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ExpressGlass - Receção Material</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <!-- HEADER -->
@@ -22,16 +22,24 @@
 
     <!-- Botão da câmara -->
     <div class="camera-box">
-      <button id="btnCamera" class="camera-btn">
-        <img src="camera-icon.svg" alt="Câmara" class="camera-icon">
+      <button id="btnCamera" class="camera-btn" type="button" aria-label="Abrir câmara">
+        <!-- SVG INLINE (substitui o <img src="camera-icon.svg">) -->
+        <svg class="camera-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M4 8h3l2-2h6l2 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"
+                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="13" r="4" stroke-width="1.6"/>
+        </svg>
       </button>
-      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+
+      <!-- input escondido que o JS clica -->
+      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
       <p id="mobileStatus" class="status">Aguardando captura...</p>
     </div>
 
     <!-- Texto de instruções -->
     <p class="instructions">
-      Tira uma foto à <b>etiqueta</b> do material.  
+      Tira uma foto à <b>etiqueta</b> do material.
       Inclui a <b>descrição</b> e o <b>código</b> se possível.
     </p>
 
@@ -50,7 +58,7 @@
   <!-- MODAL DE INSTRUÇÕES -->
   <div id="helpModal" class="modal">
     <div class="modal-content">
-      <button id="helpClose" class="close">×</button>
+      <button id="helpClose" class="close" type="button">×</button>
       <h2>Instruções</h2>
       <ol>
         <li>Carrega no botão da câmara.</li>
@@ -61,7 +69,7 @@
     </div>
   </div>
 
-  <!-- JS -->
+  <!-- JS (mantém o teu app.js atual) -->
   <script src="app.js"></script>
 </body>
 </html>
