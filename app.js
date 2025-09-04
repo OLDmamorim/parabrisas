@@ -1,14 +1,11 @@
 /* =========================
- * CONFIG (backend only)
+ * CONFIG
  * ========================= */
-const ENDPOINTS = {
-  OCR:   "/.netlify/functions/ocr-proxy",
-  LIST:  "/.netlify/functions/list-ocr",
-  SAVE:  "/.netlify/functions/save-ocr",
-  DEL:   "/.netlify/functions/delete-ocr",
-  UPDATE:"/.netlify/functions/update-ocr",
-  CLEAR: "/.netlify/functions/clear-ocr" // comenta o uso se não existir
-};
+const OCR_ENDPOINT = "/api/ocr-proxy";
+const LIST_URL     = "/api/list-ocr";
+const SAVE_URL     = "/api/save-ocr";
+const DELETE_URL   = "/api/delete-ocr";
+const UPDATE_URL   = "/api/update-ocr";
 
 /* =========================
  * DOM
@@ -26,69 +23,90 @@ const els = {
   helpBtn2:   document.getElementById('helpBtnDesktop'),
   helpModal:  document.getElementById('helpModal'),
   helpClose:  document.getElementById('helpClose'),
-  viewBadge:  document.getElementById('viewBadge'),
 };
 
 /* =========================
  * EUROCODE PARSER
  * Regra: 4 dígitos + 2 letras + 0–5 alfanuméricos
- * e o sufixo (posições 7..11) tem de conter pelo menos 1 letra.
  * ========================= */
 function parseEurocode(raw){
   const text = String(raw||'').toUpperCase();
   const tokens = text.split(/[^A-Z0-9]+/).filter(Boolean);
   const VALID = /^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/;
-  const tailHasLetter = code => /[A-Z]/.test(code.slice(6));
 
-  // 1) match direto dentro de um token
   for (const t of tokens){
     const m = t.match(/\d{4}[A-Z]{2}[A-Z0-9]{0,5}/);
-    if (m && VALID.test(m[0]) && tailHasLetter(m[0])) return m[0];
+    if (m && VALID.test(m[0])) return m[0];
   }
-  // 2) reconstrução entre tokens consecutivos
   for (let i=0;i<tokens.length-1;i++){
-    const a=tokens[i], b=tokens[i+1];
+    const a = tokens[i], b = tokens[i+1];
     if (/^\d{4}$/.test(a) && /^[A-Z]{2}/.test(b)){
       const code = (a+b).slice(0,11);
-      if (VALID.test(code) && tailHasLetter(code)) return code;
+      if (VALID.test(code)) return code;
     }
   }
   return null;
 }
 
 /* =========================
- * UI helpers
+ * OCR
  * ========================= */
-let toastTimer;
-function toast(msg, kind='ok'){
-  if(!els.toast) return;
-  els.toast.className = `toast ${kind}`;
-  els.toast.textContent = msg;
-  els.toast.style.opacity = '1';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> els.toast.style.opacity='0', 2600);
+async function doOCR(file){
+  const fd = new FormData();
+  fd.append('file', file, 'etiqueta.jpg');
+  const res = await fetch(OCR_ENDPOINT, { method:'POST', body: fd });
+  if(!res.ok) throw new Error(`OCR falhou (${res.status})`);
+  const data = await res.json();
+  return data?.text || data?.fullText || data?.ocr || '';
 }
-function fmtDate(ts){
-  try{ return new Date(ts).toLocaleString('pt-PT'); }catch{ return ts; }
+
+/* =========================
+ * API BACKEND
+ * ========================= */
+async function apiList(){
+  const res = await fetch(LIST_URL);
+  if(!res.ok) throw new Error("Erro ao listar");
+  return res.json();
 }
-function escapeHtml(s){
-  return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+async function apiSave(row){
+  const res = await fetch(SAVE_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(row)
+  });
+  return res.json();
 }
-function wireHelp(){
-  const open = ()=>{ els.helpModal?.setAttribute('aria-hidden','false'); els.helpModal?.classList.add('open'); };
-  const close= ()=>{ els.helpModal?.setAttribute('aria-hidden','true');  els.helpModal?.classList.remove('open'); };
-  els.helpBtn?.addEventListener('click', open);
-  els.helpBtn2?.addEventListener('click', open);
-  els.helpClose?.addEventListener('click', close);
-  els.helpModal?.addEventListener('click', e=>{ if(e.target===els.helpModal) close(); });
+async function apiDelete(id){
+  const res = await fetch(DELETE_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id })
+  });
+  return res.json();
+}
+async function apiUpdate(id, patch){
+  const res = await fetch(UPDATE_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id, ...patch })
+  });
+  return res.json();
 }
 
 /* =========================
  * RENDER
  * ========================= */
+function fmtDate(ts){
+  try{ return new Date(ts).toLocaleString('pt-PT'); }
+  catch{ return ts; }
+}
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, m=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
 function renderTable(rows){
   if(!els.tbody) return;
-  if(!rows?.length){ els.tbody.innerHTML = ''; return; }
   els.tbody.innerHTML = rows.map((r,idx)=>`
     <tr>
       <td>${rows.length-idx}</td>
@@ -104,7 +122,7 @@ function renderTable(rows){
 }
 function renderMobile(rows){
   if(!els.mobileList) return;
-  if(!rows?.length){
+  if(!rows.length){
     els.mobileList.innerHTML = `<p class="history-empty">Ainda não há capturas realizadas.</p>`;
     return;
   }
@@ -118,60 +136,28 @@ function renderMobile(rows){
 }
 
 /* =========================
- * BACKEND
+ * TOAST / HELP
  * ========================= */
-async function apiList(){
-  const r = await fetch(ENDPOINTS.LIST, { cache:'no-store' });
-  if(!r.ok) throw new Error('Falha ao listar registos');
-  return await r.json(); // [{id, ts, text, eurocode}, ...]
+let toastTimer;
+function toast(msg, kind='ok'){
+  if(!els.toast) return;
+  els.toast.className = `toast ${kind}`;
+  els.toast.textContent = msg;
+  els.toast.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> els.toast.style.opacity='0', 2600);
 }
-async function apiSave(row){
-  const r = await fetch(ENDPOINTS.SAVE, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(row)
-  });
-  if(!r.ok) throw new Error('Falha ao guardar');
-  return await r.json(); // { ok:true, id }
-}
-async function apiDelete(id){
-  const r = await fetch(ENDPOINTS.DEL, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ id })
-  });
-  if(!r.ok) throw new Error('Falha ao apagar');
-  return await r.json();
-}
-async function apiUpdate(id, patch){
-  const r = await fetch(ENDPOINTS.UPDATE, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ id, ...patch })
-  });
-  if(!r.ok) throw new Error('Falha ao atualizar');
-  return await r.json();
-}
-async function apiClear(){
-  const r = await fetch(ENDPOINTS.CLEAR, { method:'POST' });
-  if(!r.ok) throw new Error('Falha ao limpar');
-  return await r.json();
+function wireHelp(){
+  const open = ()=>{ els.helpModal?.setAttribute('aria-hidden','false'); els.helpModal?.classList.add('open'); };
+  const close= ()=>{ els.helpModal?.setAttribute('aria-hidden','true');  els.helpModal?.classList.remove('open'); };
+  els.helpBtn?.addEventListener('click', open);
+  els.helpBtn2?.addEventListener('click', open);
+  els.helpClose?.addEventListener('click', close);
+  els.helpModal?.addEventListener('click', e=>{ if(e.target===els.helpModal) close(); });
 }
 
 /* =========================
- * OCR
- * ========================= */
-async function doOCR(file){
-  const fd = new FormData();
-  fd.append('file', file, 'etiqueta.jpg');
-  const res = await fetch(ENDPOINTS.OCR, { method:'POST', body: fd });
-  if(!res.ok) throw new Error(`OCR falhou (${res.status})`);
-  const data = await res.json();
-  return data?.text || data?.fullText || data?.ocr || '';
-}
-
-/* =========================
- * CSV
+ * EXPORT CSV
  * ========================= */
 function toCSV(rows){
   const header = ['#','Data/Hora','Texto OCR','Eurocode'];
@@ -179,12 +165,13 @@ function toCSV(rows){
   const total = rows.length;
   rows.forEach((r,idx)=>{
     const num = total-idx;
-    lines.push([
+    const cols = [
       num,
       fmtDate(r.ts).replaceAll(';',','),
       (r.text||'').replaceAll('\n',' ').replaceAll(';',','),
       r.eurocode||''
-    ].join(';'));
+    ];
+    lines.push(cols.join(';'));
   });
   return lines.join('\n');
 }
@@ -201,50 +188,26 @@ function download(filename, text){
  * EVENTS
  * ========================= */
 async function refresh(){
-  try{
-    const rows = await apiList();
-    if (els.viewBadge) els.viewBadge.textContent = `Mobile`;
-    renderTable(rows);
-    renderMobile(rows);
-    wireRowActions();
-  }catch(e){
-    console.error(e);
-    toast('Não consegui carregar os registos.', 'err');
-  }
+  const rows = await apiList();
+  renderTable(rows);
+  renderMobile(rows);
+  wireRowActions();
 }
 function wireRowActions(){
-  // apagar
   document.querySelectorAll('[data-del]').forEach(btn=>{
     btn.onclick = async ()=> {
-      const id = Number(btn.dataset.del);
-      try{
-        await apiDelete(id);
-        toast('Registo apagado.');
-        refresh();
-      }catch(e){
-        console.error(e);
-        toast('Erro a apagar.', 'err');
-      }
+      await apiDelete(btn.dataset.del);
+      toast('Registo apagado.');
+      refresh();
     };
   });
-  // editar eurocode
   document.querySelectorAll('[data-edit]').forEach(btn=>{
     btn.onclick = async ()=> {
-      const id = Number(btn.dataset.edit);
-      try{
-        const rows = await apiList();
-        const row = rows.find(r=>r.id===id);
-        const cur = row?.eurocode || '';
-        const val = prompt('Editar Eurocode:', cur);
-        if (val===null) return;
-        const clean = (val||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-        await apiUpdate(id, { eurocode: clean });
-        toast('Eurocode atualizado.');
-        refresh();
-      }catch(e){
-        console.error(e);
-        toast('Erro a atualizar.', 'err');
-      }
+      const val = prompt('Editar Eurocode:');
+      if (val===null) return;
+      await apiUpdate(btn.dataset.edit, { eurocode: (val||'').toUpperCase().replace(/[^A-Z0-9]/g,'') });
+      toast('Eurocode atualizado.');
+      refresh();
     };
   });
 }
@@ -252,12 +215,14 @@ function wireRowActions(){
 async function handleFiles(files){
   const file = files?.[0];
   if (!file) return;
+
   try{
     toast('A ler etiqueta…');
     const text = await doOCR(file);
     const euro = parseEurocode(text);
 
     const row = {
+      id: Date.now(),
       ts: new Date().toISOString(),
       text: text,
       eurocode: euro
@@ -267,7 +232,7 @@ async function handleFiles(files){
     refresh();
   }catch(e){
     console.error(e);
-    toast('Falha no OCR/guardar.', 'err');
+    toast('Falha no OCR. Tenta de novo.', 'err');
   }
 }
 
@@ -275,34 +240,20 @@ async function handleFiles(files){
  * INIT
  * ========================= */
 function init(){
-  // inputs
   els.camInput?.addEventListener('change', e=>{ handleFiles(e.target.files); e.target.value=''; });
   els.btnUpload?.addEventListener('click', ()=> els.fileInput?.click());
   els.fileInput?.addEventListener('change', e=>{ handleFiles(e.target.files); e.target.value=''; });
 
-  // export
   els.btnExport?.addEventListener('click', async ()=>{
-    try{
-      const rows = await apiList();
-      if (!rows.length) return toast('Sem dados para exportar.');
-      download(`capturas_${new Date().toISOString().slice(0,10)}.csv`, toCSV(rows));
-    }catch(e){
-      console.error(e);
-      toast('Erro a exportar.', 'err');
-    }
+    const rows = await apiList();
+    if (!rows.length) return toast('Sem dados para exportar.');
+    download(`capturas_${new Date().toISOString().slice(0,10)}.csv`, toCSV(rows));
   });
-
-  // limpar (se existir endpoint)
   els.btnClear?.addEventListener('click', async ()=>{
     if (!confirm('Limpar todos os registos?')) return;
-    try{
-      await apiClear();
-      toast('Tabela limpa.');
-      refresh();
-    }catch(e){
-      console.error(e);
-      toast('Não consegui limpar (endpoint ausente?).', 'err');
-    }
+    await fetch(DELETE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ all:true }) });
+    toast('Tabela limpa.');
+    refresh();
   });
 
   wireHelp();
