@@ -1,71 +1,94 @@
-<!DOCTYPE html>
-<html lang="pt">
+<!doctype html>
+<html lang="pt-PT">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Receção material - ExpressGlass</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>EXPRESSGLASS · Receção material</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <header class="page-header">
-    <h1>EXPRESSGLASS</h1>
-    <span id="viewBadge" class="view-badge">Mobile</span>
+
+  <!-- HEADER -->
+  <header class="header">
+    <h1 class="brand">EXPRESSGLASS</h1>
+    <span id="viewBadge" class="badge">Mobile</span>
   </header>
 
-  <main class="card">
-    <div class="card-header">
-      <h2 class="subtitle">Receção material</h2>
+  <!-- ===== MOBILE CARD ===== -->
+  <main id="mobileView" class="card">
+    <div class="card-head">
+      <h2 class="card-title">Receção material</h2>
       <button id="helpBtn" class="help-btn">Instruções</button>
     </div>
 
-    <!-- 📷 botão câmara -->
-    <div class="camera-box">
-      <div class="camera-wrap">
-        <button id="btnCamera" class="camera-btn" type="button" aria-label="Abrir câmara">
-          <svg class="camera-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M4 8h3l2-2h6l2 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"
-                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="12" cy="13" r="4" stroke-width="1.6"/>
-          </svg>
-        </button>
-        <!-- input invisível que recebe o clique -->
-        <input id="cameraInput" type="file" accept="image/*" capture="environment" />
-      </div>
-      <p id="mobileStatus" class="status">Aguardando captura...</p>
+    <!-- CAMERA AREA -->
+    <div class="camera-wrap">
+      <button id="btnCamera" class="cam-btn" aria-label="Tirar foto">
+        <!-- ícone inline para não falhar -->
+        <svg viewBox="0 0 24 24" class="cam-icon" aria-hidden="true">
+          <path d="M9.5 6 8 8H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-3l-1.5-2h-5ZM12 17.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/>
+        </svg>
+      </button>
+      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+      <div id="mobileStatus" class="status">Aguardando captura…</div>
+
+      <p class="instructions">
+        Tira uma foto à <b>etiqueta</b> do material.<br/>
+        Inclui a <b>descrição</b> e o <b>código</b> se possível.
+      </p>
     </div>
 
-    <p class="instructions-text">
-      Tira uma foto à <b>etiqueta</b> do material. <br />
-      Inclui a <b>descrição</b> e o <b>código</b> se possível.
-    </p>
-
+    <!-- HISTÓRICO (MOBILE) -->
     <section class="history">
-      <div class="history-header">
-        <h3>📋 Últimas Capturas</h3>
-        <button id="btnClear" class="btn-clear">Limpar</button>
-      </div>
-      <div id="historyList" class="history-list">
-        <p class="empty">Ainda não há capturas realizadas.</p>
+      <h3>
+        <span>📋 Últimas Capturas</span>
+        <button id="btnClear" class="clear-btn">Limpar</button>
+      </h3>
+      <div id="mobileHistoryList" class="history-list">
+        <p class="history-empty">Ainda não há capturas realizadas.</p>
       </div>
     </section>
   </main>
 
-  <!-- modal instruções -->
+  <!-- ===== DESKTOP VIEW ===== -->
+  <section id="desktopView" class="desktop hidden">
+    <div class="toolbar">
+      <button id="btnUpload" class="btn">Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*" hidden />
+      <button id="btnExport" class="btn">Exportar CSV</button>
+      <button id="btnClearDesktop" class="btn btn-muted">Limpar Tabela (local)</button>
+      <button id="helpBtnDesktop" class="btn btn-muted">Instruções</button>
+      <span id="desktopStatus" class="desk-status"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <!-- MODAL INSTRUÇÕES -->
   <div id="helpModal" class="modal">
-    <div class="modal-content">
-      <span id="helpClose" class="modal-close">&times;</span>
-      <h2>Instruções</h2>
-      <ol>
-        <li>Carrega no botão da câmara.</li>
-        <li>Fotografa a etiqueta do material.</li>
-        <li>Garante que a descrição e código estão visíveis.</li>
-      </ol>
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h4>Instruções</h4>
+        <button id="helpClose" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <ol>
+          <li>Carrega no botão da câmara.</li>
+          <li>Fotografa a <b>etiqueta</b> do material.</li>
+          <li>Garante que a <b>descrição</b> e o <b>código</b> estão visíveis.</li>
+        </ol>
+      </div>
     </div>
   </div>
 
-  <div id="toast" class="toast"></div>
-
-  <script src="app.js"></script>
+  <script src="/app.js" defer></script>
 </body>
 </html>
