@@ -14,13 +14,17 @@
   </header>
   <p class="subtitle">Receção material</p>
 
-  <!-- ===== MOBILE CARD ===== -->
+  <!-- ===== MOBILE ===== -->
   <section id="mobileView" class="card card-main">
     <button id="helpBtn" class="help-chip">?<span> Instruções</span></button>
 
     <div class="camera-block">
-      <button id="btnCamera" class="camera-btn pulse" type="button">
-        <img src="https://cdn.jsdelivr.net/gh/tabler/tabler-icons/icons/camera.svg" alt="camera" />
+      <button id="btnCamera" class="camera-btn pulse" type="button" aria-label="Tirar foto">
+        <!-- ÍCONE INLINE (não falha) -->
+        <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="14" r="4"/>
+        </svg>
       </button>
       <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
     </div>
@@ -43,7 +47,7 @@
     <p class="madefor">Feito para o Marco • Timezone: Europe/Lisbon</p>
   </section>
 
-  <!-- ===== DESKTOP PANEL ===== -->
+  <!-- ===== DESKTOP ===== -->
   <section id="desktopView" class="card card-desktop">
     <div class="toolbar">
       <button id="btnUpload" class="btn">Carregar imagem</button>
@@ -61,7 +65,7 @@
     </table>
   </section>
 
-  <!-- ===== MODAL AJUDA ===== -->
+  <!-- ===== MODAL ===== -->
   <div id="helpModal" class="modal">
     <div class="modal-content">
       <button id="helpClose" class="modal-close">✕</button>
@@ -71,13 +75,10 @@
         <li>No <b>Desktop</b>, usa “Carregar imagem”.</li>
         <li>O texto lido é gravado no Neon (Postgres). Podes apagar linhas no desktop.</li>
       </ol>
-      <p>Qualquer erro: tenta novamente ou verifica a ligação.</p>
     </div>
   </div>
 
-  <!-- ===== TOAST ===== -->
   <div id="toast" class="toast"></div>
-
   <script src="app.js"></script>
 </body>
 </html>
