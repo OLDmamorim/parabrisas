@@ -555,3 +555,47 @@ loadHistory();
   }
 
 })();
+
+/* ========= DESKTOP: inserir linha com OCR + EUROCODE + ações ========= */
+function escapeHTML(s=''){ return s.toString().replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+function pushToDesktopTable({ raw, euro, when }) {
+  const tbody = document.querySelector('#resultsBody');
+  if (!tbody) return;
+  const idx = tbody.children.length + 1;
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${idx}</td>
+    <td>${new Date(when).toLocaleString()}</td>
+    <td class="col-ocr"><div class="cell-wrap" data-field="ocr">${escapeHTML(raw || '')}</div></td>
+    <td class="col-euro"><div class="cell-wrap" data-field="euro">${escapeHTML(euro || '')}</div></td>
+    <td class="col-actions">
+      <button class="btn btn-mini" data-edit>Editar</button>
+      <button class="btn btn-mini danger" data-del>Apagar</button>
+    </td>
+  `;
+  tbody.prepend(tr);
+
+  // Apagar
+  tr.querySelector('[data-del]')?.addEventListener('click', () => tr.remove());
+
+  // Editar/Guardar (inline nos dois campos)
+  const btnEdit = tr.querySelector('[data-edit]');
+  const ocrDiv  = tr.querySelector('[data-field="ocr"]');
+  const euroDiv = tr.querySelector('[data-field="euro"]');
+
+  btnEdit.addEventListener('click', () => {
+    const saving = btnEdit.dataset.mode === 'save';
+    if (saving) {
+      [ocrDiv, euroDiv].forEach(d => { d.contentEditable = 'false'; d.classList.remove('editing'); });
+      btnEdit.textContent = 'Editar';
+      btnEdit.dataset.mode = 'edit';
+      // aqui podes sincronizar com backend se quiseres
+    } else {
+      [ocrDiv, euroDiv].forEach(d => { d.contentEditable = 'true'; d.classList.add('editing'); });
+      btnEdit.textContent = 'Guardar';
+      btnEdit.dataset.mode = 'save';
+    }
+  });
+}
