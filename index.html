@@ -21,6 +21,7 @@
     <button class="help-btn" id="helpBtn" aria-label="Ajuda" type="button">?</button>
 
     <div class="mobile-cta">
+      <!-- Apenas 1 botão (OCR) -->
       <div class="mode-grid">
         <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)" type="button">
           <span class="emoji">📷</span>
@@ -85,25 +86,17 @@
       <button class="help-close" id="helpClose" type="button" aria-label="Fechar">&times;</button>
       <h3>💡 Como usar</h3>
       <p><strong>Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
-      <p><strong>Texto:</strong> O sistema lê automaticamente o texto e o eurocode.</p>
-      <p><strong>Dados:</strong> Tudo é guardado no servidor (sem localStorage).</p>
-      <p><strong>Exportar:</strong> Podes exportar os dados em CSV.</p>
-      <p><strong>Dica:</strong> Luz e foco ajudam o OCR a acertar à primeira.</p>
+      <p><strong>Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
     </div>
   </div>
 
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script>
-    // dispara a câmara no mobile
-    document.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('btnCamera');
-      const input = document.getElementById('cameraInput');
-      btn?.addEventListener('click', () => input?.click());
-    });
-  </script>
-
-  <script src="app.js?v=ec-ocr-only-1"></script>
+  <!-- JS -->
+  <script src="app.js?v=ocr-only"></script>
 </body>
 </html>
