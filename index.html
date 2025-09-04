@@ -15,17 +15,17 @@
     .card-inner{max-width:760px;margin:0 auto}
     .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px}
     .cam-box{display:flex;justify-content:center;align-items:center;margin:8px auto 16px auto}
-    #btnCamera{width:220px;height:160px;border:2px dashed #5e7bb8;border-radius:24px;background:rgba(255,255,255,.03);cursor:pointer;display:flex;align-items:center;justify-content:center}
-    #btnCamera img{width:64px;opacity:.9}
+    #btnCamera{width:180px;height:130px;border:2px dashed #5e7bb8;border-radius:20px;background:rgba(255,255,255,.03);cursor:pointer;display:flex;align-items:center;justify-content:center}
+    #btnCamera svg{width:48px;height:48px;opacity:.9}
     .pill{border-radius:14px;background:#1a2640;color:#cfe0ff;padding:10px 16px;cursor:pointer;border:1px solid #243455}
     .danger{background:#4d2020;border-color:#6a2a2a}
-    h2.title{font-size:36px;margin:2px 0 6px 0;text-align:center}
-    .hint{opacity:.9;text-align:center;margin:0 6px 20px 6px}
+    h2.title{font-size:30px;margin:2px 0 6px 0;text-align:center}
+    .hint{opacity:.9;text-align:center;margin:0 6px 16px 6px;font-size:0.9rem}
     .status{min-height:24px;margin:10px 0}
     /* Histórico mobile */
-    #mobileHistoryList .history-item{background:#121b2f;border:1px solid #263251;border-radius:14px;padding:10px 12px;margin-bottom:10px}
-    .history-item-time{opacity:.75;font-size:.9rem;margin-bottom:4px}
-    .history-item-text{font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #mobileHistoryList .history-item{background:#121b2f;border:1px solid #263251;border-radius:14px;padding:8px 12px;margin-bottom:10px}
+    .history-item-time{opacity:.75;font-size:.8rem;margin-bottom:2px}
+    .history-item-text{font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100ch}
     .history-empty{opacity:.7;text-align:center;margin:8px 0}
     /* Desktop */
     #desktopView{display:none}
@@ -63,7 +63,13 @@
         </div>
 
         <div class="cam-box">
-          <button id="btnCamera"><img src="camera.svg" alt="camera"></button>
+          <button id="btnCamera" title="Tirar foto">
+            <!-- SVG inline para não falhar -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M3 7h4l2-3h6l2 3h4v13H3V7z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </button>
           <input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none" />
         </div>
 
@@ -118,5 +124,21 @@
 
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
+  <script>
+    // Forçar limite de 50 caracteres no histórico
+    function truncateHistoryText(txt){
+      return txt.length > 50 ? txt.substring(0,50) + "…" : txt;
+    }
+    // override rápido do renderHistory se já existir
+    if(window.renderHistory){
+      const old = window.renderHistory;
+      window.renderHistory = function(){
+        old();
+        document.querySelectorAll("#mobileHistoryList .history-item-text").forEach(el=>{
+          el.textContent = truncateHistoryText(el.textContent);
+        });
+      }
+    }
+  </script>
 </body>
 </html>
