@@ -1,84 +1,122 @@
 <!doctype html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EXPRESSGLASS • Receção material</title>
+  <title>EXPRESSGLASS · Receção material</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    body{margin:0;background:#1e55e6;background:linear-gradient(180deg,#1e55e6 0%,#0b3fb2 80%)}
+    .wrap{max-width:960px;margin:0 auto;padding:16px}
+    header{display:flex;align-items:center;justify-content:space-between;color:#fff}
+    header h1{font-size:40px;margin:16px 0 0 0;letter-spacing:3px}
+    .badge{background:rgba(255,255,255,.2);color:#fff;padding:8px 14px;border-radius:999px;font-weight:700}
+    .card{background:#0b1320;border-radius:24px;color:#eaf2ff;padding:20px;margin-top:18px;box-shadow:0 14px 40px rgba(0,0,0,.25)}
+    .card-inner{max-width:760px;margin:0 auto}
+    .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .cam-box{display:flex;justify-content:center;align-items:center;margin:8px auto 16px auto}
+    #btnCamera{width:220px;height:160px;border:2px dashed #5e7bb8;border-radius:24px;background:rgba(255,255,255,.03);cursor:pointer;display:flex;align-items:center;justify-content:center}
+    #btnCamera img{width:64px;opacity:.9}
+    .pill{border-radius:14px;background:#1a2640;color:#cfe0ff;padding:10px 16px;cursor:pointer;border:1px solid #243455}
+    .danger{background:#4d2020;border-color:#6a2a2a}
+    h2.title{font-size:36px;margin:2px 0 6px 0;text-align:center}
+    .hint{opacity:.9;text-align:center;margin:0 6px 20px 6px}
+    .status{min-height:24px;margin:10px 0}
+    /* Histórico mobile */
+    #mobileHistoryList .history-item{background:#121b2f;border:1px solid #263251;border-radius:14px;padding:10px 12px;margin-bottom:10px}
+    .history-item-time{opacity:.75;font-size:.9rem;margin-bottom:4px}
+    .history-item-text{font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .history-empty{opacity:.7;text-align:center;margin:8px 0}
+    /* Desktop */
+    #desktopView{display:none}
+    @media(min-width:900px){#mobileView{display:none}#desktopView{display:block}}
+    table{width:100%;border-collapse:collapse}
+    thead th{background:#0e1a33;color:#bcd3ff;padding:10px;text-align:left}
+    tbody td{border-top:1px solid #213055;padding:10px;vertical-align:top}
+    .ocr-text{white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+    .btn{background:#1a2640;border:1px solid #2b3b62;color:#cfe0ff;padding:8px 12px;border-radius:10px;cursor:pointer}
+    .btn-icon{cursor:pointer;border:none;background:none;font-size:16px}
+    /* Modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal.show{display:flex}
+    .modal .box{background:#0b1320;border:1px solid #223155;color:#eaf2ff;border-radius:18px;max-width:680px;width:100%;padding:18px}
+    .modal .box h3{margin:6px 0 12px}
+    .close-x{float:right;background:#1a2640;border:1px solid #2b3b62;border-radius:10px;color:#cfe0ff;padding:6px 10px;cursor:pointer}
+    /* Toast */
+    #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#111a2e;border:1px solid #2b3b62;color:#dfeaff;padding:10px 14px;border-radius:10px;opacity:0;transition:opacity .2s}
+    #toast.show{opacity:1}
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <header>
+      <h1>EXPRESSGLASS</h1>
+      <span class="badge" id="viewBadge">Mobile</span>
+    </header>
 
-  <header class="topbar">
-    <h1 class="brand">EXPRESSGLASS</h1>
-    <span id="viewBadge" class="badge">Mobile</span>
-  </header>
-  <p class="subtitle">Receção material</p>
+    <!-- MOBILE -->
+    <section id="mobileView" class="card">
+      <div class="card-inner">
+        <div class="row-between" style="margin-bottom:8px;">
+          <span style="opacity:.85">Receção material</span>
+          <button class="pill" id="helpBtn">Instruções</button>
+        </div>
 
-  <!-- ===== MOBILE ===== -->
-  <section id="mobileView" class="card card-main">
-    <button id="helpBtn" class="help-chip" type="button">Instruções</button>
+        <div class="cam-box">
+          <button id="btnCamera"><img src="camera.svg" alt="camera"></button>
+          <input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none" />
+        </div>
 
-    <div class="camera-block">
-      <button id="btnCamera" class="camera-btn pulse" type="button" aria-label="Tirar foto">
-        <!-- Ícone inline (não falha) -->
-        <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/>
-          <circle cx="12" cy="14" r="4"/>
-        </svg>
-      </button>
-      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
-    </div>
+        <h2 class="title">Receção de Material</h2>
+        <p class="hint">Tira uma foto à <b>etiqueta</b> do material.<br>Inclui a <b>descrição</b> e o <b>código</b> se possível.</p>
 
-    <h2 class="h-title">Receção de Material</h2>
-    <p class="hint">
-      Tira uma foto à <b>etiqueta</b> do material. Inclui a <b>descrição</b> e o <b>código</b> se possível.
-    </p>
+        <div id="mobileStatus" class="status"></div>
 
-    <div id="mobileStatus" class="status"></div>
+        <div class="row-between">
+          <div class="section-title">📋 Últimas Capturas</div>
+          <button id="historyClearBtn" class="pill danger">Limpar</button>
+        </div>
+        <div id="mobileHistoryList"></div>
+      </div>
+    </section>
 
-    <hr class="sep" />
+    <!-- DESKTOP -->
+    <section id="desktopView" class="card">
+      <div class="card-inner">
+        <div class="row-between" style="margin-bottom:10px;">
+          <div class="section-title" style="margin:0">Express OCR</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="btnUpload">Carregar imagem</button>
+            <input id="fileInput" type="file" accept="image/*" style="display:none" />
+            <button class="btn" id="btnExport">Exportar CSV</button>
+            <button class="btn" id="btnClear">Limpar Tabela</button>
+            <button class="pill" id="helpBtnDesktop">Instruções</button>
+          </div>
+        </div>
 
-    <div class="history-header">
-      <h3 class="section-title">📋 Últimas Capturas</h3>
-      <button id="historyClearBtn" class="btn danger" type="button">Limpar</button>
-    </div>
-    <div id="mobileHistoryList" class="history-list"></div>
+        <div id="desktopStatus" class="status"></div>
+        <table id="resultsTable">
+          <thead></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 
-    <p class="madefor">Feito para o Marco • Timezone: Europe/Lisbon</p>
-  </section>
-
-  <!-- ===== DESKTOP ===== -->
-  <section id="desktopView" class="card card-desktop">
-    <div class="toolbar">
-      <button id="btnUpload" class="btn" type="button">Carregar imagem</button>
-      <input id="fileInput" type="file" accept="image/*" hidden />
-      <button id="btnExport" class="btn" type="button">Exportar CSV</button>
-      <button id="btnClear" class="btn danger" type="button">Limpar Tabela</button>
-      <button id="helpBtnDesktop" class="btn ghost" type="button">Instruções</button>
-    </div>
-
-    <div id="desktopStatus" class="status"></div>
-
-    <table id="resultsTable" class="table">
-      <thead></thead>
-      <tbody id="resultsBody"></tbody>
-    </table>
-  </section>
-
-  <!-- ===== MODAL ===== -->
-  <div id="helpModal" class="modal">
-    <div class="modal-content">
-      <button id="helpClose" class="modal-close" type="button">✕</button>
+  <!-- Modal Instruções -->
+  <div class="modal" id="helpModal" aria-hidden="true">
+    <div class="box">
+      <button id="helpClose" class="close-x">Fechar</button>
       <h3>Instruções</h3>
       <ol>
-        <li>No <b>Mobile</b>, toca no botão da câmara e fotografa a etiqueta/descrição/código.</li>
-        <li>No <b>Desktop</b>, usa “Carregar imagem”.</li>
-        <li>O texto lido é gravado no Neon (Postgres). Podes apagar linhas no desktop.</li>
+        <li>Toque na câmara para tirar a foto.</li>
+        <li>Garanta que a etiqueta e o texto estão focados.</li>
+        <li>Se possível inclua o Eurocode/código.</li>
       </ol>
     </div>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
 </html>
