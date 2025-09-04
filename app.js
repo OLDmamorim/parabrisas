@@ -38,6 +38,9 @@ const toast         = document.getElementById("toast");
     .actions { display:flex; gap:8px; align-items:center; justify-content:center }
     .editArea { width:100%; min-height:84px; font:inherit; padding:8px; border-radius:8px; border:1px solid #d1d5db; }
     .muted { opacity:.6 }
+
+    /* histórico (mobile) */
+    .history-item-text{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   `;
   document.head.appendChild(s);
 })();
@@ -195,10 +198,10 @@ resultsBody?.addEventListener("click", async (e)=>{
     const textCellWrap = row.querySelector(".cell-text");
     const current = row.querySelector(".ocr-text")?.innerText || "";
 
-    // troca conteúdo por textarea
+    // textarea em vez do texto
     textCellWrap.innerHTML = `<textarea class="editArea">${current}</textarea>`;
 
-    // troca botões por guardar/cancelar
+    // trocar botões por guardar/cancelar
     const actions = row.querySelector(".actions");
     actions.innerHTML = `
       <button class="btn-icon saveBtn"   data-id="${id}" title="Guardar">💾</button>
@@ -372,3 +375,138 @@ helpModal?.addEventListener("click", (e) => { if (e.target === helpModal) hideHe
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
 });
+
+/* ===== HISTÓRICO (MOBILE) ===== */
+let captureHistory = [];
+
+function addToHistory(c){
+  captureHistory.unshift(c);
+  if(captureHistory.length>20) captureHistory=captureHistory.slice(0,20);
+  localStorage.setItem('expressglass_history', JSON.stringify(captureHistory));
+}
+function loadHistory(){
+  try{
+    const s=localStorage.getItem('expressglass_history');
+    if(s) captureHistory=JSON.parse(s);
+  }catch(e){ captureHistory=[]; }
+}
+
+const mobileHistoryList = document.getElementById("mobileHistoryList");
+
+function renderHistory() {
+  if (!mobileHistoryList) return;
+
+  if (captureHistory.length === 0) {
+    mobileHistoryList.innerHTML = '<p class="history-empty">Ainda não há capturas realizadas.</p>';
+    return;
+  }
+
+  // MOSTRAR NO MÁXIMO 5
+  mobileHistoryList.innerHTML = captureHistory.slice(0, 5).map((capture, index) => {
+    const text = capture.text || '';
+    const shortText = text.length > 10 ? text.slice(0, 10) + '...' : text;
+
+    return `
+      <div class="history-item" data-index="${index}">
+        <div class="history-item-header">
+          <span class="history-item-time">${formatTime(capture.timestamp)}</span>
+          <div class="history-item-actions">
+            <button class="history-action-btn copy-btn"   title="Copiar texto" data-index="${index}">📋</button>
+            <button class="history-action-btn resend-btn" title="Reenviar"     data-index="${index}">🔄</button>
+            <button class="history-action-btn delete-btn" title="Apagar"       data-index="${index}">🗑️</button>
+          </div>
+        </div>
+        <div class="history-item-text">${shortText}</div>
+        <div class="history-item-filename">${capture.filename || ''}</div>
+      </div>
+    `;
+  }).join('');
+
+  addHistoryEventListeners();
+}
+
+function addHistoryEventListeners() {
+  // Copiar
+  mobileHistoryList.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      const idx = Number(btn.dataset.index);
+      const cap = captureHistory[idx];
+      const txt = cap?.text || '';
+      try {
+        await navigator.clipboard.writeText(txt);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = txt; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      showToast('Texto copiado!');
+    });
+  });
+
+  // Reenviar
+  mobileHistoryList.querySelectorAll('.resend-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      const idx = Number(btn.dataset.index);
+      const cap = captureHistory[idx];
+      try{
+        showProgress("A reenviar captura…", 50);
+        await persistToDB({
+          ts: Date.now(),
+          text: cap.text || '',
+          filename: (cap.filename || 'imagem') + ' (reenviado)',
+          origin: 'resend'
+        });
+        RESULTS = await fetchServerRows();
+        renderTable();
+        showProgress("Concluído", 100);
+        setTimeout(()=>setStatus(""), 400);
+        showToast('Captura reenviada!');
+      }catch(err){
+        showError('Erro ao reenviar: ' + err.message);
+      }
+    });
+  });
+
+  // Apagar do histórico (local)
+  mobileHistoryList.querySelectorAll('.delete-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = Number(btn.dataset.index);
+      if (confirm('Apagar esta captura do histórico?')) {
+        captureHistory.splice(idx, 1);
+        saveHistory();
+        renderHistory();
+        showToast('Captura removida do histórico');
+      }
+    });
+  });
+}
+
+function saveHistory(){
+  try{
+    localStorage.setItem('expressglass_history', JSON.stringify(captureHistory));
+  }catch(e){}
+}
+
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Agora mesmo';
+  if (diffMins < 60) return `${diffMins}m atrás`;
+  if (diffHours < 24) return `${diffHours}h atrás`;
+  if (diffDays < 7) return `${diffDays}d atrás`;
+
+  return date.toLocaleDateString('pt-PT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+/* carregar histórico */
+loadHistory();
+document.addEventListener('DOMContentLoaded', renderHistory);
+if (document.readyState !== 'loading') renderHistory();
