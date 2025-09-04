@@ -642,3 +642,26 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
   flex: 1;              /* cada botão ocupa metade */
   max-width: 140px;     /* não ficam gigantes em ecrãs largos */
 }
+
+/* ===== FORÇAR OCR + EUROCODE LADO A LADO ===== */
+.mobile-cta .mode-grid{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  justify-content:center !important;
+  align-items:stretch !important;
+  gap:16px !important;
+  margin:8px 0 16px !important;
+}
+.mobile-cta .mode-grid .mode-btn{
+  flex:1 1 0 !important;      /* mesma largura */
+  max-width:140px !important; /* mantém o tamanho que queres */
+  width:auto !important;
+  margin:0 !important;        /* anula margens que empilham */
+  display:flex !important;    /* garante layout interno */
+}
+.mobile-cta > button.btn-square{ 
+  /* anula regras antigas que empilhavam os botões diretamente sob .mobile-cta */
+  display:initial !important; 
+  width:auto !important; 
+  margin:0 !important; 
+}
