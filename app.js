@@ -585,3 +585,33 @@ helpModal?.addEventListener("click", (e) => { if (e.target === helpModal) hideHe
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
 });
+
+function updateMobileHistory() {
+  const tbody = document.getElementById('resultsBody');
+  const rows = tbody.querySelectorAll('tr');
+  const list = document.getElementById('mobileHistoryList');
+  list.innerHTML = '';
+
+  let found = false;
+  rows.forEach(row => {
+    const eurocodeCell = row.querySelector('td:nth-child(4)');
+    if (eurocodeCell && eurocodeCell.textContent.trim() !== '') {
+      found = true;
+      const item = document.createElement('div');
+      item.className = 'history-item-text';
+      item.textContent = eurocodeCell.textContent.trim();
+      list.appendChild(item);
+    }
+  });
+
+  if (!found) {
+    list.innerHTML = '<p class="history-empty">Ainda não há capturas realizadas.</p>';
+  }
+}
+
+// atualizar sempre que algo mudar na tabela
+const observer = new MutationObserver(updateMobileHistory);
+observer.observe(document.getElementById('resultsBody'), { childList: true, subtree: true });
+
+// chamada inicial
+updateMobileHistory();
