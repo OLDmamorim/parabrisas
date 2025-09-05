@@ -1,12 +1,12 @@
 // =========================
-// APP.JS (persistência em BD + editar só OCR)
+// APP.JS (BD + Editar só OCR sem tocar no Eurocode)
 // =========================
 
-// ---- Endpoints (como no teu backup) ----
-const OCR_ENDPOINT = '/api/ocr-proxy';     // fallback para netlify abaixo
+// ---- Endpoints ----
+const OCR_ENDPOINT = '/api/ocr-proxy';     // fallback Netlify mais abaixo
 const LIST_URL     = '/api/list-ocr';
 const SAVE_URL     = '/api/save-ocr';
-const UPDATE_URL   = '/api/update-ocr';    // <- editar SÓ OCR
+const UPDATE_URL   = '/api/update-ocr';    // EDITA SÓ OCR (mas enviamos os outros campos para não os perder)
 const DELETE_URL   = '/api/delete-ocr';
 
 // ---- Seletores ----
@@ -14,7 +14,6 @@ const fileInput  = document.getElementById('fileInput');
 const btnUpload  = document.getElementById('btnUpload');
 const btnExport  = document.getElementById('btnExport');
 const btnClear   = document.getElementById('btnClear');
-const resultsTbl = document.getElementById('resultsTable');
 const resultsBody= document.getElementById('resultsBody');
 
 const cameraInput  = document.getElementById('cameraInput');
@@ -46,8 +45,7 @@ function setStatus(el, text, mode='') {
 }
 
 // =========================
-// Normalização de linhas vindas da BD
-// (ajusta aqui se os teus nomes diferirem)
+// Normalização (ajusta aqui se os nomes do backend diferirem)
 // =========================
 function normalizeRow(r){
   return {
@@ -90,7 +88,7 @@ function extractEurocode(text) {
 }
 
 // =========================
-/* BD: listar, guardar, atualizar (só OCR), apagar */
+// BD: listar, guardar, atualizar (só OCR), apagar
 // =========================
 async function fetchServerRows(){
   const res = await fetch(LIST_URL, { headers:{'Accept':'application/json'} });
@@ -110,11 +108,23 @@ async function saveRowToServer({ text, eurocode, timestamp }){
   return normalizeRow(await res.json().catch(()=>payload));
 }
 
-async function updateOCRInServer({ id, text }){
-  // Envia SÓ o OCR, não envia eurocode
+// >>> AQUI ESTÁ O PONTO CRÍTICO: EDITAR SÓ OCR, PRESERVANDO O RESTO <<<
+// Muitos backends fazem "replace" do registo inteiro no update.
+// Para não perder o eurocode, enviamos também eurocode/timestamp INALTERADOS.
+async function updateOCRInServer(row){
+  const payload = {
+    id: row.id,
+    // OCR novo:
+    text: row.text,
+    // Campos preservados (mesmos nomes que teu backend aceita; duplica onde for comum):
+    eurocode: row.eurocode,
+    euro_validado: row.eurocode,
+    timestamp: row.timestamp
+  };
+
   const res = await fetch(UPDATE_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ id, text })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('UPDATE HTTP '+res.status);
   return await res.json().catch(()=>({ok:true}));
@@ -167,19 +177,24 @@ async function deleteRowUI(idx){
 }
 
 // =========================
-// Editar APENAS OCR (com persistência em BD)
+// Editar APENAS OCR (com persistência)
 // =========================
 async function editOCR(idx){
   const row = RESULTS[idx];
   if (!row) return;
+
   const atual = row.text || '';
   const novo  = window.prompt('Editar texto lido (OCR):', atual);
   if (novo === null) return;  // cancelou
+
   try{
+    const updated = { ...row, text: novo };   // só muda OCR localmente
     setStatus(desktopStatus, 'A guardar…');
-    await updateOCRInServer({ id: row.id, text: novo }); // <-- SÓ OCR
-    RESULTS = await fetchServerRows();                   // refetch para refletir o que está na BD
+
+    await updateOCRInServer(updated);         // envia OCR + eurocode/timestamp inalterados
+    RESULTS = await fetchServerRows();        // reflete o que ficou na BD
     renderTable();
+
     setStatus(desktopStatus, 'OCR atualizado', 'success');
     showToast('Texto lido (OCR) atualizado ✅','success');
   }catch(e){
@@ -190,7 +205,7 @@ async function editOCR(idx){
 }
 
 // =========================
-// Histórico Mobile — só Eurocodes da BD
+// Histórico Mobile — Eurocodes da BD
 // =========================
 function renderMobileEuroList(){
   if (!mobileHistoryList) return;
@@ -209,7 +224,7 @@ function renderMobileEuroList(){
   codes.forEach(c=>{
     const div = document.createElement('div');
     div.className = 'history-item-text';
-    div.textContent = c.split(/\s+/)[0]; // primeira palavra (só o código)
+    div.textContent = c.split(/\s+/)[0]; // só o código
     frag.appendChild(div);
   });
   mobileHistoryList.innerHTML = '';
@@ -217,7 +232,7 @@ function renderMobileEuroList(){
 }
 
 // =========================
-// Upload Desktop -> OCR -> extrai Eurocode -> GUARDA NA BD
+// Upload Desktop -> OCR -> Eurocode -> GUARDA NA BD
 // =========================
 btnUpload?.addEventListener('click', ()=> fileInput.click());
 fileInput?.addEventListener('change', async (e) => {
@@ -255,7 +270,7 @@ fileInput?.addEventListener('change', async (e) => {
 });
 
 // =========================
-// Câmera Mobile -> OCR -> extrai Eurocode -> GUARDA NA BD
+// Câmera Mobile -> OCR -> Eurocode -> GUARDA NA BD
 // =========================
 btnCamera?.addEventListener('click', ()=> cameraInput.click());
 cameraInput?.addEventListener('change', async (e) => {
@@ -293,7 +308,7 @@ cameraInput?.addEventListener('change', async (e) => {
 });
 
 // =========================
-// Exportar CSV (da BD carregada)
+/* Exportar CSV (da BD carregada) */
 // =========================
 btnExport?.addEventListener('click', async () => {
   try{
@@ -319,7 +334,7 @@ btnExport?.addEventListener('click', async () => {
 });
 
 // =========================
-// Limpar Tabela (apaga todos no servidor? aqui só limpa visual)
+/* Limpar Tabela (só UI; não apaga BD) */
 // =========================
 btnClear?.addEventListener('click', async () => {
   if (!confirm('Queres limpar apenas a vista local? (Isto não apaga na BD)')) return;
