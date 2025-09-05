@@ -1,133 +1,73 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>EXPRESSGLASS • Receção material</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"/>
+  <title>EXRESSGLASS — Receção material</title>
+
+  <!-- CSS principal (mantém o teu ficheiro) -->
+  <link rel="stylesheet" href="style.css"/>
+
+  <!-- Manifest / tema (mantém como já tens) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
 </head>
 <body>
-  <!-- HEADER -->
   <header class="header">
-    <div class="brand">
-      <h1 class="title">EXPRESSGLASS</h1>
-      <p class="subtitle">Receção material</p>
+    <div class="header-inner">
+      <h1 class="app-title">EXPRESSGLASS</h1>
+      <div class="mode-badge">Mobile</div>
     </div>
-    <div class="view-badge" id="viewBadge">Mobile</div>
+    <p class="subtitle">Receção material</p>
   </header>
 
-  <!-- MOBILE VIEW -->
-  <main id="mobileView" class="card mobile-only">
-    <!-- Botão de ajuda -->
-    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
-    
-    <div class="mobile-cta">
-      <!-- Dois botões lado a lado -->
-      <div class="mode-grid">
-        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)">
-          <span class="emoji">📷</span>
-          <span class="mode-label">OCR</span>
+  <main class="main">
+    <!-- Painel de ações -->
+    <section class="panel actions-panel">
+      <div class="panel-header">
+        <h2 class="panel-title"> </h2>
+        <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+      </div>
+
+      <!-- GRID DE AÇÕES: agora apenas 1 coluna para alargar o OCR -->
+      <div class="actions-grid" style="display:grid; grid-template-columns: 1fr; gap:16px;">
+        <!-- ===== CARTÃO ÚNICO: OCR ===== -->
+        <button id="ocrBtn" class="action-card">
+          <div class="action-card__icon" aria-hidden="true">📷</div>
+          <div class="action-card__title">OCR</div>
         </button>
 
-        <button id="btnEurocode" class="btn-square mode-btn" aria-label="Tirar foto (Eurocode)">
-          <span class="emoji">📷</span>
-          <span class="mode-label">EUROCODE</span>
-        </button>
+        <!-- (Opcional de segurança) Mantemos o EUROCODE invisível para evitar
+             erros em JS antigos que ainda possam procurar #eurocodeBtn -->
+        <button id="eurocodeBtn" class="action-card" hidden aria-hidden="true" style="display:none"></button>
       </div>
 
       <p class="hint">
         Tira uma foto à <strong>etiqueta</strong> do material.<br/>
         Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
       </p>
-    </div>
+    </section>
 
-    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
-    <div id="mobileStatus" class="status"></div>
-
-    <!-- Histórico de Capturas -->
-    <div id="mobileHistory" class="history-section">
-      <h3 class="history-title">📋 Últimas Capturas</h3>
-      <div id="mobileHistoryList" class="history-list">
-        <p class="history-empty">Ainda não há capturas realizadas.</p>
+    <!-- Últimas Capturas -->
+    <section class="panel captures-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">🧾 Últimas Capturas</h2>
       </div>
-    </div>
 
-    <footer class="footnote">
-      <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
-    </footer>
+      <div id="capturesEmpty" class="empty-box">
+        Ainda não há capturas realizadas.
+      </div>
+
+      <!-- Lista dinâmica de capturas -->
+      <div id="capturesList" class="captures-list" hidden></div>
+    </section>
   </main>
 
-  <!-- DESKTOP VIEW -->
-  <section id="desktopView" class="card desktop-only">
-    <!-- Botão de ajuda -->
-    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
-    
-    <div class="toolbar">
-      <button id="btnUpload" class="btn">📁 Carregar imagem</button>
-      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
-      <button id="btnExport" class="btn">📊 Exportar CSV</button>
-      <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
-    </div>
+  <footer class="footer">
+    Feito para o Marco • Timezone: Europe/Lisbon
+  </footer>
 
-    <div class="table-wrap">
-      <table id="resultsTable">
-        <thead>
-          <tr>
-            <th style="width:60px">#</th>
-            <th style="width:220px">Data/Hora</th>
-            <th style="width:auto">Texto lido (OCR)</th>
-            <th style="width:180px">Eurocode</th>
-            <th style="width:140px">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
-
-    <div id="desktopStatus" class="status"></div>
-  </section>
-
-  <!-- MODAL DE AJUDA -->
-  <div id="helpModal" class="help-modal">
-    <div class="help-content">
-      <button class="help-close" id="helpClose">&times;</button>
-      <h3>💡 Como usar</h3>
-      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
-      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
-      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
-      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
-      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
-    </div>
-  </div>
-
-  <!-- TOAST -->
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <!-- JS para alternar modos -->
-  <script>
-    window.OCR_MODE = 'ocr'; // modo ativo inicial
-
-    const btnOCR   = document.getElementById('btnCamera');
-    const btnEURO  = document.getElementById('btnEurocode');
-    const inputCam = document.getElementById('cameraInput');
-
-    btnOCR.addEventListener('click', () => {
-      window.OCR_MODE = 'ocr';
-      btnOCR.classList.add('selected');
-      btnEURO.classList.remove('selected');
-      // o teu app.js já trata do fluxo do #btnCamera
-    }, { capture: true });
-
-    btnEURO.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.OCR_MODE = 'euro';
-      btnEURO.classList.add('selected');
-      btnOCR.classList.remove('selected');
-      // dispara o mesmo input para reaproveitar o teu app.js
-      inputCam.click();
-    });
-  </script>
-
-  <script src="app.js"></script>
+  <!-- Scripts (mantém a tua lógica e endpoints) -->
+  <script src="script.js" defer></script>
 </body>
 </html>
