@@ -22,17 +22,13 @@
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
     
     <div class="mobile-cta">
-      <!-- Dois botões lado a lado -->
-      <div class="mode-grid">
-        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)">
+      <!-- Grid agora com UMA coluna para o botão ficar mais largo -->
+      <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)" style="width:100%;">
           <span class="emoji">📷</span>
           <span class="mode-label">OCR</span>
         </button>
-
-        <button id="btnEurocode" class="btn-square mode-btn" aria-label="Tirar foto (Eurocode)">
-          <span class="emoji">📷</span>
-          <span class="mode-label">EUROCODE</span>
-        </button>
+        <!-- (Removido) botão Eurocode -->
       </div>
 
       <p class="hint">
@@ -103,29 +99,20 @@
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- JS para alternar modos -->
+  <!-- JS para o botão OCR (removidas referências ao Eurocode) -->
   <script>
-    window.OCR_MODE = 'ocr'; // modo ativo inicial
+    // Modo ativo
+    window.OCR_MODE = 'ocr';
 
     const btnOCR   = document.getElementById('btnCamera');
-    const btnEURO  = document.getElementById('btnEurocode');
     const inputCam = document.getElementById('cameraInput');
 
+    // No mobile, carregar a câmara diretamente
     btnOCR.addEventListener('click', () => {
       window.OCR_MODE = 'ocr';
       btnOCR.classList.add('selected');
-      btnEURO.classList.remove('selected');
-      // o teu app.js já trata do fluxo do #btnCamera
-    }, { capture: true });
-
-    btnEURO.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.OCR_MODE = 'euro';
-      btnEURO.classList.add('selected');
-      btnOCR.classList.remove('selected');
-      // dispara o mesmo input para reaproveitar o teu app.js
       inputCam.click();
-    });
+    }, { capture: true });
   </script>
 
   <script src="app.js"></script>
