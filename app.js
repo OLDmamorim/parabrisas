@@ -64,15 +64,18 @@ const toast         = document.getElementById("toast");
 let RESULTS = [];
 let lastFile = null;
 
-/* ===== COMPAT BACKEND ===== */
-function readEuroField(row){ return row.euro_user ?? row.eurocode ?? row.euro ?? ""; }
-function euroPayload(euro){ return { euro, euro_user: euro, eurocode: euro }; }
+/* ===== Back compat ===== */
+function readEuroField(row){ 
+  return row.euro_validado ?? row.euro_user ?? row.eurocode ?? row.euro ?? ""; 
+}
+function euroPayload(euro){ 
+  return { euro_validado: euro, euro_user: euro, eurocode: euro }; 
+}
 
-/* ===== EUROCODE regras + candidatos ===== */
-const EURO_BASE_RE   = /^\d{4}[A-Z][A-Z0-9]{1,8}$/; // 6..13
+/* ===== EUROCODE ===== */
+const EURO_BASE_RE   = /^\d{4}[A-Z][A-Z0-9]{1,8}$/; // 6..13 chars
 const STARTS_4_RE    = /^\d{4}/;
 const SUSPECT_WORDS  = /FINAL|MATERIAL|VINYL|GLASS|INSPECT|TEST|QA|ALT|ALTERNATES/i;
-
 const cleanTokens = (s='') => s.toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
 
 function scoreCode(c){
@@ -80,29 +83,22 @@ function scoreCode(c){
   let score = 0;
   if (/^00/.test(c)) score -= 12;
   const len = c.length;
-  if (len >= 7 && len <= 10) score += 8;   // reforço 7–10
-  if (len > 10) score -= 20;               // penaliza variações longas (ex: ...1R20)
+  if (len >= 7 && len <= 10) score += 8;   // alvo 7–10
+  if (len > 10) score -= 20;               // penaliza longos (ex. ...1R20)
   const letters = (c.match(/[A-Z]/g)||[]).length;
   if (letters >= 3) score += 4;
   if (/\d{2,}/.test(c.slice(5))) score += 3;
   if (SUSPECT_WORDS.test(c)) score -= 15;
   return score;
 }
-
 function buildCandidates(tokens){
   const out = new Set();
-
-  // 1 token
   for (const t of tokens) {
     if (EURO_BASE_RE.test(t)) out.add(t);
-    // se vier muito comprido mas os 10 primeiros são bons, propõe corte
     if (t.length > 10 && EURO_BASE_RE.test(t.slice(0,10))) out.add(t.slice(0,10));
   }
-
-  // 2 e 3 tokens colados quando o 1º começa por 4 dígitos
   for (let i=0;i<tokens.length;i++){
     const t0 = tokens[i]; if (!STARTS_4_RE.test(t0)) continue;
-
     if (i+1<tokens.length){
       let t01 = (t0+tokens[i+1]).slice(0,13);
       if (EURO_BASE_RE.test(t01)) out.add(t01);
@@ -120,12 +116,6 @@ function getEuroCandidates(text=''){
   const cands = buildCandidates(cleanTokens(text));
   cands.sort((a,b)=> scoreCode(b)-scoreCode(a));
   return cands;
-}
-function pickEuroToDisplay(row){
-  const validated = readEuroField(row);
-  if (validated) return validated;
-  const cands = getEuroCandidates(row.text||"");
-  return cands[0] || "";
 }
 
 /* ===== UI helpers ===== */
@@ -177,23 +167,31 @@ async function fetchServerRows(){
   const r = await fetch(LIST_URL);
   if(!r.ok) throw new Error('HTTP '+r.status);
   const { rows } = await r.json();
+
   return rows.map(x => {
-    const tsAny = (typeof x.ts === "number" ? x.ts
-                  : x.ts_ms ?? x.ts_epoch_ms ?? x.ts_ms_epoch ?? x.ts);
+    // TS pode vir em ms/seg/ISO → normaliza para ms
+    let tsMs = null;
+    if (typeof x.ts === "number") {
+      tsMs = x.ts < 1e12 ? x.ts * 1000 : x.ts;
+    } else if (typeof x.ts === "string" && x.ts) {
+      const d = new Date(x.ts);
+      if (!Number.isNaN(d.getTime())) tsMs = d.getTime();
+    }
+    if (!Number.isFinite(tsMs)) tsMs = Date.now();
+
     return {
       id: x.id,
-      ts: Number(tsAny),
+      ts: tsMs,
       text: x.text || '',
       filename: x.filename || '',
       source: x.source || '',
-      euro_user: x.euro_user,
-      eurocode : x.eurocode,
-      euro     : x.euro
+      euro_validado: x.euro_validado ?? null,
+      euro_user: x.euro_user ?? null,
+      eurocode:  x.eurocode  ?? null,
+      euro:      x.euro      ?? null,
     };
   });
 }
-
-// devolve {id, raw}
 async function persistToDB(payload) {
   const resp = await fetch(SAVE_URL, {
     method: 'POST',
@@ -207,7 +205,6 @@ async function persistToDB(payload) {
   const id = data?.id ?? data?.row?.id ?? data?.insertId ?? null;
   return { id, raw: data };
 }
-
 async function deleteFromDB(id){
   const resp = await fetch(DELETE_URL, {
     method: 'POST',
@@ -448,7 +445,7 @@ async function optimizeImageForOCR(file){
   return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
 }
 
-/* ===== Fluxo (Mobile valida antes de gravar + UPDATE forçado) ===== */
+/* ===== Fluxo (Mobile valida antes de gravar + UPDATE) ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
@@ -482,7 +479,7 @@ async function handleImage(file, origin="camera"){
       text: textRead,
       filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
       source: origin,
-      ...euroPayload(euroChosen)   // tentamos enviar logo
+      ...euroPayload(euroChosen)
     });
 
     // 2) garante que a escolha fica persistida (se backend ignorar no save)
@@ -537,7 +534,7 @@ function bindCameraOnce(){
 /* ===== Bootstrap ===== */
 (async function(){
   try { RESULTS = await fetchServerRows(); }
-  catch(e){ console.warn("Sem Neon:", e.message); RESULTS = []; }
+  catch(e){ console.warn("List falhou:", e.message); RESULTS = []; }
   renderTable();
   bindCameraOnce();
 })();
