@@ -1,4 +1,3 @@
-// netlify/functions/list-ocr.mjs
 import { sql, init, jsonHeaders } from './db.mjs';
 
 export const handler = async (event) => {
@@ -9,7 +8,7 @@ export const handler = async (event) => {
   try {
     await init();
 
-    // garantir que existe a coluna euro_validado
+    // Garante que a coluna existe
     await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS euro_validado text`;
 
     const rows = await sql/*sql*/`
@@ -25,10 +24,6 @@ export const handler = async (event) => {
       body: JSON.stringify({ ok: true, rows })
     };
   } catch (e) {
-    return {
-      statusCode: 500,
-      headers: jsonHeaders,
-      body: JSON.stringify({ ok:false, error: e.message })
-    };
+    return { statusCode: 500, headers: jsonHeaders, body: JSON.stringify({ ok:false, error: e.message }) };
   }
 };
