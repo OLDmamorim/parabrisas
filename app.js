@@ -1,12 +1,12 @@
 // =========================
-// APP.JS (BD + Editar só OCR sem tocar no Eurocode)
+// APP.JS (BD + Modal editar SÓ OCR)
 // =========================
 
 // ---- Endpoints ----
 const OCR_ENDPOINT = '/api/ocr-proxy';     // fallback Netlify mais abaixo
 const LIST_URL     = '/api/list-ocr';
 const SAVE_URL     = '/api/save-ocr';
-const UPDATE_URL   = '/api/update-ocr';    // EDITA SÓ OCR (mas enviamos os outros campos para não os perder)
+const UPDATE_URL   = '/api/update-ocr';    // EDITA SÓ OCR (enviamos eurocode/timestamp para não os perder)
 const DELETE_URL   = '/api/delete-ocr';
 
 // ---- Seletores ----
@@ -23,6 +23,14 @@ const mobileHistoryList = document.getElementById('mobileHistoryList');
 
 const desktopStatus = document.getElementById('desktopStatus');
 const toast = document.getElementById('toast');
+
+// ---- Modal de edição OCR ----
+const ocrModal      = document.getElementById('ocrEditModal');
+const ocrTextArea   = document.getElementById('ocrEditText');
+const ocrBtnClose   = document.getElementById('ocrEditClose');
+const ocrBtnCancel  = document.getElementById('ocrEditCancel');
+const ocrBtnSave    = document.getElementById('ocrEditSave');
+let   EDIT_IDX      = null; // índice no array RESULTS da linha a editar
 
 // ---- Estado ----
 let RESULTS = [];  // [{id, timestamp, text, eurocode}, ...]
@@ -108,20 +116,15 @@ async function saveRowToServer({ text, eurocode, timestamp }){
   return normalizeRow(await res.json().catch(()=>payload));
 }
 
-// >>> AQUI ESTÁ O PONTO CRÍTICO: EDITAR SÓ OCR, PRESERVANDO O RESTO <<<
-// Muitos backends fazem "replace" do registo inteiro no update.
-// Para não perder o eurocode, enviamos também eurocode/timestamp INALTERADOS.
+// >>> Ponto crítico: EDITAR SÓ OCR, preservando o resto (para backends que "substituem" o registo)
 async function updateOCRInServer(row){
   const payload = {
     id: row.id,
-    // OCR novo:
-    text: row.text,
-    // Campos preservados (mesmos nomes que teu backend aceita; duplica onde for comum):
-    eurocode: row.eurocode,
-    euro_validado: row.eurocode,
-    timestamp: row.timestamp
+    text: row.text,            // OCR novo
+    eurocode: row.eurocode,    // preserva
+    euro_validado: row.eurocode, // se o backend usar este nome, preserva também
+    timestamp: row.timestamp   // preserva
   };
-
   const res = await fetch(UPDATE_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
@@ -152,7 +155,7 @@ function renderTable() {
       <td class="ocr-text">${(row.text || '')}</td>
       <td>${row.eurocode || ''}</td>
       <td>
-        <button class="btn btn-mini" onclick="editOCR(${idx})" title="Editar OCR">✏️</button>
+        <button class="btn btn-mini" onclick="openOCREdit(${idx})" title="Editar OCR">✏️</button>
         <button class="btn btn-mini danger" onclick="deleteRowUI(${idx})" title="Apagar">🗑️</button>
       </td>
     `;
@@ -177,35 +180,52 @@ async function deleteRowUI(idx){
 }
 
 // =========================
-// Editar APENAS OCR (com persistência)
+// Modal: abrir/fechar/guardar (SÓ OCR)
 // =========================
-async function editOCR(idx){
+function openOCREdit(idx){
   const row = RESULTS[idx];
   if (!row) return;
+  EDIT_IDX = idx;
+  if (ocrTextArea) ocrTextArea.value = row.text || '';
+  if (ocrModal){
+    ocrModal.classList.remove('hidden');
+    ocrModal.setAttribute('aria-hidden','false');
+  }
+  setTimeout(()=> ocrTextArea?.focus(), 50);
+}
+function closeOCREdit(){
+  EDIT_IDX = null;
+  if (ocrModal){
+    ocrModal.classList.add('hidden');
+    ocrModal.setAttribute('aria-hidden','true');
+  }
+}
+ocrBtnClose?.addEventListener('click', closeOCREdit);
+ocrBtnCancel?.addEventListener('click', closeOCREdit);
+ocrModal?.addEventListener('click', (e)=>{ if(e.target.dataset.close) closeOCREdit(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !ocrModal?.classList.contains('hidden')) closeOCREdit(); });
 
-  const atual = row.text || '';
-  const novo  = window.prompt('Editar texto lido (OCR):', atual);
-  if (novo === null) return;  // cancelou
-
+ocrBtnSave?.addEventListener('click', async () => {
+  if (EDIT_IDX === null) return;
+  const row = RESULTS[EDIT_IDX];
+  const novoText = ocrTextArea?.value ?? '';
   try{
-    const updated = { ...row, text: novo };   // só muda OCR localmente
     setStatus(desktopStatus, 'A guardar…');
-
-    await updateOCRInServer(updated);         // envia OCR + eurocode/timestamp inalterados
-    RESULTS = await fetchServerRows();        // reflete o que ficou na BD
+    await updateOCRInServer({ ...row, text: novoText }); // atualiza SÓ OCR na BD
+    RESULTS = await fetchServerRows();
     renderTable();
-
     setStatus(desktopStatus, 'OCR atualizado', 'success');
-    showToast('Texto lido (OCR) atualizado ✅','success');
+    showToast('Texto lido (OCR) atualizado ✅', 'success');
+    closeOCREdit();
   }catch(e){
     console.error(e);
     setStatus(desktopStatus, 'Erro ao guardar', 'error');
     showToast('Erro ao atualizar OCR','error');
   }
-}
+});
 
 // =========================
-// Histórico Mobile — Eurocodes da BD
+/* Histórico Mobile — Eurocodes da BD */
 // =========================
 function renderMobileEuroList(){
   if (!mobileHistoryList) return;
