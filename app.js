@@ -1,4 +1,3 @@
-// =========================
 // APP.JS (BD + Editar só OCR sem tocar no Eurocode)
 // =========================
 
@@ -24,8 +23,16 @@ const mobileHistoryList = document.getElementById('mobileHistoryList');
 const desktopStatus = document.getElementById('desktopStatus');
 const toast = document.getElementById('toast');
 
+// ---- Modal de edição OCR ----
+const editOcrModal = document.getElementById('editOcrModal');
+const editOcrTextarea = document.getElementById('editOcrTextarea');
+const editOcrClose = document.getElementById('editOcrClose');
+const editOcrCancel = document.getElementById('editOcrCancel');
+const editOcrSave = document.getElementById('editOcrSave');
+
 // ---- Estado ----
 let RESULTS = [];  // [{id, timestamp, text, eurocode}, ...]
+let currentEditingRow = null; // Para guardar qual linha está a ser editada
 
 // =========================
 // Utils UI
@@ -42,6 +49,77 @@ function setStatus(el, text, mode='') {
   el.classList.remove('error','success');
   if (mode==='error') el.classList.add('error');
   if (mode==='success') el.classList.add('success');
+}
+
+// =========================
+// Funções do Modal de Edição OCR
+// =========================
+function showEditOcrModal(text) {
+  return new Promise((resolve) => {
+    if (!editOcrModal || !editOcrTextarea) {
+      resolve(null);
+      return;
+    }
+
+    // Preencher o textarea com o texto atual
+    editOcrTextarea.value = text || '';
+    
+    // Mostrar o modal
+    editOcrModal.classList.add('show');
+    
+    // Focar no textarea e posicionar cursor no final
+    setTimeout(() => {
+      editOcrTextarea.focus();
+      editOcrTextarea.setSelectionRange(editOcrTextarea.value.length, editOcrTextarea.value.length);
+    }, 100);
+
+    // Função para fechar o modal
+    function closeModal(result) {
+      editOcrModal.classList.remove('show');
+      resolve(result);
+    }
+
+    // Event listeners temporários
+    function handleSave() {
+      const newText = editOcrTextarea.value;
+      cleanup();
+      closeModal(newText);
+    }
+
+    function handleCancel() {
+      cleanup();
+      closeModal(null);
+    }
+
+    function handleKeydown(e) {
+      if (e.key === 'Escape') {
+        handleCancel();
+      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        handleSave();
+      }
+    }
+
+    function handleBackdropClick(e) {
+      if (e.target === editOcrModal) {
+        handleCancel();
+      }
+    }
+
+    function cleanup() {
+      editOcrSave.removeEventListener('click', handleSave);
+      editOcrCancel.removeEventListener('click', handleCancel);
+      editOcrClose.removeEventListener('click', handleCancel);
+      document.removeEventListener('keydown', handleKeydown);
+      editOcrModal.removeEventListener('click', handleBackdropClick);
+    }
+
+    // Adicionar event listeners
+    editOcrSave.addEventListener('click', handleSave);
+    editOcrCancel.addEventListener('click', handleCancel);
+    editOcrClose.addEventListener('click', handleCancel);
+    document.addEventListener('keydown', handleKeydown);
+    editOcrModal.addEventListener('click', handleBackdropClick);
+  });
 }
 
 // =========================
@@ -177,30 +255,42 @@ async function deleteRowUI(idx){
 }
 
 // =========================
-// Editar APENAS OCR (com persistência)
+// Editar APENAS OCR (com modal personalizado)
 // =========================
 async function editOCR(idx){
   const row = RESULTS[idx];
   if (!row) return;
 
+  currentEditingRow = row;
   const atual = row.text || '';
-  const novo  = window.prompt('Editar texto lido (OCR):', atual);
-  if (novo === null) return;  // cancelou
+  
+  try {
+    // Mostrar o modal e aguardar resposta
+    const novo = await showEditOcrModal(atual);
+    
+    if (novo === null) {
+      // Utilizador cancelou
+      currentEditingRow = null;
+      return;
+    }
 
-  try{
-    const updated = { ...row, text: novo };   // só muda OCR localmente
+    // Atualizar o texto
+    const updated = { ...row, text: novo };
     setStatus(desktopStatus, 'A guardar…');
 
-    await updateOCRInServer(updated);         // envia OCR + eurocode/timestamp inalterados
-    RESULTS = await fetchServerRows();        // reflete o que ficou na BD
+    await updateOCRInServer(updated);
+    RESULTS = await fetchServerRows();
     renderTable();
 
     setStatus(desktopStatus, 'OCR atualizado', 'success');
     showToast('Texto lido (OCR) atualizado ✅','success');
-  }catch(e){
+    
+  } catch(e) {
     console.error(e);
     setStatus(desktopStatus, 'Erro ao guardar', 'error');
     showToast('Erro ao atualizar OCR','error');
+  } finally {
+    currentEditingRow = null;
   }
 }
 
@@ -341,6 +431,47 @@ btnClear?.addEventListener('click', async () => {
   RESULTS = [];
   renderTable();
   showToast('Vista limpa (BD intacta)','success');
+});
+
+// =========================
+// Event Listeners para Modal de Ajuda
+// =========================
+const helpModal = document.getElementById('helpModal');
+const helpBtn = document.getElementById('helpBtn');
+const helpBtnDesktop = document.getElementById('helpBtnDesktop');
+const helpClose = document.getElementById('helpClose');
+
+function showHelpModal() {
+  if (helpModal) {
+    helpModal.classList.add('show');
+  }
+}
+
+function hideHelpModal() {
+  if (helpModal) {
+    helpModal.classList.remove('show');
+  }
+}
+
+// Event listeners para o modal de ajuda
+helpBtn?.addEventListener('click', showHelpModal);
+helpBtnDesktop?.addEventListener('click', showHelpModal);
+helpClose?.addEventListener('click', hideHelpModal);
+
+// Fechar modal ao clicar no backdrop
+helpModal?.addEventListener('click', (e) => {
+  if (e.target === helpModal) {
+    hideHelpModal();
+  }
+});
+
+// Fechar modal com ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (helpModal?.classList.contains('show')) {
+      hideHelpModal();
+    }
+  }
 });
 
 // =========================
