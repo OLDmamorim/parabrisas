@@ -9,21 +9,22 @@ export const handler = async (event) => {
       return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { id, text } = JSON.parse(event.body || "{}");
+    const { id, text, euro_validado, euro_user, eurocode } = JSON.parse(event.body || "{}");
     const numId = Number(id);
 
     if (!numId || Number.isNaN(numId)) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing/invalid id" }) };
     }
-    if (typeof text !== 'string') {
-      return { statusCode: 400, body: JSON.stringify({ error: "Missing/invalid text" }) };
-    }
+
+    const euroFinal = euro_validado || euro_user || eurocode || null;
 
     const rows = await sql/*sql*/`
       UPDATE ocr_results
-      SET text = ${text}
+      SET 
+        text = COALESCE(${text}, text),
+        euro_validado = COALESCE(${euroFinal}, euro_validado)
       WHERE id = ${numId}
-      RETURNING id, ts, text, filename, source
+      RETURNING id, ts, text, filename, source, euro_validado
     `;
 
     if (!rows?.length) {
