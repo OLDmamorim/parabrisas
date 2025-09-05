@@ -9,9 +9,10 @@ export const handler = async (event) => {
   try {
     await init();
 
-    const { ts, text, filename, source, euro_validado, euro_user, eurocode } =
-      JSON.parse(event.body || '{}');
+    // garantir que existe a coluna euro_validado
+    await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS euro_validado text`;
 
+    const { ts, text, filename, source, euro_validado } = JSON.parse(event.body || '{}');
     if (!text && !filename) {
       return { statusCode: 400, headers: jsonHeaders, body: '"Texto ou filename obrigatório"' };
     }
@@ -20,11 +21,9 @@ export const handler = async (event) => {
       event.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
       event.headers['client-ip'] || null;
 
-    const euroFinal = euro_validado || euro_user || eurocode || null;
-
     const rows = await sql/*sql*/`
       insert into ocr_results (ts, text, filename, source, ip, euro_validado)
-      values (${ts ? new Date(ts) : new Date()}, ${text}, ${filename}, ${source}, ${ip}, ${euroFinal})
+      values (${ts ? new Date(ts) : new Date()}, ${text}, ${filename}, ${source}, ${ip}, ${euro_validado})
       returning id, ts, text, filename, source, euro_validado
     `;
 
@@ -37,7 +36,7 @@ export const handler = async (event) => {
     return {
       statusCode: 500,
       headers: jsonHeaders,
-      body: JSON.stringify({ ok: false, error: e.message })
+      body: JSON.stringify({ ok:false, error: e.message })
     };
   }
 };
