@@ -28,22 +28,17 @@
           <span class="mode-label">Eurocode</span>
         </button>
       </div>
-
-      <p class="hint">
-  Tira uma foto à <strong>etiqueta</strong> do material.<br/>
-  Inclui a <strong>descrição</strong> e o <strong>Eurocode</strong>.<br/>
-  <strong>Valida</strong> no fim.
-</p>
+      <!-- (removido o <p class="hint"> para não mostrar instruções no mobile) -->
     </div>
 
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
     <div id="mobileStatus" class="status"></div>
 
-    <!-- Histórico de Capturas -->
+    <!-- Histórico de Capturas (apenas Eurocodes) -->
     <div id="mobileHistory" class="history-section">
       <h3 class="history-title">📋 Últimas Capturas</h3>
       <div id="mobileHistoryList" class="history-list">
-        <p class="history-empty">Ainda não há capturas realizadas.</p>
+        <p class="history-empty">Ainda não há Eurocodes guardados.</p>
       </div>
     </div>
 
@@ -98,20 +93,67 @@
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- JS -->
-  <script>
-    window.OCR_MODE = 'ocr';
-
-    const btnOCR   = document.getElementById('btnCamera');
-    const inputCam = document.getElementById('cameraInput');
-
-    btnOCR.addEventListener('click', () => {
-      window.OCR_MODE = 'ocr';
-      btnOCR.classList.add('selected');
-      inputCam.click();
-    }, { capture: true });
-  </script>
-
+  <!-- App original (manténs o teu) -->
   <script src="app.js"></script>
+
+  <!-- ===== Mobile: espelhar Eurocodes da tabela (não mexe no OCR/BD) ===== -->
+  <script>
+  (function(){
+    const listWrap = document.getElementById('mobileHistoryList');
+    const tbody    = document.getElementById('resultsBody');
+
+    function getEurocodes(limit = 50){
+      if(!tbody) return [];
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const out = [];
+      for (const tr of rows) {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 4) {
+          // 4.ª coluna é "Eurocode" — apanhar só o código (ignora "validado", etc.)
+          const raw  = (tds[3].innerText || tds[3].textContent || '').trim();
+          const code = raw.split(/\s+/)[0];
+          if (code) out.push(code);
+        }
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+
+    function renderList(){
+      if(!listWrap) return;
+      const codes = getEurocodes();
+      if (!codes.length) {
+        listWrap.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
+        return;
+      }
+      const ul = document.createElement('ul');
+      ul.style.listStyle = 'none';
+      ul.style.margin = '0';
+      ul.style.padding = '0';
+      codes.forEach(c => {
+        const li = document.createElement('li');
+        li.textContent = c;
+        li.style.textAlign = 'left';
+        li.style.padding = '10px 12px';
+        li.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+        li.style.fontWeight = '700';
+        li.style.letterSpacing = '.3px';
+        ul.appendChild(li);
+      });
+      listWrap.innerHTML = '';
+      listWrap.appendChild(ul);
+    }
+
+    // 1) Render inicial
+    renderList();
+    // 2) Atualiza quando a tabela mudar (adições/edições/apagar)
+    if (tbody) {
+      const mo = new MutationObserver(renderList);
+      mo.observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+    // 3) Atualiza ao redimensionar (só por segurança)
+    window.addEventListener('resize', renderList);
+  })();
+  </script>
 </body>
 </html>
