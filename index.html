@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>EXPRESSGLASS • Receção material</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
 </head>
 <body>
   <!-- HEADER -->
@@ -199,7 +199,7 @@
   <script>
   (function(){
     const tbody = document.getElementById('resultsBody');
-    function aplicarTamanho(){
+    function fixCol3(){
       document.querySelectorAll('#resultsTable tbody tr td:nth-child(3)').forEach(td=>{
         td.style.setProperty('font-size','14px','important');
         td.style.setProperty('line-height','1.35','important');
@@ -208,12 +208,12 @@
         td.style.setProperty('letter-spacing','0','important');
       });
     }
-    aplicarTamanho();
+    fixCol3();
     if (tbody){
-      new MutationObserver(aplicarTamanho)
+      new MutationObserver(fixCol3)
         .observe(tbody, { childList:true, subtree:true, characterData:true });
     }
-    window.addEventListener('resize', aplicarTamanho);
+    window.addEventListener('resize', fixCol3);
   })();
   </script>
 </body>
