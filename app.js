@@ -10,7 +10,6 @@ const DEMO_MODE    = false;
 const isDesktop = window.matchMedia("(min-width: 900px)").matches;
 document.getElementById("viewBadge").textContent = isDesktop ? "Desktop" : "Mobile";
 
-/* — grab elements — */
 let cameraBtn   = document.getElementById("btnCamera");
 let cameraInput = document.getElementById("cameraInput");
 const mobileStatus  = document.getElementById("mobileStatus");
@@ -22,9 +21,9 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== CSS rápido ===== */
-(function(){
-  const id = "ocr-text-style";
+/* ===== CSS inline ===== */
+(() => {
+  const id = "inline-style-app";
   if (document.getElementById(id)) return;
   const s = document.createElement("style");
   s.id = id;
@@ -34,10 +33,25 @@ const toast         = document.getElementById("toast");
     .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
     .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
     .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
+
     .euro { font-weight:700; padding:2px 6px; border-radius:6px; display:inline-block; }
     .euro-ok { background:#064e3b; color:#d1fae5; }
     .euro-miss { background:#7c2d12; color:#ffedd5; }
-    .euro-cell { cursor:copy; }
+    .euro-cell { position:relative; }
+
+    .euro-select-wrap{ display:flex; gap:6px; align-items:center; }
+    .euro-choose-btn{ border:1px solid #334155; background:#0b1220; color:#e5e7eb; padding:4px 8px; border-radius:6px; cursor:pointer; }
+
+    /* Painel Mobile */
+    .mob-euro-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:9998; }
+    .mob-euro{ position:fixed; left:0; right:0; bottom:0; z-index:9999; background:#0b1220; color:#e5e7eb; border-top-left-radius:18px; border-top-right-radius:18px; padding:14px; box-shadow:0 -8px 30px rgba(0,0,0,.4); max-height:72vh; overflow:auto; }
+    .mob-euro h4{ margin:0 0 8px 0; font-size:16px; }
+    .mob-euro table{ width:100%; border-collapse:collapse; margin-top:8px; }
+    .mob-euro th, .mob-euro td{ border-bottom:1px solid #1f2937; padding:8px; font-size:14px; }
+    .mob-euro-actions{ display:flex; gap:8px; margin-top:12px; }
+    .mob-btn{ padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#111827; color:#e5e7eb; flex:1; }
+    .mob-btn.primary{ background:#2563eb; border-color:#2563eb; color:white; }
+    .mob-note{ font-size:12px; opacity:.8; margin-top:6px; }
     .toast.show{ opacity:1; }
   `;
   document.head.appendChild(s);
@@ -47,67 +61,75 @@ const toast         = document.getElementById("toast");
 let RESULTS = [];
 let lastFile = null;
 
-/* ===== EUROCODE (robusto) =====
-   Regra: 4 dígitos + LETRA obrigatória + 1..8 [A-Z0-9]  →  comprimento total 6..13 */
-const EUROCODE_REGEX = /^\d{4}[A-Z][A-Z0-9]{1,8}$/;
-
-function normalizeAmbiguous(s=''){
-  return s.toUpperCase()
-    .replace(/[^\dA-Z]+/g,' ')  // limpar ruído mantendo A-Z 0-9
-    .trim();
+/* ===== CAMADA DE COMPATIBILIDADE COM O BACKEND ===== */
+// Lê qualquer nome de campo que já exista no teu backend
+function readEuroField(row){
+  return row.euro_user ?? row.eurocode ?? row.euro ?? "";
 }
-// pontuação para escolher “o melhor” candidato
-const scoreCode = (c) => {
+// Envia em várias chaves — o backend aproveita a que conhecer
+function euroPayload(euro){
+  return { euro, euro_user: euro, eurocode: euro };
+}
+
+/* ===== EUROCODE — regras + candidatos =====
+   Formato base: 4 dígitos + 1 letra + 1..8 A/Z/0-9  → total 6..13
+*/
+const EURO_BASE_RE   = /^\d{4}[A-Z][A-Z0-9]{1,8}$/;
+const STARTS_4_RE    = /^\d{4}/;
+const SUSPECT_WORDS  = /FINAL|MATERIAL|VINYL|GLASS|INSPECT|TEST|QA|ALT|ALTERNATES/i;
+
+const cleanTokens = (s='') => s.toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
+
+function scoreCode(c){
+  if (!EURO_BASE_RE.test(c)) return -999;
+  let score = 0;
+  if (/^00/.test(c)) score -= 12;                 // evita 00xx…
+  const len = c.length;
+  if (len >= 7 && len <= 10) score += 6;          // comprimento típico
   const letters = (c.match(/[A-Z]/g)||[]).length;
-  return letters*2 + c.length; // mais letras > mais pontos; depois comprimento
-};
+  if (letters >= 3) score += 4;                    // >=3 letras
+  if (/\d{2,}/.test(c.slice(5))) score += 3;       // dígitos finais
+  if (SUSPECT_WORDS.test(c)) score -= 15;          // falsos positivos (FINAL…)
+  return score;
+}
 
-function findCandidates(tokens){
-  const out = [];
-  const starts4 = t => /^\d{4}/.test(t);
+function buildCandidates(tokens){
+  const out = new Set();
+  // 1 token
+  for (const t of tokens) if (EURO_BASE_RE.test(t)) out.add(t);
+  // 2 e 3 tokens colados quando o 1º começa por 4 dígitos
   for (let i=0;i<tokens.length;i++){
-    const t0 = tokens[i];
-    // 1 token
-    if (EUROCODE_REGEX.test(t0)) out.push(t0);
-    if (!starts4(t0)) continue;
-
-    // 2 tokens colados
-    if (i+1<tokens.length){
+    const t0 = tokens[i]; if (!STARTS_4_RE.test(t0)) continue;
+    if (i+1 < tokens.length){
       const t01 = (t0 + tokens[i+1]).slice(0,13);
-      if (EUROCODE_REGEX.test(t01)) out.push(t01);
+      if (EURO_BASE_RE.test(t01)) out.add(t01);
     }
-    // 3 tokens colados (ex.: 7262 AGAMV 1R)
-    if (i+2<tokens.length){
+    if (i+2 < tokens.length){
       const t012 = (t0 + tokens[i+1] + tokens[i+2]).slice(0,13);
-      if (EUROCODE_REGEX.test(t012)) out.push(t012);
+      if (EURO_BASE_RE.test(t012)) out.add(t012);
     }
   }
-  // devolver o melhor por score (se empatar, o primeiro na ordem de leitura)
-  if (!out.length) return "";
-  out.sort((a,b)=> scoreCode(b)-scoreCode(a));
-  return out[0];
+  return Array.from(out);
+}
+function getEuroCandidates(text=''){
+  const cands = buildCandidates(cleanTokens(text));
+  cands.sort((a,b)=> scoreCode(b)-scoreCode(a));
+  return cands;
+}
+function pickEuroToDisplay(row){
+  const validated = readEuroField(row);
+  if (validated) return validated; // veio validado do backend
+  const cands = getEuroCandidates(row.text||"");
+  return cands[0] || "";
 }
 
-function extractEurocode(text=''){
-  // 1) tentar no texto “cru” (sem mexer em O/I/S/B)
-  const raw = text.toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
-  const rawTokens = raw.split(/\s+/).filter(Boolean);
-  let hit = findCandidates(rawTokens);
-  if (hit) return hit;
-
-  // 2) fallback: normalizado (apenas limpeza de ruído)
-  const normTokens = normalizeAmbiguous(text).split(/\s+/).filter(Boolean);
-  hit = findCandidates(normTokens);
-  return hit || "";
-}
-
-/* ===== Helpers UI ===== */
+/* ===== UI helpers ===== */
 function showToast(msg){
   toast.textContent = msg;
   toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"), 2200);
+  setTimeout(()=>toast.classList.remove("show"), 2000);
 }
-function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
+const statusEl = () => isDesktop ? desktopStatus : mobileStatus;
 function setStatus(html, opts={}) {
   const el = statusEl();
   el.classList.toggle("error", !!opts.error);
@@ -116,15 +138,7 @@ function setStatus(html, opts={}) {
 function showProgress(label, pct=0, asError=false){
   const el = statusEl();
   el.classList.toggle("error", !!asError);
-  el.innerHTML = `
-    <div>${label}</div>
-    <div class="progress"><span style="width:${pct}%"></span></div>
-  `;
-}
-function updateProgress(pct){
-  const el = statusEl();
-  const bar = el.querySelector(".progress > span");
-  if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  el.innerHTML = `<div>${label}</div><div class="progress"><span style="width:${pct}%"></span></div>`;
 }
 function showError(message){
   const el = statusEl();
@@ -147,7 +161,7 @@ function ensureActionsHeader() {
       <th style="width:60px">#</th>
       <th style="width:220px">Data/Hora</th>
       <th style="width:auto">Texto lido (OCR)</th>
-      <th style="width:180px">Eurocode</th>
+      <th style="width:260px">Eurocode</th>
       <th style="width:110px">Ações</th>
     </tr>
   `;
@@ -158,19 +172,28 @@ async function fetchServerRows(){
   const r = await fetch(LIST_URL);
   if(!r.ok) throw new Error('HTTP '+r.status);
   const { rows } = await r.json();
-  return rows.map(x => ({
-    id: x.id,
-    ts: new Date(x.ts).getTime(),
-    text: x.text || '',
-    filename: x.filename || '',
-    source: x.source || ''
-  }));
+
+  return rows.map(x => {
+    // ts pode vir em vários nomes/formatos — tenta normalizar
+    const tsAny = (typeof x.ts === "number" ? x.ts
+                 : x.ts_ms ?? x.ts_epoch_ms ?? x.ts_ms_epoch ?? x.ts);
+    return {
+      id: x.id,
+      ts: Number(tsAny),
+      text: x.text || '',
+      filename: x.filename || '',
+      source: x.source || '',
+      euro_user: x.euro_user,                 // se existir
+      eurocode : x.eurocode,                  // se existir
+      euro     : x.euro                       // se existir
+    };
+  });
 }
-async function persistToDB({ ts, text, filename, origin }) {
+async function persistToDB(payload) {
   const resp = await fetch(SAVE_URL, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ ts, text, filename, source: origin })
+    body: JSON.stringify(payload)
   });
   const txt = await resp.text().catch(()=>resp.statusText);
   if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
@@ -185,7 +208,17 @@ async function deleteFromDB(id){
   if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
   return true;
 }
-async function updateInDB(id, text){
+async function updateEuroValidated(id, euro){
+  const resp = await fetch(UPDATE_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id, ...euroPayload(euro) })  // compat com teu backend
+  });
+  const data = await resp.json().catch(()=>({}));
+  if (!resp.ok || data?.error || !data?.ok) throw new Error(data?.error || ('HTTP ' + resp.status));
+  return data.row;
+}
+async function updateInDBText(id, text){
   const resp = await fetch(UPDATE_URL, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -196,24 +229,35 @@ async function updateInDB(id, text){
   return data.row;
 }
 
-/* ===== Render ===== */
+/* ===== Render Desktop ===== */
 function renderTable(){
   if(!isDesktop) return;
   ensureActionsHeader();
   resultsBody.innerHTML = "";
+
   RESULTS.forEach((r,i)=>{
-    const raw = (r.text || "").replace(/\s*\n\s*/g, " ").trim();
-    const euro = extractEurocode(raw);
-    const ok = !!euro;
+    const raw   = (r.text || "").replace(/\s*\n\s*/g, " ").trim();
+    const auto  = getEuroCandidates(r.text || "")[0] || "";
+    const validFromBackend = readEuroField(r) || "";
+    const euro  = validFromBackend || auto;
+    const validated = !!validFromBackend;
 
     const tr = document.createElement("tr");
+    tr.dataset.id = r.id;
+
+    const euroHtml = `
+      <div class="euro-select-wrap">
+        <span class="euro ${euro ? 'euro-ok' : 'euro-miss'}">${euro || '—'}</span>
+        <button class="btn-icon euroEdit" title="Validar/alterar">▾</button>
+      </div>
+      ${validated ? '<div class="mob-note">validado</div>' : ''}
+    `;
+
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
       <td><div class="ocr-text">${raw}</div></td>
-      <td class="euro-cell" title="${ok ? 'Clique para copiar' : 'Não encontrado'}">
-        <span class="euro ${ok ? 'euro-ok' : 'euro-miss'}">${ok ? euro : '—'}</span>
-      </td>
+      <td class="euro-cell">${euroHtml}</td>
       <td>
         <button class="btn-icon editBtn" title="Editar" data-id="${r.id}">✏️</button>
         <button class="btn-icon delBtn"  title="Apagar" data-id="${r.id}">🗑️</button>
@@ -221,64 +265,154 @@ function renderTable(){
     `;
     resultsBody.appendChild(tr);
   });
+
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
 
-/* Copiar Eurocode com clique */
-resultsBody?.addEventListener("click", (e)=>{
-  const cell = e.target.closest(".euro-cell");
-  if (!cell) return;
-  const code = cell.textContent.trim();
-  if (!code || code === "—") return;
-  navigator.clipboard?.writeText(code).then(()=> showToast("Eurocode copiado")).catch(()=>{});
-});
+/* abre seletor de candidatos (Desktop) e grava no backend */
+async function openEuroSelectorDesktop(cell, row){
+  const candidates = getEuroCandidates(row.text || "");
+  if (!candidates.length){ showToast("Sem candidatos extraídos"); return; }
 
-/* Delegação — editar e apagar */
+  const prev = cell.innerHTML;
+  const wrap = document.createElement("div");
+  wrap.className = "euro-select-wrap";
+  wrap.innerHTML = `
+    <select class="euro-select">
+      ${candidates.map(c => `<option value="${c}" ${c === (readEuroField(row) || candidates[0]) ? 'selected':''}>${c}</option>`).join('')}
+    </select>
+    <button class="euro-choose-btn">OK</button>
+    <button class="btn-icon euro-cancel" title="Cancelar">✖</button>
+  `;
+  cell.innerHTML = ""; cell.appendChild(wrap);
+
+  const select = wrap.querySelector('.euro-select');
+  const btnOk  = wrap.querySelector('.euro-choose-btn');
+  const btnX   = wrap.querySelector('.euro-cancel');
+
+  const cancel = ()=> cell.innerHTML = prev;
+  btnX.addEventListener('click', cancel);
+  btnOk.addEventListener('click', async ()=>{
+    const code = select.value || "";
+    try{
+      await updateEuroValidated(row.id, code);
+      RESULTS = await fetchServerRows();
+      renderTable();
+      showToast("Eurocode validado");
+    }catch(e){
+      console.error(e);
+      showToast("Falha ao validar");
+      cancel();
+    }
+  });
+}
+
+/* Delegação Desktop */
 resultsBody?.addEventListener("click", async (e)=>{
-  const editBtn = e.target.closest(".editBtn");
-  const delBtn  = e.target.closest(".delBtn");
+  const tr  = e.target.closest("tr");
+  if (!tr) return;
+  const id  = Number(tr.dataset.id);
+  const row = RESULTS.find(x => x.id === id);
 
-  if (editBtn) {
-    const id = Number(editBtn.dataset.id);
-    if (!id) return;
-    const rowEl = editBtn.closest('tr');
-    const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
+  // abrir seletor ▾
+  if (e.target.closest(".euroEdit")){
+    const cell = e.target.closest(".euro-cell");
+    openEuroSelectorDesktop(cell, row);
+    return;
+  }
+
+  // copiar euro (clicar no chip)
+  const euroChip = e.target.closest(".euro");
+  if (euroChip && euroChip.textContent.trim() && euroChip.textContent.trim() !== "—") {
+    try { await navigator.clipboard?.writeText(euroChip.textContent.trim()); showToast("Eurocode copiado"); } catch {}
+    return;
+  }
+
+  // editar texto
+  if (e.target.closest(".editBtn")){
+    const currentText = row?.text || '';
     const newText = prompt('Editar texto lido (OCR):', currentText);
     if (newText === null) return;
     try{
-      editBtn.disabled = true; editBtn.textContent = '…';
-      await updateInDB(id, newText);
+      e.target.disabled = true; e.target.textContent = '…';
+      await updateInDBText(id, newText);
       RESULTS = await fetchServerRows();
       renderTable();
       showToast('Registo atualizado.');
     }catch(err){
       console.error(err);
-      showToast('Falha ao atualizar: ' + (err.message || 'erro'));
+      showToast('Falha ao atualizar');
     }finally{
-      editBtn.disabled = false; editBtn.textContent = '✏️';
+      e.target.disabled = false; e.target.textContent = '✏️';
     }
-    return;
   }
 
-  if(!delBtn) return;
-  const id = Number(delBtn.dataset.id);
-  if(!id) return;
-  if(!confirm("Apagar este registo da base de dados?")) return;
-
-  const old = delBtn.textContent;
-  delBtn.disabled = true; delBtn.textContent = "…";
-  try{
-    await deleteFromDB(id);
-    RESULTS = await fetchServerRows();
-    renderTable();
-    showToast("Registo apagado.");
-  }catch(err){
-    console.error(err);
-    showToast("Falha ao apagar: " + (err.message || "erro"));
-  }finally{
-    delBtn.disabled = false; delBtn.textContent = old;
+  // apagar
+  if (e.target.closest(".delBtn")){
+    if(!confirm("Apagar este registo da base de dados?")) return;
+    const old = e.target.textContent;
+    e.target.disabled = true; e.target.textContent = "…";
+    try{
+      await deleteFromDB(id);
+      RESULTS = await fetchServerRows();
+      renderTable();
+      showToast("Registo apagado.");
+    }catch(err){
+      console.error(err);
+      showToast("Falha ao apagar");
+    }finally{
+      e.target.disabled = false; e.target.textContent = old;
+    }
   }
 });
+
+/* ===== Painel Mobile de validação ===== */
+function openMobileEuroPanel({ text }) {
+  return new Promise((resolve) => {
+    const cands = getEuroCandidates(text);
+    const best  = cands[0] || "";
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "mob-euro-backdrop";
+
+    const pane = document.createElement("div");
+    pane.className = "mob-euro";
+    pane.innerHTML = `
+      <h4>Valida o Eurocode</h4>
+      <div class="mob-note">Escolhe o código correto antes de gravar.</div>
+      <table>
+        <thead><tr><th>#</th><th>Possível Eurocode</th><th>Selecionar</th></tr></thead>
+        <tbody>
+          ${
+            (cands.length ? cands : [""]).map((c,idx)=>`
+              <tr>
+                <td>${c ? idx+1 : "-"}</td>
+                <td>${c || "<i>Sem candidatos detetados</i>"}</td>
+                <td>${c ? `<input type="radio" name="euroPick" value="${c}" ${c===best?'checked':''}/>` : ""}</td>
+              </tr>
+            `).join("")
+          }
+        </tbody>
+      </table>
+      <div class="mob-note" style="margin-top:8px;">Se não aparecer, podes seguir sem Eurocode.</div>
+      <div class="mob-euro-actions">
+        <button class="mob-btn" id="mobEuroSkip">Sem Eurocode</button>
+        <button class="mob-btn primary" id="mobEuroOK">Confirmar</button>
+      </div>
+    `;
+
+    const close = (val) => { document.body.removeChild(backdrop); document.body.removeChild(pane); resolve(val); };
+    backdrop.addEventListener("click", ()=> close(null));
+    document.body.appendChild(backdrop);
+    document.body.appendChild(pane);
+
+    pane.querySelector("#mobEuroSkip").addEventListener("click", ()=> close(""));
+    pane.querySelector("#mobEuroOK").addEventListener("click", ()=>{
+      const pick = pane.querySelector('input[name="euroPick"]:checked')?.value || "";
+      close(pick);
+    });
+  });
+}
 
 /* ===== OCR ===== */
 async function optimizeImageForOCR(file){
@@ -292,7 +426,7 @@ async function optimizeImageForOCR(file){
   return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
 }
 
-/* ===== Fluxo Principal ===== */
+/* ===== Fluxo (Mobile pede validação antes de gravar) ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
@@ -310,24 +444,29 @@ async function handleImage(file, origin="camera"){
     const t = await res.text().catch(()=>res.statusText);
     if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
     const data = JSON.parse(t);
-
     const textRead = data?.text || (data?.qr ? `QR: ${data.qr}` : "");
-    const row = {
-      id: Date.now().toString(),
-      ts: Date.now(),
-      filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
-      text: textRead
-    };
 
+    let euroChosen = "";
+    if (!isDesktop) {
+      euroChosen = await openMobileEuroPanel({ text: textRead }) || "";
+    }
+
+    const tsNow = Date.now();
     showProgress("A gravar no Neon…", 90);
-    await persistToDB({ ts: row.ts, text: row.text, filename: row.filename, origin });
+    await persistToDB({
+      ts: tsNow,
+      text: textRead,
+      filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
+      source: origin,
+      ...euroPayload(euroChosen) // ← compat com o teu backend
+    });
 
     RESULTS = await fetchServerRows();
     renderTable();
 
-    showProgress("Concluído ✅", 100);
-    setTimeout(()=> setStatus(""), 300);
-    showToast("OCR concluído");
+    setStatus("Concluído ✅");
+    setTimeout(()=> setStatus(""), 400);
+    showToast(!isDesktop ? (euroChosen ? "Eurocode validado" : "Gravado (sem Eurocode)") : "OCR concluído");
   }catch(err){
     console.error(err);
     showError(err.message || "Erro inesperado");
@@ -335,7 +474,7 @@ async function handleImage(file, origin="camera"){
   }
 }
 
-/* ===== Bind seguro da câmara ===== */
+/* ===== Bind seguro da câmara (evita duplos cliques) ===== */
 function bindCameraOnce(){
   if (!cameraBtn || !cameraInput) return;
 
@@ -384,25 +523,21 @@ fileInput?.addEventListener("change", (e) => {
 /* ===== Export / Limpar ===== */
 exportBtn?.addEventListener("click", async () => {
   if(!RESULTS.length) return showToast("Nada para exportar");
-  const header = ["idx","timestamp","eurocode","text"];
-  const lines = [header.join(",")].concat(
-    RESULTS.map((r,i)=>{
-      const raw = (r.text||"").replace(/\s*\n\s*/g," ").trim();
-      const euro = extractEurocode(raw);
-      return [
-        i+1,
-        new Date(r.ts).toISOString(),
-        euro,
-        `"${raw.replace(/"/g,'""')}"`
-      ].join(",");
-    })
-  );
+  const lines = [];
+  lines.push(["idx","timestamp","eurocode_auto","eurocode_validado","text"].join(","));
+  RESULTS.forEach((r,i)=>{
+    const auto  = getEuroCandidates(r.text||"")[0] || "";
+    const valid = readEuroField(r) || "";
+    const raw   = (r.text||"").replace(/\s*\n\s*/g," ").trim().replace(/"/g,'""');
+    lines.push([ i+1, new Date(r.ts).toISOString(), auto, valid, `"${raw}"` ].join(","));
+  });
   const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = "express_ocr.csv"; a.click();
   URL.revokeObjectURL(url);
 });
+
 clearBtn?.addEventListener("click", ()=>{
   RESULTS = [];
   renderTable();
@@ -414,7 +549,6 @@ const helpModal = document.getElementById("helpModal");
 const helpBtn = document.getElementById("helpBtn");
 const helpBtnDesktop = document.getElementById("helpBtnDesktop");
 const helpClose = document.getElementById("helpClose");
-
 function showHelpModal() { helpModal?.classList.add("show"); }
 function hideHelpModal() { helpModal?.classList.remove("show"); }
 helpBtn?.addEventListener("click", showHelpModal);
