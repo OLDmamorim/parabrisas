@@ -34,6 +34,11 @@ const toast         = document.getElementById("toast");
     .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
     .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
     .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
+    .euro { font-weight:700; padding:2px 6px; border-radius:6px; display:inline-block; }
+    .euro-ok { background:#064e3b; color:#d1fae5; }     /* verde escuro */
+    .euro-miss { background:#7c2d12; color:#ffedd5; }   /* laranja/tostado */
+    .euro-cell { cursor:copy; }
+    .toast.show{ opacity:1; }
   `;
   document.head.appendChild(s);
 })();
@@ -165,12 +170,16 @@ function renderTable(){
   RESULTS.forEach((r,i)=>{
     const raw = (r.text || "").replace(/\s*\n\s*/g, " ").trim();
     const euro = extractEurocode(raw);
+    const ok = !!euro;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${new Date(r.ts).toLocaleString()}</td>
       <td><div class="ocr-text">${raw}</div></td>
-      <td><strong>${euro || ""}</strong></td>
+      <td class="euro-cell" title="${ok ? 'Clique para copiar' : 'Não encontrado'}">
+        <span class="euro ${ok ? 'euro-ok' : 'euro-miss'}">${ok ? euro : '—'}</span>
+      </td>
       <td>
         <button class="btn-icon editBtn" title="Editar" data-id="${r.id}">✏️</button>
         <button class="btn-icon delBtn"  title="Apagar" data-id="${r.id}">🗑️</button>
@@ -181,17 +190,30 @@ function renderTable(){
   desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
 
+/* Copiar Eurocode com clique */
+resultsBody?.addEventListener("click", (e)=>{
+  const cell = e.target.closest(".euro-cell");
+  if (!cell) return;
+  const code = cell.textContent.trim();
+  if (!code || code === "—") return;
+  navigator.clipboard?.writeText(code).then(()=> showToast("Eurocode copiado")).catch(()=>{});
+});
+
 /* Delegação — editar e apagar */
 resultsBody?.addEventListener("click", async (e)=>{
   const editBtn = e.target.closest(".editBtn");
   const delBtn  = e.target.closest(".delBtn");
+
   if (editBtn) {
     const id = Number(editBtn.dataset.id);
     if (!id) return;
+
     const rowEl = editBtn.closest('tr');
     const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
+
     const newText = prompt('Editar texto lido (OCR):', currentText);
-    if (newText === null) return;
+    if (newText === null) return; // cancelou
+
     try{
       editBtn.disabled = true; editBtn.textContent = '…';
       await updateInDB(id, newText);
@@ -206,10 +228,12 @@ resultsBody?.addEventListener("click", async (e)=>{
     }
     return;
   }
+
   if(!delBtn) return;
   const id = Number(delBtn.dataset.id);
   if(!id) return;
   if(!confirm("Apagar este registo da base de dados?")) return;
+
   const old = delBtn.textContent;
   delBtn.disabled = true; delBtn.textContent = "…";
   try{
@@ -280,7 +304,7 @@ async function handleImage(file, origin="camera"){
   }
 }
 
-/* ===== Bind seguro da câmara (remove listeners duplicados) ===== */
+/* ===== Bind seguro da câmara ===== */
 function bindCameraOnce(){
   if (!cameraBtn || !cameraInput) return;
 
@@ -294,19 +318,18 @@ function bindCameraOnce(){
   cameraBtn.addEventListener("click", (e) => {
     e.preventDefault();
     if (camBusy) return;
-    camBusy = true;              // trava reentradas
-    cameraBtn.blur();            // tira foco
-    cameraInput.click();         // abre câmara
+    camBusy = true;
+    cameraBtn.blur();
+    cameraInput.click();
   });
 
   cameraInput.addEventListener("change", async (e) => {
     try{
       const file = e.target.files?.[0];
-      if (!file) { camBusy = false; return; }  // cancelou
+      if (!file) { camBusy = false; return; }
       await handleImage(file, "camera");
     } finally {
       cameraInput.value = "";
-      // pequena folga para o SO fechar a câmara antes de permitir novo clique
       setTimeout(()=>{ camBusy = false; }, 350);
     }
   });
@@ -356,7 +379,7 @@ clearBtn?.addEventListener("click", ()=>{
   showToast("Vista limpa (dados no Neon mantidos)");
 });
 
-/* ===== Modal Ajuda (igual) ===== */
+/* ===== Modal Ajuda ===== */
 const helpModal = document.getElementById("helpModal");
 const helpBtn = document.getElementById("helpBtn");
 const helpBtnDesktop = document.getElementById("helpBtnDesktop");
