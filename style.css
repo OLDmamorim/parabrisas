@@ -706,32 +706,3 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
   white-space: pre-wrap;
   word-break: break-word;
 }
-
-/* === Lista só de Eurocodes (mobile) === */
-.eurocode-list {
-  padding: 10px 12px;
-}
-
-.eurocode-list ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.eurocode-list li {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  font-weight: 700;
-  letter-spacing: .3px;
-  text-align: left;          /* encostado à esquerda */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-}
-
-.eurocode-list li:last-child {
-  border-bottom: 0;
-}
-
-.history-empty {
-  text-align: left;          /* também à esquerda quando vazio */
-  padding: 14px 12px;
-}
