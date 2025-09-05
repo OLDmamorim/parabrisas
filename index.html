@@ -89,13 +89,30 @@
     </div>
   </div>
 
+  <!-- MODAL DE EDIÇÃO OCR -->
+  <div id="editOcrModal" class="edit-ocr-modal">
+    <div class="edit-ocr-content">
+      <div class="edit-ocr-header">
+        <h3>✏️ Editar texto lido (OCR)</h3>
+        <button class="edit-ocr-close" id="editOcrClose">&times;</button>
+      </div>
+      <div class="edit-ocr-body">
+        <textarea id="editOcrTextarea" class="edit-ocr-textarea" placeholder="Texto do OCR..."></textarea>
+      </div>
+      <div class="edit-ocr-footer">
+        <button id="editOcrCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="editOcrSave" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- App original -->
   <script src="app.js"></script>
 
-  <!-- ===== Mobile: preencher “Últimas Capturas” (API -> fallback tabela) ===== -->
+  <!-- ===== Mobile: preencher "Últimas Capturas" (API -> fallback tabela) ===== -->
   <script>
   (function(){
     const listEl = document.getElementById('mobileHistoryList');
