@@ -706,3 +706,23 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* === Mobile: esconder instruções e formatar lista de Eurocodes === */
+@media (max-width: 899px){
+  .mobile-cta .hint{ display:none !important; }
+}
+
+/* Lista simples de Eurocodes (mobile) */
+#mobileHistoryList ul{ list-style:none; margin:0; padding:0; }
+#mobileHistoryList li{
+  text-align:left;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  font-weight:700;
+  letter-spacing:.3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+#mobileHistoryList li:last-child{ border-bottom:0; }
+
+/* Mensagem vazia também à esquerda */
+#mobileHistoryList .history-empty{ text-align:left; padding:14px 12px; }
