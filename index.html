@@ -1,45 +1,120 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ExpressGlass • Receção de material (OCR)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="errorBanner" class="error-banner hidden"></div>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand">
+      <h1 class="title">EXPRESSGLASS</h1>
+      <p class="subtitle">Receção material</p>
+    </div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
+  </header>
 
-  <div class="container">
-    <header class="app-header">
-      <h1 class="app-title">EXPRESSGLASS</h1>
-      <p class="subtitle">Receção de material</p>
-
-      <div class="header-actions">
-        <label class="btn">
-          Carregar imagem
-          <input id="ocrFileInput" type="file" accept="image/*" style="display:none">
-        </label>
-        <button id="btnExport" class="btn">Exportar CSV</button>
-        <button id="btnClear" class="btn btn-danger">Limpar Tabela</button>
+  <!-- MOBILE VIEW -->
+  <main id="mobileView" class="card mobile-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    
+    <div class="mobile-cta">
+      <!-- Grid agora com UMA coluna para o botão ficar mais largo -->
+      <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)" style="width:100%;">
+          <span class="emoji">📷</span>
+          <span class="mode-label">OCR</span>
+        </button>
+        <!-- (Removido) botão Eurocode -->
       </div>
-    </header>
+
+      <p class="hint">
+        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
+        Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
+      </p>
+    </div>
+
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <div id="mobileStatus" class="status"></div>
+
+    <!-- Histórico de Capturas -->
+    <div id="mobileHistory" class="history-section">
+      <h3 class="history-title">📋 Últimas Capturas</h3>
+      <div id="mobileHistoryList" class="history-list">
+        <p class="history-empty">Ainda não há capturas realizadas.</p>
+      </div>
+    </div>
+
+    <footer class="footnote">
+      <small>Feito para o Marco • Timezone: Europe/Lisbon</small>
+    </footer>
+  </main>
+
+  <!-- DESKTOP VIEW -->
+  <section id="desktopView" class="card desktop-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
+    
+    <div class="toolbar">
+      <button id="btnUpload" class="btn">📁 Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+      <button id="btnExport" class="btn">📊 Exportar CSV</button>
+      <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
+    </div>
 
     <div class="table-wrap">
-      <table>
+      <table id="resultsTable">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Data/Hora</th>
-            <th>Texto lido (OCR)</th>
-            <th>Eurocode</th>
-            <th class="only-desktop">Ações</th>
+            <th style="width:60px">#</th>
+            <th style="width:220px">Data/Hora</th>
+            <th style="width:auto">Texto lido (OCR)</th>
+            <th style="width:180px">Eurocode</th>
+            <th style="width:140px">Ações</th>
           </tr>
         </thead>
-        <tbody id="ocrTableBody"></tbody>
+        <tbody id="resultsBody"></tbody>
       </table>
+    </div>
+
+    <div id="desktopStatus" class="status"></div>
+  </section>
+
+  <!-- MODAL DE AJUDA -->
+  <div id="helpModal" class="help-modal">
+    <div class="help-content">
+      <button class="help-close" id="helpClose">&times;</button>
+      <h3>💡 Como usar</h3>
+      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- JS para o botão OCR (removidas referências ao Eurocode) -->
+  <script>
+    // Modo ativo
+    window.OCR_MODE = 'ocr';
+
+    const btnOCR   = document.getElementById('btnCamera');
+    const inputCam = document.getElementById('cameraInput');
+
+    // No mobile, carregar a câmara diretamente
+    btnOCR.addEventListener('click', () => {
+      window.OCR_MODE = 'ocr';
+      btnOCR.classList.add('selected');
+      inputCam.click();
+    }, { capture: true });
+  </script>
+
+  <script src="app.js"></script>
 </body>
 </html>
