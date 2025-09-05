@@ -755,3 +755,21 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
     line-height: 1.2 !important;
   }
 }
+
+/* ===== Texto lido (coluna 3) EXACTAMENTE igual ao Data/Hora ===== */
+table#resultsTable > tbody > tr > td.ocr-text,
+table#resultsTable > tbody > tr > td.ocr-text *,
+table#resultsTable > tbody > tr > td:nth-child(3),
+table#resultsTable > tbody > tr > td:nth-child(3) * {
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  letter-spacing: 0 !important;
+}
+
+/* cabeçalho da coluna 3 também igual */
+table#resultsTable > thead > tr > th:nth-child(3) {
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+}
