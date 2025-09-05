@@ -35,8 +35,8 @@ const toast         = document.getElementById("toast");
     .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
     .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
     .euro { font-weight:700; padding:2px 6px; border-radius:6px; display:inline-block; }
-    .euro-ok { background:#064e3b; color:#d1fae5; }     /* verde escuro */
-    .euro-miss { background:#7c2d12; color:#ffedd5; }   /* laranja/tostado */
+    .euro-ok { background:#064e3b; color:#d1fae5; }
+    .euro-miss { background:#7c2d12; color:#ffedd5; }
     .euro-cell { cursor:copy; }
     .toast.show{ opacity:1; }
   `;
@@ -47,24 +47,59 @@ const toast         = document.getElementById("toast");
 let RESULTS = [];
 let lastFile = null;
 
-/* ===== EUROCODE ===== */
+/* ===== EUROCODE (robusto, recompõe 2–3 tokens) ===== */
 const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{2,9}$/;
+
 function normalizeAmbiguous(s=''){
   return s.toUpperCase()
     .replaceAll('O','0')
     .replaceAll('I','1')
     .replaceAll('S','5')
     .replaceAll('B','8')
-    .replace(/[^A-Z0-9]+/g,' ');
+    .replace(/[^\dA-Z]+/g,' ')
+    .trim();
 }
+
 function extractEurocode(text=''){
-  const toks1 = (text||'').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
-  let hit = toks1.find(t => EUROCODE_REGEX.test(t));
-  if (hit) return hit;
   const norm = normalizeAmbiguous(text);
-  const toks2 = norm.split(/\s+/).filter(Boolean);
-  hit = toks2.find(t => EUROCODE_REGEX.test(t));
-  return hit || "";
+  if (!norm) return "";
+
+  // tokens só A-Z0-9
+  const toks = norm.split(/\s+/).filter(Boolean);
+
+  // helper para validar
+  const valid = v => EUROCODE_REGEX.test(v);
+
+  // 1) qualquer token isolado já válido
+  for (let t of toks) {
+    if (valid(t)) return t;
+  }
+
+  // 2) concatenar tokens adjacentes quando o 1º começa por 4 dígitos
+  const starts4digits = t => /^[0-9]{4}/.test(t);
+
+  for (let i=0;i<toks.length;i++){
+    const t0 = toks[i];
+    if (!starts4digits(t0)) continue;
+
+    // t0 + t1
+    if (i+1 < toks.length){
+      const t01 = (t0 + toks[i+1]).slice(0, 13); // limite superior 4+9
+      if (valid(t01)) return t01;
+    }
+
+    // t0 + t1 + t2 (caso “7262 AGAMV 1R”)
+    if (i+2 < toks.length){
+      const t012 = (t0 + toks[i+1] + toks[i+2]).slice(0, 13);
+      if (valid(t012)) return t012;
+    }
+
+    // fallback: se t0 for demasiado comprido (OCR colou lixo), corta até 13
+    const cut = t0.slice(0,13);
+    if (valid(cut)) return cut;
+  }
+
+  return "";
 }
 
 /* ===== Helpers UI ===== */
@@ -212,7 +247,7 @@ resultsBody?.addEventListener("click", async (e)=>{
     const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
 
     const newText = prompt('Editar texto lido (OCR):', currentText);
-    if (newText === null) return; // cancelou
+    if (newText === null) return;
 
     try{
       editBtn.disabled = true; editBtn.textContent = '…';
@@ -308,7 +343,6 @@ async function handleImage(file, origin="camera"){
 function bindCameraOnce(){
   if (!cameraBtn || !cameraInput) return;
 
-  // remove possíveis listeners antigos clonando o nó
   const clone = cameraBtn.cloneNode(true);
   cameraBtn.parentNode.replaceChild(clone, cameraBtn);
   cameraBtn = document.getElementById("btnCamera");
