@@ -28,7 +28,7 @@
           <span class="mode-label">Eurocode</span>
         </button>
       </div>
-      <!-- (removido o <p class="hint"> para não mostrar instruções no mobile) -->
+      <!-- sem instruções no mobile -->
     </div>
 
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
@@ -93,46 +93,68 @@
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- App original (manténs o teu) -->
+  <!-- App original -->
   <script src="app.js"></script>
 
-  <!-- ===== Mobile: espelhar Eurocodes da tabela (não mexe no OCR/BD) ===== -->
+  <!-- ===== Mobile: preencher “Últimas Capturas” (API -> fallback tabela) ===== -->
   <script>
   (function(){
-    const listWrap = document.getElementById('mobileHistoryList');
-    const tbody    = document.getElementById('resultsBody');
+    const listEl = document.getElementById('mobileHistoryList');
 
-    function getEurocodes(limit = 50){
+    async function fetchRowsFromAPI(){
+      try{
+        const res = await fetch('/api/list-ocr', { headers:{'Accept':'application/json'} });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data.rows))  return data.rows;
+        if (Array.isArray(data.items)) return data.items;
+        return [];
+      }catch(e){
+        return null; // força fallback
+      }
+    }
+
+    function pickEuro(row){
+      const c = (
+        row.euro_validado ??
+        row.euro_user ??
+        row.euroUser ??
+        row.eurocode ??
+        row.euro ??
+        ''
+      ).toString().trim();
+      return c || null;
+    }
+
+    function scrapeEurocodesFromTable(limit=50){
+      const tbody = document.getElementById('resultsBody');
       if(!tbody) return [];
       const rows = Array.from(tbody.querySelectorAll('tr'));
       const out = [];
-      for (const tr of rows) {
-        const tds = tr.querySelectorAll('td');
-        if (tds.length >= 4) {
-          // 4.ª coluna é "Eurocode" — apanhar só o código (ignora "validado", etc.)
-          const raw  = (tds[3].innerText || tds[3].textContent || '').trim();
-          const code = raw.split(/\s+/)[0];
-          if (code) out.push(code);
-        }
+      for (const tr of rows){
+        const td = tr.querySelector('td:nth-child(4)');
+        const raw = (td?.innerText || td?.textContent || '').trim();
+        const code = raw.split(/\s+/)[0]; // ignora “validado”, etc.
+        if (code) out.push(code);
         if (out.length >= limit) break;
       }
       return out;
     }
 
-    function renderList(){
-      if(!listWrap) return;
-      const codes = getEurocodes();
-      if (!codes.length) {
-        listWrap.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
+    function renderList(codes){
+      if (!listEl) return;
+      if (!codes || !codes.length){
+        listEl.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
         return;
       }
       const ul = document.createElement('ul');
       ul.style.listStyle = 'none';
       ul.style.margin = '0';
       ul.style.padding = '0';
-      codes.forEach(c => {
+      codes.forEach(code => {
         const li = document.createElement('li');
-        li.textContent = c;
+        li.textContent = code;
         li.style.textAlign = 'left';
         li.style.padding = '10px 12px';
         li.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
@@ -140,19 +162,41 @@
         li.style.letterSpacing = '.3px';
         ul.appendChild(li);
       });
-      listWrap.innerHTML = '';
-      listWrap.appendChild(ul);
+      listEl.innerHTML = '';
+      listEl.appendChild(ul);
     }
 
-    // 1) Render inicial
-    renderList();
-    // 2) Atualiza quando a tabela mudar (adições/edições/apagar)
-    if (tbody) {
-      const mo = new MutationObserver(renderList);
-      mo.observe(tbody, { childList:true, subtree:true, characterData:true });
+    async function refresh(){
+      const apiRows = await fetchRowsFromAPI();
+      if (apiRows){
+        const codes = apiRows.map(pickEuro).filter(Boolean);
+        renderList([...new Set(codes)].slice(0,50));
+        return;
+      }
+      const codes = scrapeEurocodesFromTable();
+      renderList([...new Set(codes)].slice(0,50));
     }
-    // 3) Atualiza ao redimensionar (só por segurança)
-    window.addEventListener('resize', renderList);
+
+    // Inicial
+    refresh();
+
+    // Atualiza quando a tabela muda
+    const tbody = document.getElementById('resultsBody');
+    if (tbody){
+      new MutationObserver(refresh)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+
+    // Atualiza após cliques de “validar”
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      const txt = (t?.textContent || '').toLowerCase();
+      const isValidate = txt.includes('valid') || t?.dataset?.action === 'validate';
+      if (isValidate) setTimeout(refresh, 500);
+    });
+
+    // Segurança: refresh periódico
+    setInterval(refresh, 10000);
   })();
   </script>
 </body>
