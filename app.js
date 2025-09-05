@@ -3,15 +3,16 @@ const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
 const DELETE_URL   = "/api/delete-ocr";
-const UPDATE_URL   = "/api/update-ocr";   // <- NOVO: editar no Neon
+const UPDATE_URL   = "/api/update-ocr";
 const DEMO_MODE    = false;
 
 /* ===== Elements ===== */
 const isDesktop = window.matchMedia("(min-width: 900px)").matches;
 document.getElementById("viewBadge").textContent = isDesktop ? "Desktop" : "Mobile";
 
-const cameraBtn     = document.getElementById("btnCamera");
-const cameraInput   = document.getElementById("cameraInput");
+/* — grab elements — */
+let cameraBtn   = document.getElementById("btnCamera");
+let cameraInput = document.getElementById("cameraInput");
 const mobileStatus  = document.getElementById("mobileStatus");
 const uploadBtn     = document.getElementById("btnUpload");
 const fileInput     = document.getElementById("fileInput");
@@ -21,7 +22,7 @@ const resultsBody   = document.getElementById("resultsBody");
 const desktopStatus = document.getElementById("desktopStatus");
 const toast         = document.getElementById("toast");
 
-/* ===== CSS para texto corrido ===== */
+/* ===== CSS rápido ===== */
 (function(){
   const id = "ocr-text-style";
   if (document.getElementById(id)) return;
@@ -41,7 +42,7 @@ const toast         = document.getElementById("toast");
 let RESULTS = [];
 let lastFile = null;
 
-/* ===== EUROCODE: extração (4 dígitos + 2 a 9 caracteres A/Z/0-9) ===== */
+/* ===== EUROCODE ===== */
 const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{2,9}$/;
 function normalizeAmbiguous(s=''){
   return s.toUpperCase()
@@ -52,12 +53,9 @@ function normalizeAmbiguous(s=''){
     .replace(/[^A-Z0-9]+/g,' ');
 }
 function extractEurocode(text=''){
-  // 1) tentar diretamente
   const toks1 = (text||'').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
   let hit = toks1.find(t => EUROCODE_REGEX.test(t));
   if (hit) return hit;
-
-  // 2) tentar com normalização (O↔0, I↔1, S↔5, B↔8, etc.)
   const norm = normalizeAmbiguous(text);
   const toks2 = norm.split(/\s+/).filter(Boolean);
   hit = toks2.find(t => EUROCODE_REGEX.test(t));
@@ -100,7 +98,7 @@ function showError(message){
   document.getElementById("retryBtn")?.addEventListener("click", ()=> lastFile && handleImage(lastFile, "retry"));
 }
 
-/* ===== Cabeçalho da tabela (com EUROCODE) ===== */
+/* ===== Cabeçalho Desktop ===== */
 function ensureActionsHeader() {
   if (!isDesktop) return;
   const thead = document.querySelector("#resultsTable thead");
@@ -116,7 +114,7 @@ function ensureActionsHeader() {
   `;
 }
 
-/* ===== API Neon ===== */
+/* ===== API ===== */
 async function fetchServerRows(){
   const r = await fetch(LIST_URL);
   if(!r.ok) throw new Error('HTTP '+r.status);
@@ -148,7 +146,6 @@ async function deleteFromDB(id){
   if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
   return true;
 }
-/* EDITAR no Neon */
 async function updateInDB(id, text){
   const resp = await fetch(UPDATE_URL, {
     method: 'POST',
@@ -160,7 +157,7 @@ async function updateInDB(id, text){
   return data.row;
 }
 
-/* ===== Render da tabela ===== */
+/* ===== Render ===== */
 function renderTable(){
   if(!isDesktop) return;
   ensureActionsHeader();
@@ -188,18 +185,13 @@ function renderTable(){
 resultsBody?.addEventListener("click", async (e)=>{
   const editBtn = e.target.closest(".editBtn");
   const delBtn  = e.target.closest(".delBtn");
-
-  // EDITAR
   if (editBtn) {
     const id = Number(editBtn.dataset.id);
     if (!id) return;
-
     const rowEl = editBtn.closest('tr');
     const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
-
     const newText = prompt('Editar texto lido (OCR):', currentText);
-    if (newText === null) return; // cancelou
-
+    if (newText === null) return;
     try{
       editBtn.disabled = true; editBtn.textContent = '…';
       await updateInDB(id, newText);
@@ -214,13 +206,10 @@ resultsBody?.addEventListener("click", async (e)=>{
     }
     return;
   }
-
-  // APAGAR
   if(!delBtn) return;
   const id = Number(delBtn.dataset.id);
   if(!id) return;
   if(!confirm("Apagar este registo da base de dados?")) return;
-
   const old = delBtn.textContent;
   delBtn.disabled = true; delBtn.textContent = "…";
   try{
@@ -247,26 +236,13 @@ async function optimizeImageForOCR(file){
   const out = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
   return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
 }
-async function runOCR(file){
-  if (DEMO_MODE){
-    await new Promise(r=>setTimeout(r, 500));
-    return { text: "DEMO: Texto simulado de OCR\nLinha 2: 123 ABC" };
-  }
-  const optimized = await optimizeImageForOCR(file);
-  const fd = new FormData();
-  fd.append("file", optimized, optimized.name);
-  const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
-  const t = await res.text().catch(()=>res.statusText);
-  if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
-  return JSON.parse(t);
-}
 
-/* ===== Fluxo ===== */
+/* ===== Fluxo Principal ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
     showProgress("A preparar imagem…", 10);
-    await new Promise(r=>setTimeout(r, 150));
+    await new Promise(r=>setTimeout(r, 120));
 
     showProgress("A otimizar…", 25);
     const prepped = await optimizeImageForOCR(file);
@@ -295,7 +271,7 @@ async function handleImage(file, origin="camera"){
     renderTable();
 
     showProgress("Concluído ✅", 100);
-    setTimeout(()=> setStatus(""), 400);
+    setTimeout(()=> setStatus(""), 300);
     showToast("OCR concluído");
   }catch(err){
     console.error(err);
@@ -304,27 +280,55 @@ async function handleImage(file, origin="camera"){
   }
 }
 
+/* ===== Bind seguro da câmara (remove listeners duplicados) ===== */
+function bindCameraOnce(){
+  if (!cameraBtn || !cameraInput) return;
+
+  // remove possíveis listeners antigos clonando o nó
+  const clone = cameraBtn.cloneNode(true);
+  cameraBtn.parentNode.replaceChild(clone, cameraBtn);
+  cameraBtn = document.getElementById("btnCamera");
+
+  let camBusy = false;
+
+  cameraBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (camBusy) return;
+    camBusy = true;              // trava reentradas
+    cameraBtn.blur();            // tira foco
+    cameraInput.click();         // abre câmara
+  });
+
+  cameraInput.addEventListener("change", async (e) => {
+    try{
+      const file = e.target.files?.[0];
+      if (!file) { camBusy = false; return; }  // cancelou
+      await handleImage(file, "camera");
+    } finally {
+      cameraInput.value = "";
+      // pequena folga para o SO fechar a câmara antes de permitir novo clique
+      setTimeout(()=>{ camBusy = false; }, 350);
+    }
+  });
+}
+
 /* ===== Bootstrap ===== */
 (async function(){
-  if(!isDesktop) return;
   try { RESULTS = await fetchServerRows(); }
   catch(e){ console.warn("Sem Neon:", e.message); RESULTS = []; }
   renderTable();
+  bindCameraOnce();
 })();
 
-/* ===== Ações ===== */
-cameraBtn?.addEventListener("click", () => cameraInput.click());
-cameraInput?.addEventListener("change", (e) => {
-  const file = e.target.files?.[0];
-  if (file) handleImage(file, "camera");
-  cameraInput.value = "";
-});
+/* ===== Upload Desktop ===== */
 uploadBtn?.addEventListener("click", () => fileInput.click());
 fileInput?.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (file) handleImage(file, "upload");
   fileInput.value = "";
 });
+
+/* ===== Export / Limpar ===== */
 exportBtn?.addEventListener("click", async () => {
   if(!RESULTS.length) return showToast("Nada para exportar");
   const header = ["idx","timestamp","eurocode","text"];
@@ -352,7 +356,7 @@ clearBtn?.addEventListener("click", ()=>{
   showToast("Vista limpa (dados no Neon mantidos)");
 });
 
-/* ===== MODAL DE AJUDA ===== */
+/* ===== Modal Ajuda (igual) ===== */
 const helpModal = document.getElementById("helpModal");
 const helpBtn = document.getElementById("helpBtn");
 const helpBtnDesktop = document.getElementById("helpBtnDesktop");
@@ -367,61 +371,3 @@ helpModal?.addEventListener("click", (e) => { if (e.target === helpModal) hideHe
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
 });
-
-/* ===== FEEDBACK VISUAL MELHORADO (mantido) ===== */
-function showToastWithType(msg, type = 'info') {
-  toast.textContent = msg;
-  toast.classList.remove('success', 'error');
-  if (type === 'success') toast.classList.add('success');
-  else if (type === 'error') toast.classList.add('error');
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 2500);
-}
-function setCardState(state) {
-  const card = isDesktop ? document.getElementById("desktopView") : document.getElementById("mobileView");
-  card.classList.remove('success', 'error');
-  if (state === 'success') { card.classList.add('success'); setTimeout(() => card.classList.remove('success'), 3000); }
-  else if (state === 'error') { card.classList.add('error'); setTimeout(() => card.classList.remove('error'), 3000); }
-}
-function addFeedbackIcon(message, type) {
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-  return `<span class="feedback-icon">${icons[type] || icons.info}</span>${message}`;
-}
-function animateCameraButton(state) {
-  if (!cameraBtn) return;
-  cameraBtn.classList.remove('pulse');
-  if (state === 'processing') {
-    cameraBtn.style.transform = 'scale(0.95)';
-    cameraBtn.style.opacity = '0.7';
-  } else if (state === 'success') {
-    cameraBtn.style.transform = 'scale(1.05)'; cameraBtn.style.borderColor = 'var(--success)';
-    setTimeout(() => { cameraBtn.style.transform = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse'); }, 1000);
-  } else if (state === 'error') {
-    cameraBtn.style.transform = 'scale(1.05)'; cameraBtn.style.borderColor = 'var(--danger)';
-    setTimeout(() => { cameraBtn.style.transform = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse'); }, 1000);
-  } else {
-    cameraBtn.style.transform = ''; cameraBtn.style.opacity = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse');
-  }
-}
-const originalShowToast = showToast;
-showToast = function(msg, type = 'info') { showToastWithType(msg, type); };
-const originalSetStatus = setStatus;
-setStatus = function(html, opts = {}) {
-  const el = statusEl();
-  el.classList.toggle("error", !!opts.error);
-  if (opts.error) { html = addFeedbackIcon(html, 'error'); setCardState('error'); }
-  else if (opts.success) { html = addFeedbackIcon(html, 'success'); setCardState('success'); }
-  el.innerHTML = html || "";
-};
-const originalShowError = showError;
-showError = function(message) {
-  const el = statusEl();
-  el.classList.add("error");
-  el.innerHTML = `
-    <div>${addFeedbackIcon(message, 'error')}</div>
-    <div class="progress"><span style="width:0%"></span></div>
-    <button class="retry-btn" id="retryBtn">🔄 Tentar novamente</button>
-  `;
-  document.getElementById("retryBtn")?.addEventListener("click", () => lastFile && handleImage(lastFile, "retry"));
-  setCardState('error'); animateCameraButton('error'); showToast(message, 'error');
-};
