@@ -28,13 +28,12 @@
           <span class="mode-label">Eurocode</span>
         </button>
       </div>
-      <!-- sem instruções no mobile -->
     </div>
 
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
     <div id="mobileStatus" class="status"></div>
 
-    <!-- Histórico de Capturas (apenas Eurocodes) -->
+    <!-- Histórico de Capturas -->
     <div id="mobileHistory" class="history-section">
       <h3 class="history-title">📋 Últimas Capturas</h3>
       <div id="mobileHistoryList" class="history-list">
@@ -43,7 +42,7 @@
     </div>
 
     <footer class="footnote">
-      <small>Feito por Marco Amorim • Timezone: Europe/Lisbon</small>
+      <small>Feito por Marco Amorim</small>
     </footer>
   </main>
 
@@ -135,7 +134,7 @@
       for (const tr of rows){
         const td = tr.querySelector('td:nth-child(4)');
         const raw = (td?.innerText || td?.textContent || '').trim();
-        const code = raw.split(/\s+/)[0]; // ignora “validado”, etc.
+        const code = raw.split(/\s+/)[0];
         if (code) out.push(code);
         if (out.length >= limit) break;
       }
@@ -177,17 +176,14 @@
       renderList([...new Set(codes)].slice(0,50));
     }
 
-    // Inicial
     refresh();
 
-    // Atualiza quando a tabela muda
     const tbody = document.getElementById('resultsBody');
     if (tbody){
       new MutationObserver(refresh)
         .observe(tbody, { childList:true, subtree:true, characterData:true });
     }
 
-    // Atualiza após cliques de “validar”
     document.addEventListener('click', (e) => {
       const t = e.target;
       const txt = (t?.textContent || '').toLowerCase();
@@ -195,8 +191,29 @@
       if (isValidate) setTimeout(refresh, 500);
     });
 
-    // Segurança: refresh periódico
     setInterval(refresh, 10000);
+  })();
+  </script>
+
+  <!-- ===== Forçar tamanho da coluna Texto lido no desktop ===== -->
+  <script>
+  (function(){
+    const tbody = document.getElementById('resultsBody');
+    function aplicarTamanho(){
+      document.querySelectorAll('#resultsTable tbody tr td:nth-child(3)').forEach(td=>{
+        td.style.setProperty('font-size','14px','important');
+        td.style.setProperty('line-height','1.35','important');
+        td.style.setProperty('white-space','pre-wrap','important');
+        td.style.setProperty('word-break','break-word','important');
+        td.style.setProperty('letter-spacing','0','important');
+      });
+    }
+    aplicarTamanho();
+    if (tbody){
+      new MutationObserver(aplicarTamanho)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+    window.addEventListener('resize', aplicarTamanho);
   })();
   </script>
 </body>
