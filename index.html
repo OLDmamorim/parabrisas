@@ -4,7 +4,34 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>EXPRESSGLASS • Receção material</title>
-  <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
+
+  <!-- CSS principal -->
+  <link id="mainCss" rel="stylesheet" href="./style.css">
+
+  <!-- Fallback automático caso o CSS não carregue -->
+  <script>
+    window.addEventListener('load', function () {
+      try {
+        const ok = Array.from(document.styleSheets).some(ss => {
+          const href = (ss.href || "");
+          const isOurCss = href.includes("style.css");
+          try { return isOurCss && ss.cssRules && ss.cssRules.length > 0; }
+          catch { return isOurCss; }
+        });
+        if (!ok) {
+          const l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = './style.css?v=bust';
+          document.head.appendChild(l);
+        }
+      } catch (e) {
+        const l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = './style.css?v=bust2';
+        document.head.appendChild(l);
+      }
+    });
+  </script>
 </head>
 <body>
   <!-- HEADER -->
