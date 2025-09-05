@@ -680,3 +680,29 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
   background: rgba(59,130,246,.08);
 }
 .col-actions .btn.btn-mini{ margin-right:6px }
+
+/* === Ajuste de tamanho e legibilidade do "Texto lido" (coluna 3) === */
+#resultsTable th:nth-child(3),
+#resultsTable td:nth-child(3) {
+  font-size: 14px;        /* reduz o tamanho */
+  line-height: 1.45;      /* melhor leitura em blocos grandes */
+  white-space: pre-wrap;  /* mantém quebras do OCR */
+  word-break: break-word; /* parte palavras muito longas */
+  letter-spacing: 0;
+}
+
+/* ligeiro aumento no desktop */
+@media (min-width: 900px) {
+  #resultsTable th:nth-child(3),
+  #resultsTable td:nth-child(3) {
+    font-size: 15px;
+  }
+}
+
+/* Se existirem células com a classe .ocr-text, força o mesmo estilo */
+.ocr-text {
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
