@@ -1,182 +1,191 @@
-/* =========================
- * CONFIG
- * ========================= */
+/* ===== CONFIG ===== */
 const OCR_ENDPOINT = "/api/ocr-proxy";
 const LIST_URL     = "/api/list-ocr";
 const SAVE_URL     = "/api/save-ocr";
 const DELETE_URL   = "/api/delete-ocr";
-const UPDATE_URL   = "/api/update-ocr";
+const UPDATE_URL   = "/api/update-ocr"; // se quiseres editar no futuro
 const DEMO_MODE    = false;
 
-/* =========================
- * HELPERS
- * ========================= */
-const $  = (sel, el=document) => el.querySelector(sel);
-const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
+/* ===== HELPERS ===== */
+const $  = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+
+const pad = n => String(n).padStart(2,"0");
 const fmtDate = (d) => {
   const dt = (d instanceof Date) ? d : new Date(d);
-  const pad = (n)=> String(n).padStart(2,'0');
-  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+  return `${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
 };
 
-/** Normaliza texto do OCR: remove quebras de linha e espaços extra */
 function normalizeOcrText(txt){
   if (!txt) return "";
-  // junta linhas -> um espaço; remove múltiplos espaços; trim
   return String(txt)
     .replace(/\r\n/g, "\n")
     .replace(/\n+/g, " ")
     .replace(/[ \t]+/g, " ")
-    .replace(/\u0000/g, "")   // caracteres nulos estranhos
+    .replace(/\u0000/g, "")
     .trim();
 }
 
-/** Extrai eurocode do texto (regra: 4 dígitos + 2 a 9 caracteres alfanuméricos) */
+// 4 dígitos + 2 a 9 alfanuméricos (aceita ruído com espaços/hífens, depois limpa)
 function extractEurocode(txt){
   if (!txt) return null;
-  // Permitimos espaços/hífens intermédios no reconhecimento e depois limpamos
   const pattern = /(\d{4}[\s\-A-Z0-9]{2,12})/gi;
-  const matches = [];
-  let m;
+  let m, cand;
   while ((m = pattern.exec(txt)) !== null) {
-    let cand = m[1].toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (/^\d{4}[A-Z0-9]{2,9}$/.test(cand)) {
-      matches.push(cand);
-    }
+    cand = m[1].toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (/^\d{4}[A-Z0-9]{2,9}$/.test(cand)) return cand;
   }
-  // Escolhe o primeiro candidato válido
-  return matches[0] || null;
+  return null;
 }
+const isValidEurocode = (code) => typeof code === "string" && /^\d{4}[A-Z0-9]{2,9}$/.test(code);
 
-/** Valida eurocode já “limpo” */
-function isValidEurocode(code){
-  return typeof code === "string" && /^\d{4}[A-Z0-9]{2,9}$/.test(code);
-}
-
-/* =========================
- * RENDERIZAÇÃO DA TABELA
- * ========================= */
+/* ===== TABELA ===== */
 async function loadRows(){
   try{
     const res = await fetch(LIST_URL);
-    if(!res.ok) throw new Error("Falha ao carregar lista.");
-    const data = await res.json(); // espera [{id, created_at, ocr_text, eurocode, valid}]
-    renderTable(data || []);
-  }catch(err){
-    console.error(err);
+    if(!res.ok) throw new Error("Falha ao carregar lista");
+    const rows = await res.json(); // [{id, created_at, ocr_text, eurocode, valid}]
+    renderTable(rows || []);
+  }catch(e){
+    console.error(e);
     renderTable([]);
   }
 }
 
 function renderTable(rows){
   const tbody = $("#ocrTableBody");
-  if(!tbody) return;
   tbody.innerHTML = "";
 
-  rows.forEach(row=>{
+  rows.forEach((r, i) => {
     const tr = document.createElement("tr");
+
+    // #
+    const tdIdx = document.createElement("td");
+    tdIdx.className = "idx";
+    tdIdx.textContent = String(i+1);
+    tr.appendChild(tdIdx);
 
     // Data/Hora
     const tdTime = document.createElement("td");
     tdTime.className = "time-col";
-    tdTime.textContent = fmtDate(row.created_at || new Date());
+    tdTime.textContent = fmtDate(r.created_at || new Date());
     tr.appendChild(tdTime);
 
-    // Texto OCR (compactado + scroll)
+    // Texto OCR
     const tdOcr = document.createElement("td");
     tdOcr.className = "ocr-col";
-    const ocr = document.createElement("div");
-    ocr.className = "ocr-text";
-    ocr.textContent = normalizeOcrText(row.ocr_text || "");
-    tdOcr.appendChild(ocr);
+    const div = document.createElement("div");
+    div.className = "ocr-text";
+    div.textContent = normalizeOcrText(r.ocr_text || "");
+    tdOcr.appendChild(div);
     tr.appendChild(tdOcr);
 
-    // Eurocode + estado
+    // Eurocode
     const tdEuro = document.createElement("td");
     tdEuro.className = "euro-col";
+    const valid = !!r.valid && isValidEurocode(r.eurocode);
     const badge = document.createElement("span");
-    const valid = !!row.valid && isValidEurocode(row.eurocode);
     badge.className = "badge " + (valid ? "green" : "red");
-    badge.innerHTML = `${row.eurocode ? row.eurocode : "—"} <span class="hint">${valid ? "validado" : "inválido"}</span>`;
+    badge.innerHTML = `${r.eurocode ? r.eurocode : "—"} <span class="hint">${valid ? "validado" : "inválido"}</span>`;
     tdEuro.appendChild(badge);
     tr.appendChild(tdEuro);
+
+    // Ações (desktop)
+    const tdAct = document.createElement("td");
+    tdAct.className = "only-desktop";
+    tdAct.innerHTML = ""; // reservado para futuro (editar/apagar)
+    tr.appendChild(tdAct);
 
     tbody.appendChild(tr);
   });
 }
 
-/* =========================
- * CAPTURA/ENVIO OCR
- * ========================= */
-// Exemplo: botão que dispara a captura (ou upload) e envia ao backend OCR
-async function handleCaptureOrUpload(fileOrBlob){
-  // 1) envia para OCR
+/* ===== OCR / UPLOAD ===== */
+async function handleUpload(file){
   const form = new FormData();
-  form.append("file", fileOrBlob, "captura.jpg");
+  form.append("file", file, file.name || "captura.jpg");
 
+  // Chama OCR
   const ocrRes = await fetch(OCR_ENDPOINT, { method:"POST", body: form });
-  if(!ocrRes.ok) throw new Error("Falha no OCR.");
-  const ocrData = await ocrRes.json(); // { text: "...", ... }
+  if(!ocrRes.ok) throw new Error("Falha no OCR");
+  const { text = "" } = await ocrRes.json();
 
-  // 2) normaliza texto
-  const cleanText = normalizeOcrText(ocrData.text || "");
+  // Normaliza + extrai eurocode
+  const cleanText = normalizeOcrText(text);
+  const eurocode  = extractEurocode(cleanText);
+  const valid     = isValidEurocode(eurocode);
 
-  // 3) extrai/valida eurocode
-  const eurocode = extractEurocode(cleanText);
-  const valid = isValidEurocode(eurocode);
-
-  // 4) grava no Neon via API
-  const payload = {
-    ocr_text: cleanText,
-    eurocode: eurocode,
-    valid: valid
-  };
-
+  // Grava no Neon
   const saveRes = await fetch(SAVE_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(payload)
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ ocr_text: cleanText, eurocode, valid })
   });
-  if(!saveRes.ok) throw new Error("Falha ao gravar registo.");
-  // 5) recarrega tabela
-  await loadRows();
+  if(!saveRes.ok) throw new Error("Falha ao guardar");
 }
 
-/* =========================
- * LIMPESA TABELA (opcional)
- * ========================= */
+/* ===== CSV EXPORT ===== */
+function rowsToCSV(rows){
+  const header = ["#", "Data/Hora", "Texto lido (OCR)", "Eurocode", "Validado"];
+  const lines = [header.join(";")];
+  rows.forEach((r, i)=>{
+    const line = [
+      i+1,
+      fmtDate(r.created_at || new Date()),
+      `"${normalizeOcrText(r.ocr_text||"").replace(/"/g,'""')}"`,
+      r.eurocode || "",
+      (r.valid && isValidEurocode(r.eurocode)) ? "Sim" : "Não"
+    ];
+    lines.push(line.join(";"));
+  });
+  return lines.join("\n");
+}
+
+async function exportCSV(){
+  const res = await fetch(LIST_URL);
+  if(!res.ok) { alert("Não foi possível obter os dados."); return; }
+  const rows = await res.json();
+  const csv  = rowsToCSV(rows || []);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url;
+  a.download = `ocr_expressglass_${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ===== LIMPAR TABELA ===== */
 async function clearTable(){
   if(!confirm("Limpar todos os registos?")) return;
   const res = await fetch(DELETE_URL, { method:"POST" });
-  if(!res.ok) { alert("Falha ao limpar."); return; }
+  if(!res.ok){ alert("Falha ao limpar."); return; }
   await loadRows();
 }
 
-/* =========================
- * INICIALIZAÇÃO
- * ========================= */
-window.addEventListener("DOMContentLoaded", () => {
-  // liga botões se existirem
-  const btnClear = $("#btnClear");
-  if (btnClear) btnClear.addEventListener("click", clearTable);
+/* ===== INIT ===== */
+window.addEventListener("DOMContentLoaded", ()=>{
+  // Botões
+  const input = $("#ocrFileInput");
+  input?.addEventListener("change", async (e)=>{
+    const f = e.target.files?.[0];
+    if(!f) return;
+    try{
+      await handleUpload(f);
+      await loadRows();
+    }catch(err){
+      console.error(err);
+      alert("Erro no processamento da imagem.");
+    }finally{
+      input.value = "";
+    }
+  });
 
-  // Se tiveres um input file para upload manual:
-  const fileInput = $("#ocrFileInput");
-  if (fileInput) {
-    fileInput.addEventListener("change", async (e)=>{
-      const f = e.target.files?.[0];
-      if(!f) return;
-      try{
-        await handleCaptureOrUpload(f);
-      }catch(err){
-        console.error(err);
-        alert("Ocorreu um erro no processamento do OCR.");
-      }finally{
-        fileInput.value = "";
-      }
-    });
-  }
+  $("#btnClear")?.addEventListener("click", clearTable);
+  $("#btnExport")?.addEventListener("click", exportCSV);
 
-  // carrega dados
+  // Carregar tabela
   loadRows();
 });
