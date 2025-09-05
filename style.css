@@ -726,3 +726,14 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
 
 /* Mensagem vazia também à esquerda */
 #mobileHistoryList .history-empty{ text-align:left; padding:14px 12px; }
+
+/* Desktop: controlar tamanho da coluna "Texto lido (Eurocode)" */
+@media (min-width: 900px) {
+  #resultsTable th:nth-child(3),
+  #resultsTable td:nth-child(3) {
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: pre-wrap;  /* mantém as quebras originais */
+    word-break: break-word; /* parte palavras longas */
+  }
+}
