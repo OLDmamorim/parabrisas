@@ -9,20 +9,19 @@ export const handler = async (event) => {
       return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { id, text, euro_validado, euro_user, eurocode } = JSON.parse(event.body || "{}");
+    // garantir que existe a coluna euro_validado
+    await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS euro_validado text`;
+
+    const { id, text, euro_validado } = JSON.parse(event.body || "{}");
     const numId = Number(id);
 
     if (!numId || Number.isNaN(numId)) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing/invalid id" }) };
     }
 
-    const euroFinal = euro_validado || euro_user || eurocode || null;
-
     const rows = await sql/*sql*/`
       UPDATE ocr_results
-      SET 
-        text = COALESCE(${text}, text),
-        euro_validado = COALESCE(${euroFinal}, euro_validado)
+      SET text = ${text}, euro_validado = ${euro_validado}
       WHERE id = ${numId}
       RETURNING id, ts, text, filename, source, euro_validado
     `;
