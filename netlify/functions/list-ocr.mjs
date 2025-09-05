@@ -1,3 +1,4 @@
+// netlify/functions/list-ocr.mjs
 import { sql, init, jsonHeaders } from './db.mjs';
 
 export const handler = async (event) => {
@@ -9,7 +10,7 @@ export const handler = async (event) => {
     await init();
 
     const rows = await sql/*sql*/`
-      select id, ts, text, filename, source
+      select id, ts, text, filename, source, euro_validado
       from ocr_results
       order by ts desc
       limit 200
@@ -21,6 +22,10 @@ export const handler = async (event) => {
       body: JSON.stringify({ ok: true, rows })
     };
   } catch (e) {
-    return { statusCode: 500, headers: jsonHeaders, body: JSON.stringify({ ok:false, error: e.message }) };
+    return {
+      statusCode: 500,
+      headers: jsonHeaders,
+      body: JSON.stringify({ ok: false, error: e.message })
+    };
   }
 };
