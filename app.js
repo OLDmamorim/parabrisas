@@ -47,10 +47,13 @@ const toast         = document.getElementById("toast");
     .mob-euro{ position:fixed; left:0; right:0; bottom:0; z-index:9999; background:#0b1220; color:#e5e7eb; border-top-left-radius:18px; border-top-right-radius:18px; padding:14px; box-shadow:0 -8px 30px rgba(0,0,0,.4); max-height:72vh; overflow:auto; }
     .mob-euro h4{ margin:0 0 8px 0; font-size:16px; }
     .mob-euro table{ width:100%; border-collapse:collapse; margin-top:8px; }
-    .mob-euro th, .mob-euro td{ border-bottom:1px solid #1f2937; padding:8px; font-size:14px; }
+    .mob-euro th, .mob-euro td{ border-bottom:1px solid #1f2937; padding:12px 8px; font-size:15px; }
+    .mob-euro tr{ user-select:none; }
+    .mob-euro tr.active{ background:#0f172a; }
     .mob-euro-actions{ display:flex; gap:8px; margin-top:12px; }
-    .mob-btn{ padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#111827; color:#e5e7eb; flex:1; }
+    .mob-btn{ padding:12px; border-radius:10px; border:1px solid #334155; background:#111827; color:#e5e7eb; flex:1; }
     .mob-btn.primary{ background:#2563eb; border-color:#2563eb; color:white; }
+    .mob-btn.primary:disabled{ opacity:.6; }
     .mob-note{ font-size:12px; opacity:.8; margin-top:6px; }
     .toast.show{ opacity:1; }
   `;
@@ -61,20 +64,12 @@ const toast         = document.getElementById("toast");
 let RESULTS = [];
 let lastFile = null;
 
-/* ===== CAMADA DE COMPATIBILIDADE COM O BACKEND ===== */
-// Lê qualquer nome de campo que já exista no teu backend
-function readEuroField(row){
-  return row.euro_user ?? row.eurocode ?? row.euro ?? "";
-}
-// Envia em várias chaves — o backend aproveita a que conhecer
-function euroPayload(euro){
-  return { euro, euro_user: euro, eurocode: euro };
-}
+/* ===== COMPAT BACKEND ===== */
+function readEuroField(row){ return row.euro_user ?? row.eurocode ?? row.euro ?? ""; }
+function euroPayload(euro){ return { euro, euro_user: euro, eurocode: euro }; }
 
-/* ===== EUROCODE — regras + candidatos =====
-   Formato base: 4 dígitos + 1 letra + 1..8 A/Z/0-9  → total 6..13
-*/
-const EURO_BASE_RE   = /^\d{4}[A-Z][A-Z0-9]{1,8}$/;
+/* ===== EUROCODE regras + candidatos ===== */
+const EURO_BASE_RE   = /^\d{4}[A-Z][A-Z0-9]{1,8}$/; // 6..13
 const STARTS_4_RE    = /^\d{4}/;
 const SUSPECT_WORDS  = /FINAL|MATERIAL|VINYL|GLASS|INSPECT|TEST|QA|ALT|ALTERNATES/i;
 
@@ -83,31 +78,22 @@ const cleanTokens = (s='') => s.toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().
 function scoreCode(c){
   if (!EURO_BASE_RE.test(c)) return -999;
   let score = 0;
-  if (/^00/.test(c)) score -= 12;                 // evita 00xx…
+  if (/^00/.test(c)) score -= 12;
   const len = c.length;
-  if (len >= 7 && len <= 10) score += 6;          // comprimento típico
+  if (len >= 7 && len <= 10) score += 6;
   const letters = (c.match(/[A-Z]/g)||[]).length;
-  if (letters >= 3) score += 4;                    // >=3 letras
-  if (/\d{2,}/.test(c.slice(5))) score += 3;       // dígitos finais
-  if (SUSPECT_WORDS.test(c)) score -= 15;          // falsos positivos (FINAL…)
+  if (letters >= 3) score += 4;
+  if (/\d{2,}/.test(c.slice(5))) score += 3;
+  if (SUSPECT_WORDS.test(c)) score -= 15;
   return score;
 }
-
 function buildCandidates(tokens){
   const out = new Set();
-  // 1 token
   for (const t of tokens) if (EURO_BASE_RE.test(t)) out.add(t);
-  // 2 e 3 tokens colados quando o 1º começa por 4 dígitos
   for (let i=0;i<tokens.length;i++){
     const t0 = tokens[i]; if (!STARTS_4_RE.test(t0)) continue;
-    if (i+1 < tokens.length){
-      const t01 = (t0 + tokens[i+1]).slice(0,13);
-      if (EURO_BASE_RE.test(t01)) out.add(t01);
-    }
-    if (i+2 < tokens.length){
-      const t012 = (t0 + tokens[i+1] + tokens[i+2]).slice(0,13);
-      if (EURO_BASE_RE.test(t012)) out.add(t012);
-    }
+    if (i+1<tokens.length){ const t01 = (t0+tokens[i+1]).slice(0,13); if (EURO_BASE_RE.test(t01)) out.add(t01); }
+    if (i+2<tokens.length){ const t012 = (t0+tokens[i+1]+tokens[i+2]).slice(0,13); if (EURO_BASE_RE.test(t012)) out.add(t012); }
   }
   return Array.from(out);
 }
@@ -118,7 +104,7 @@ function getEuroCandidates(text=''){
 }
 function pickEuroToDisplay(row){
   const validated = readEuroField(row);
-  if (validated) return validated; // veio validado do backend
+  if (validated) return validated;
   const cands = getEuroCandidates(row.text||"");
   return cands[0] || "";
 }
@@ -172,20 +158,18 @@ async function fetchServerRows(){
   const r = await fetch(LIST_URL);
   if(!r.ok) throw new Error('HTTP '+r.status);
   const { rows } = await r.json();
-
   return rows.map(x => {
-    // ts pode vir em vários nomes/formatos — tenta normalizar
     const tsAny = (typeof x.ts === "number" ? x.ts
-                 : x.ts_ms ?? x.ts_epoch_ms ?? x.ts_ms_epoch ?? x.ts);
+                  : x.ts_ms ?? x.ts_epoch_ms ?? x.ts_ms_epoch ?? x.ts);
     return {
       id: x.id,
       ts: Number(tsAny),
       text: x.text || '',
       filename: x.filename || '',
       source: x.source || '',
-      euro_user: x.euro_user,                 // se existir
-      eurocode : x.eurocode,                  // se existir
-      euro     : x.euro                       // se existir
+      euro_user: x.euro_user,
+      eurocode : x.eurocode,
+      euro     : x.euro
     };
   });
 }
@@ -212,7 +196,7 @@ async function updateEuroValidated(id, euro){
   const resp = await fetch(UPDATE_URL, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ id, ...euroPayload(euro) })  // compat com teu backend
+    body: JSON.stringify({ id, ...euroPayload(euro) })
   });
   const data = await resp.json().catch(()=>({}));
   if (!resp.ok || data?.error || !data?.ok) throw new Error(data?.error || ('HTTP ' + resp.status));
@@ -314,21 +298,18 @@ resultsBody?.addEventListener("click", async (e)=>{
   const id  = Number(tr.dataset.id);
   const row = RESULTS.find(x => x.id === id);
 
-  // abrir seletor ▾
   if (e.target.closest(".euroEdit")){
     const cell = e.target.closest(".euro-cell");
     openEuroSelectorDesktop(cell, row);
     return;
   }
 
-  // copiar euro (clicar no chip)
   const euroChip = e.target.closest(".euro");
   if (euroChip && euroChip.textContent.trim() && euroChip.textContent.trim() !== "—") {
     try { await navigator.clipboard?.writeText(euroChip.textContent.trim()); showToast("Eurocode copiado"); } catch {}
     return;
   }
 
-  // editar texto
   if (e.target.closest(".editBtn")){
     const currentText = row?.text || '';
     const newText = prompt('Editar texto lido (OCR):', currentText);
@@ -347,7 +328,6 @@ resultsBody?.addEventListener("click", async (e)=>{
     }
   }
 
-  // apagar
   if (e.target.closest(".delBtn")){
     if(!confirm("Apagar este registo da base de dados?")) return;
     const old = e.target.textContent;
@@ -366,11 +346,11 @@ resultsBody?.addEventListener("click", async (e)=>{
   }
 });
 
-/* ===== Painel Mobile de validação ===== */
+/* ===== Painel Mobile de validação (corrigido) ===== */
 function openMobileEuroPanel({ text }) {
   return new Promise((resolve) => {
     const cands = getEuroCandidates(text);
-    const best  = cands[0] || "";
+    const single = cands.length === 1;
 
     const backdrop = document.createElement("div");
     backdrop.className = "mob-euro-backdrop";
@@ -385,10 +365,10 @@ function openMobileEuroPanel({ text }) {
         <tbody>
           ${
             (cands.length ? cands : [""]).map((c,idx)=>`
-              <tr>
+              <tr data-idx="${idx}">
                 <td>${c ? idx+1 : "-"}</td>
                 <td>${c || "<i>Sem candidatos detetados</i>"}</td>
-                <td>${c ? `<input type="radio" name="euroPick" value="${c}" ${c===best?'checked':''}/>` : ""}</td>
+                <td>${c ? `<input type="radio" name="euroPick" value="${c}" ${single?'checked':''}/>` : ""}</td>
               </tr>
             `).join("")
           }
@@ -397,7 +377,7 @@ function openMobileEuroPanel({ text }) {
       <div class="mob-note" style="margin-top:8px;">Se não aparecer, podes seguir sem Eurocode.</div>
       <div class="mob-euro-actions">
         <button class="mob-btn" id="mobEuroSkip">Sem Eurocode</button>
-        <button class="mob-btn primary" id="mobEuroOK">Confirmar</button>
+        <button class="mob-btn primary" id="mobEuroOK" ${(!single && cands.length>1)?'disabled':''}>Confirmar</button>
       </div>
     `;
 
@@ -405,6 +385,22 @@ function openMobileEuroPanel({ text }) {
     backdrop.addEventListener("click", ()=> close(null));
     document.body.appendChild(backdrop);
     document.body.appendChild(pane);
+
+    const tbody = pane.querySelector("tbody");
+    const btnOK = pane.querySelector("#mobEuroOK");
+
+    // selecionar ao tocar na linha
+    tbody.addEventListener("click", (ev)=>{
+      const tr = ev.target.closest("tr");
+      if (!tr) return;
+      const radio = tr.querySelector('input[type="radio"]');
+      if (radio){
+        radio.checked = true;
+        [...tbody.querySelectorAll("tr")].forEach(x=>x.classList.remove("active"));
+        tr.classList.add("active");
+        btnOK.disabled = false;
+      }
+    });
 
     pane.querySelector("#mobEuroSkip").addEventListener("click", ()=> close(""));
     pane.querySelector("#mobEuroOK").addEventListener("click", ()=>{
@@ -426,7 +422,7 @@ async function optimizeImageForOCR(file){
   return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
 }
 
-/* ===== Fluxo (Mobile pede validação antes de gravar) ===== */
+/* ===== Fluxo (Mobile valida antes de gravar) ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
@@ -458,7 +454,7 @@ async function handleImage(file, origin="camera"){
       text: textRead,
       filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
       source: origin,
-      ...euroPayload(euroChosen) // ← compat com o teu backend
+      ...euroPayload(euroChosen)
     });
 
     RESULTS = await fetchServerRows();
@@ -474,7 +470,7 @@ async function handleImage(file, origin="camera"){
   }
 }
 
-/* ===== Bind seguro da câmara (evita duplos cliques) ===== */
+/* ===== Bind seguro da câmara ===== */
 function bindCameraOnce(){
   if (!cameraBtn || !cameraInput) return;
 
