@@ -80,20 +80,39 @@ function scoreCode(c){
   let score = 0;
   if (/^00/.test(c)) score -= 12;
   const len = c.length;
-  if (len >= 7 && len <= 10) score += 6;
+  if (len >= 7 && len <= 10) score += 8;   // reforço 7–10
+  if (len > 10) score -= 20;               // penaliza variações longas (ex: ...1R20)
   const letters = (c.match(/[A-Z]/g)||[]).length;
   if (letters >= 3) score += 4;
   if (/\d{2,}/.test(c.slice(5))) score += 3;
   if (SUSPECT_WORDS.test(c)) score -= 15;
   return score;
 }
+
 function buildCandidates(tokens){
   const out = new Set();
-  for (const t of tokens) if (EURO_BASE_RE.test(t)) out.add(t);
+
+  // 1 token
+  for (const t of tokens) {
+    if (EURO_BASE_RE.test(t)) out.add(t);
+    // se vier muito comprido mas os 10 primeiros são bons, propõe corte
+    if (t.length > 10 && EURO_BASE_RE.test(t.slice(0,10))) out.add(t.slice(0,10));
+  }
+
+  // 2 e 3 tokens colados quando o 1º começa por 4 dígitos
   for (let i=0;i<tokens.length;i++){
     const t0 = tokens[i]; if (!STARTS_4_RE.test(t0)) continue;
-    if (i+1<tokens.length){ const t01 = (t0+tokens[i+1]).slice(0,13); if (EURO_BASE_RE.test(t01)) out.add(t01); }
-    if (i+2<tokens.length){ const t012 = (t0+tokens[i+1]+tokens[i+2]).slice(0,13); if (EURO_BASE_RE.test(t012)) out.add(t012); }
+
+    if (i+1<tokens.length){
+      let t01 = (t0+tokens[i+1]).slice(0,13);
+      if (EURO_BASE_RE.test(t01)) out.add(t01);
+      if (t01.length > 10 && EURO_BASE_RE.test(t01.slice(0,10))) out.add(t01.slice(0,10));
+    }
+    if (i+2<tokens.length){
+      let t012 = (t0+tokens[i+1]+tokens[i+2]).slice(0,13);
+      if (EURO_BASE_RE.test(t012)) out.add(t012);
+      if (t012.length > 10 && EURO_BASE_RE.test(t012.slice(0,10))) out.add(t012.slice(0,10));
+    }
   }
   return Array.from(out);
 }
@@ -173,6 +192,8 @@ async function fetchServerRows(){
     };
   });
 }
+
+// devolve {id, raw}
 async function persistToDB(payload) {
   const resp = await fetch(SAVE_URL, {
     method: 'POST',
@@ -180,8 +201,13 @@ async function persistToDB(payload) {
     body: JSON.stringify(payload)
   });
   const txt = await resp.text().catch(()=>resp.statusText);
-  if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
+  if (!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
+  let data = {};
+  try { data = JSON.parse(txt); } catch {}
+  const id = data?.id ?? data?.row?.id ?? data?.insertId ?? null;
+  return { id, raw: data };
 }
+
 async function deleteFromDB(id){
   const resp = await fetch(DELETE_URL, {
     method: 'POST',
@@ -346,7 +372,7 @@ resultsBody?.addEventListener("click", async (e)=>{
   }
 });
 
-/* ===== Painel Mobile de validação (corrigido) ===== */
+/* ===== Painel Mobile de validação ===== */
 function openMobileEuroPanel({ text }) {
   return new Promise((resolve) => {
     const cands = getEuroCandidates(text);
@@ -422,7 +448,7 @@ async function optimizeImageForOCR(file){
   return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
 }
 
-/* ===== Fluxo (Mobile valida antes de gravar) ===== */
+/* ===== Fluxo (Mobile valida antes de gravar + UPDATE forçado) ===== */
 async function handleImage(file, origin="camera"){
   lastFile = file;
   try{
@@ -449,13 +475,21 @@ async function handleImage(file, origin="camera"){
 
     const tsNow = Date.now();
     showProgress("A gravar no Neon…", 90);
-    await persistToDB({
+
+    // 1) grava a captura
+    const { id: savedId } = await persistToDB({
       ts: tsNow,
       text: textRead,
       filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
       source: origin,
-      ...euroPayload(euroChosen)
+      ...euroPayload(euroChosen)   // tentamos enviar logo
     });
+
+    // 2) garante que a escolha fica persistida (se backend ignorar no save)
+    if (euroChosen && savedId) {
+      try { await updateEuroValidated(savedId, euroChosen); }
+      catch(e){ console.warn("UPDATE euro falhou:", e?.message); }
+    }
 
     RESULTS = await fetchServerRows();
     renderTable();
