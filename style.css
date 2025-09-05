@@ -737,3 +737,21 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
     word-break: break-word; /* parte palavras longas */
   }
 }
+
+/* ===== Ajustar "Texto lido (Eurocode)" ao mesmo tamanho de Data/Hora ===== */
+@media (min-width: 900px){
+  table#resultsTable td:nth-child(2),   /* Data/Hora */
+  table#resultsTable td:nth-child(3) { /* Texto lido */
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    letter-spacing: 0 !important;
+  }
+
+  table#resultsTable th:nth-child(2),
+  table#resultsTable th:nth-child(3) {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+}
