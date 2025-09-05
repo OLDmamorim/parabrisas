@@ -14,20 +14,20 @@ const fileInput = document.getElementById('fileInput');
 // Toast
 const toastEl = document.getElementById('toast');
 
-// ====== Estado em memória (sessão) ======
+// ====== Estado ======
 let EUROCODE_HISTORY = []; // só strings (e.g. "1234ABCDEF")
 
 // ====== Utilidades ======
 function showToast(msg, type = 'info') {
   if (!toastEl) return;
   toastEl.textContent = msg;
-  toastEl.classList.remove('show', 'success', 'error');
+  toastEl.className = 'toast'; // reset
   if (type === 'success') toastEl.classList.add('success');
   if (type === 'error') toastEl.classList.add('error');
   // força reflow para reiniciar a animação
   void toastEl.offsetWidth;
   toastEl.classList.add('show');
-  setTimeout(() => toastEl.classList.remove('show', 'success', 'error'), 2200);
+  setTimeout(() => { toastEl.className = 'toast'; }, 2200);
 }
 
 function setStatus(el, text, mode = 'normal') {
@@ -70,47 +70,57 @@ function renderEurocodeHistory() {
 }
 
 // ====== Extração de Eurocode ======
-// Regra que combinámos: 4 dígitos + 2 a 9 caracteres alfanuméricos
+// 4 dígitos + 2 a 9 caracteres alfanuméricos
 const EUROCODE_REGEX = /\b\d{4}[A-Za-z0-9]{2,9}\b/g;
 
 function extractEurocode(text) {
   if (!text) return null;
   const matches = text.match(EUROCODE_REGEX);
-  return (matches && matches[0]) || null; // devolve o primeiro válido
+  return (matches && matches[0]) || null; // primeiro válido
 }
 
-// ====== Chamada ao teu endpoint de OCR ======
+// ====== Fetch robusto ao OCR (tenta /api e depois /.netlify/functions) ======
+async function callOCR(payload) {
+  const endpoints = ['/api/ocr-proxy', '/.netlify/functions/ocr-proxy'];
+  let lastErr;
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text(); // lê como texto para conseguir ver erro do backend
+      if (!res.ok) {
+        lastErr = new Error(`HTTP ${res.status} em ${endpoint}: ${text.slice(0,200)}`);
+        continue;
+      }
+      // tenta parse de JSON; se não der, assume texto simples
+      let data;
+      try { data = JSON.parse(text); } catch { data = { text }; }
+      const fullText = data.text || data.fullText || data.raw || '';
+      return fullText;
+    } catch (e) {
+      lastErr = e;
+      // tenta o próximo endpoint
+    }
+  }
+  throw lastErr || new Error('Falha ao contactar o OCR');
+}
+
+// Converte ficheiro -> base64 e chama OCR
 async function runOCRFromFile(file) {
-  // Converte para base64 data URL
   const buf = await file.arrayBuffer();
   const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
   const mime = file.type || 'image/png';
   const imageBase64 = `data:${mime};base64,${base64}`;
-
-  // Ajusta o endpoint conforme o teu backend
-  const endpoint = '/.netlify/functions/ocr-proxy';
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageBase64 })
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  // Espera-se algo como { text: "....", ... }
-  const data = await res.json();
-  // Tenta ler `text`, `fullText` ou `raw` de forma resiliente
-  const fullText = data.text || data.fullText || data.raw || '';
-  return fullText;
+  return callOCR({ imageBase64 });
 }
 
-// ====== Fluxo Mobile: botão de câmara ======
+// ====== Fluxo Mobile ======
 if (btnCamera && cameraInput) {
-  btnCamera.addEventListener('click', () => {
-    cameraInput.click();
-  });
+  btnCamera.addEventListener('click', () => cameraInput.click());
 
   cameraInput.addEventListener('change', async (e) => {
     const f = e.target.files?.[0];
@@ -127,53 +137,49 @@ if (btnCamera && cameraInput) {
         return;
       }
 
-      // Guarda na lista (sem duplicados consecutivos para ficar limpo)
-      if (EUROCODE_HISTORY[0] !== euro) {
-        EUROCODE_HISTORY.unshift(euro);
-      }
-      // Limite opcional às últimas 50
+      if (EUROCODE_HISTORY[0] !== euro) EUROCODE_HISTORY.unshift(euro);
       if (EUROCODE_HISTORY.length > 50) EUROCODE_HISTORY = EUROCODE_HISTORY.slice(0, 50);
 
       renderEurocodeHistory();
       setStatus(mobileStatus, `✅ Guardado: ${euro}`, 'success');
       showToast(`Eurocode guardado: ${euro}`, 'success');
 
-      // Se no futuro quiseres persistir em Neon, aqui é o ponto para fazer o fetch POST.
-
+      // aqui é o ponto para persistir em Neon, se quiseres
     } catch (err) {
       console.error(err);
-      setStatus(mobileStatus, '❌ Erro a processar a imagem.', 'error');
+      setStatus(mobileStatus, `❌ Erro a processar a imagem. ${err?.message || ''}`, 'error');
       showToast('Erro no OCR.', 'error');
     } finally {
-      // limpa o input para permitir tirar a mesma foto outra vez se precisares
       cameraInput.value = '';
     }
   });
 }
 
-// ====== Desktop (opcional): permitir upload e processar igual ======
+// ====== Desktop (opcional) ======
 if (btnUpload && fileInput) {
   btnUpload.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
     try {
-      setStatus(document.getElementById('desktopStatus'), '⏳ A processar…');
+      const el = document.getElementById('desktopStatus');
+      setStatus(el, '⏳ A processar…');
       const text = await runOCRFromFile(f);
       const euro = extractEurocode(text);
       if (!euro) {
-        setStatus(document.getElementById('desktopStatus'), '⚠️ Sem Eurocode válido. Não foi guardado.', 'error');
+        setStatus(el, '⚠️ Sem Eurocode válido. Não foi guardado.', 'error');
         showToast('Sem Eurocode — nada guardado.', 'error');
         return;
       }
       if (EUROCODE_HISTORY[0] !== euro) EUROCODE_HISTORY.unshift(euro);
       if (EUROCODE_HISTORY.length > 50) EUROCODE_HISTORY = EUROCODE_HISTORY.slice(0, 50);
       renderEurocodeHistory();
-      setStatus(document.getElementById('desktopStatus'), `✅ Guardado: ${euro}`, 'success');
+      setStatus(el, `✅ Guardado: ${euro}`, 'success');
       showToast(`Eurocode guardado: ${euro}`, 'success');
     } catch (err) {
+      const el = document.getElementById('desktopStatus');
       console.error(err);
-      setStatus(document.getElementById('desktopStatus'), '❌ Erro no OCR.', 'error');
+      setStatus(el, `❌ Erro no OCR. ${err?.message || ''}`, 'error');
       showToast('Erro no OCR.', 'error');
     } finally {
       fileInput.value = '';
