@@ -9,6 +9,9 @@ export const handler = async (event) => {
   try {
     await init();
 
+    // garantir que existe a coluna euro_validado
+    await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS euro_validado text`;
+
     const rows = await sql/*sql*/`
       select id, ts, text, filename, source, euro_validado
       from ocr_results
@@ -25,7 +28,7 @@ export const handler = async (event) => {
     return {
       statusCode: 500,
       headers: jsonHeaders,
-      body: JSON.stringify({ ok: false, error: e.message })
+      body: JSON.stringify({ ok:false, error: e.message })
     };
   }
 };
