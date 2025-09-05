@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>EXPRESSGLASS • Receção material</title>
-  <link rel="stylesheet" href="style.css?v=ocr-modal-1" />
+  <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
 </head>
 <body>
   <!-- HEADER -->
@@ -14,39 +14,133 @@
       <p class="subtitle">Receção material</p>
     </div>
     <div class="view-badge" id="viewBadge">Mobile</div>
-  </header>
-
-  <!-- MAIN CARD -->
-  <main class="card">
-    <div class="toolbar">
-      <h2 class="section-title">Registos OCR</h2>
-      <button id="refreshBtn" class="btn">Recarregar</button>
+...
+  <main id="mobileView" class="card mobile-only">
+    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    <div class="mobile-cta">
+      <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap:10px">
+        <button id="btnCamera" class="btn">📷 Capturar Eurocode</button>
+        <button id="btnExport" class="btn btn-secondary">⬇️ Exportar CSV</button>
+        <button id="btnClear" class="btn btn-danger">🧹 Limpar Tabela</button>
+      </div>
     </div>
 
-    <!-- TABELA -->
+    <!-- Histórico Eurocodes (Mobile) -->
+    <section class="history">
+      <h3 class="history-title">Últimas capturas</h3>
+      <ul id="mobileHistoryList" class="history-list"></ul>
+    </section>
+
+    <footer class="footnote">
+      <small>Feito por Marco Amorim</small>
+    </footer>
+  </main>
+
+  <!-- DESKTOP VIEW -->
+  <section id="desktopView" class="card desktop-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
+    
+    <div class="toolbar">
+      <button id="btnUpload" class="btn">📁 Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+      <button id="btnExport" class="btn btn-secondary">⬇️ Exportar CSV</button>
+      <button id="btnClear" class="btn btn-danger">🧹 Limpar Tabela</button>
+    </div>
+
+    <div class="status-line">
+      <span id="desktopStatus" class="status">Pronto</span>
+    </div>
+
     <div class="table-wrap">
-      <table class="table" id="ocrTable" aria-label="Lista OCR">
+      <table class="table" id="resultsTable" aria-label="Resultados OCR">
         <thead>
           <tr>
-            <th style="width:46%">Texto lido (OCR)</th>
+            <th style="width:52%">Texto lido (OCR)</th>
             <th style="width:24%">Eurocode</th>
-            <th style="width:30%">Ações</th>
+            <th style="width:24%">Ações</th>
           </tr>
         </thead>
-        <tbody id="ocrTbody">
-          <!-- linhas injetadas por JS -->
+        <tbody id="resultsBody">
+          <!-- Linhas geradas por JS -->
         </tbody>
       </table>
     </div>
-  </main>
 
-  <!-- ===== Modal Edição OCR (Textarea) ===== -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </section>
+
+  <!-- App original -->
+  <script src="app.js"></script>
+
+  <!-- ===== Mobile: preencher “Últimas Capturas” (API -> fallback tabela) ===== -->
+  <script>
+  (function(){
+    const listEl = document.getElementById('mobileHistoryList');
+    const status = document.getElementById('mobileStatus');
+
+    async function loadRecent(){
+      try{
+        const res = await fetch('/api/list-ocr', { headers:{'Accept':'application/json'} });
+        if(!res.ok) throw new Error('LIST '+res.status);
+        const data = await res.json();
+        const rows = Array.isArray(data) ? data : (data.rows || data.items || []);
+        const codes = rows
+          .map(r => (r.eurocode || r.euro_validado || '').toString().trim())
+          .filter(Boolean)
+          .slice(0, 20);
+
+        if(!codes.length){
+          listEl.innerHTML = '<li class="history-empty">Ainda não há Eurocodes guardados.</li>';
+          return;
+        }
+        const frag = document.createDocumentFragment();
+        codes.forEach(c=>{
+          const li = document.createElement('li');
+          li.textContent = c;
+          li.style.listStyle = 'none';
+          li.style.padding = '10px 12px';
+          li.style.borderBottom = '1px solid rgba(255,255,255,.06)';
+          frag.appendChild(li);
+        });
+        listEl.innerHTML = '';
+        listEl.appendChild(frag);
+      }catch(e){
+        listEl.innerHTML = '<li class="history-empty">Sem ligação ao servidor.</li>';
+      }
+    }
+    loadRecent();
+  })();
+  </script>
+
+  <!-- ===== Fix visual da 3ª coluna (quebras/padding) ===== -->
+  <script>
+  (function(){
+    const tbody = document.getElementById('resultsBody');
+    function fixCol3(){
+      if(!tbody) return;
+      tbody.querySelectorAll('td:nth-child(3)').forEach(td=>{
+        td.style.setProperty('white-space','pre-wrap','important');
+        td.style.setProperty('word-break','break-word','important');
+        td.style.setProperty('letter-spacing','0','important');
+      });
+    }
+    fixCol3();
+    if (tbody){
+      new MutationObserver(fixCol3)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+    window.addEventListener('resize', fixCol3);
+  })();
+  </script>
+
+  <!-- ===== Modal Edição OCR (Textarea) — ADICIONADO ===== -->
   <div id="ocrEditModal" class="ocr-edit-modal ocr-hidden" aria-hidden="true">
     <div class="ocr-dialog" role="dialog" aria-modal="true" aria-labelledby="ocrEditTitle">
       <h3 id="ocrEditTitle" class="ocr-title">Editar texto lido (OCR)</h3>
 
       <label for="ocrEditTextarea" class="ocr-label">Texto completo</label>
-      <textarea id="ocrEditTextarea" class="ocr-textarea" rows="8" spellcheck="false"></textarea>
+      <textarea id="ocrEditTextarea" class="ocr-textarea" rows="10" spellcheck="false"></textarea>
 
       <div class="ocr-actions">
         <button type="button" class="ocr-btn ocr-btn-ghost" id="ocrCancelBtn">Cancelar</button>
@@ -56,7 +150,5 @@
       <button class="ocr-close" id="ocrCloseX" aria-label="Fechar">×</button>
     </div>
   </div>
-
-  <script src="script.js?v=ocr-modal-1"></script>
 </body>
 </html>
