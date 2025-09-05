@@ -28,22 +28,16 @@
           <span class="mode-label">Eurocode</span>
         </button>
       </div>
-
-      <p class="hint">
-  Tira uma foto à <strong>etiqueta</strong> do material.<br/>
-  Inclui a <strong>descrição</strong> e o <strong>Eurocode</strong>.<br/>
-  <strong>Valida</strong> no fim.
-</p>
     </div>
 
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
     <div id="mobileStatus" class="status"></div>
 
-    <!-- Histórico de Capturas -->
+    <!-- Histórico de Capturas (apenas Eurocodes) -->
     <div id="mobileHistory" class="history-section">
       <h3 class="history-title">📋 Últimas Capturas</h3>
-      <div id="mobileHistoryList" class="history-list">
-        <p class="history-empty">Ainda não há capturas realizadas.</p>
+      <div id="mobileHistoryList" class="history-list eurocode-list">
+        <p class="history-empty">Ainda não há Eurocodes guardados.</p>
       </div>
     </div>
 
@@ -99,19 +93,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- JS -->
-  <script>
-    window.OCR_MODE = 'ocr';
-
-    const btnOCR   = document.getElementById('btnCamera');
-    const inputCam = document.getElementById('cameraInput');
-
-    btnOCR.addEventListener('click', () => {
-      window.OCR_MODE = 'ocr';
-      btnOCR.classList.add('selected');
-      inputCam.click();
-    }, { capture: true });
-  </script>
-
   <script src="app.js"></script>
 </body>
 </html>
