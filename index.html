@@ -2,8 +2,8 @@
 <html lang="pt">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>EXPRESSGLASS - Receção material</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -18,19 +18,25 @@
 
   <!-- MOBILE VIEW -->
   <main id="mobileView" class="card mobile-only">
-    <button class="help-btn" id="helpBtn" aria-label="Ajuda" type="button">?</button>
-
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    
     <div class="mobile-cta">
-      <!-- Apenas 1 botão (OCR) -->
+      <!-- Dois botões lado a lado -->
       <div class="mode-grid">
-        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)" type="button">
+        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (OCR)">
           <span class="emoji">📷</span>
           <span class="mode-label">OCR</span>
+        </button>
+
+        <button id="btnEurocode" class="btn-square mode-btn" aria-label="Tirar foto (Eurocode)">
+          <span class="emoji">📷</span>
+          <span class="mode-label">EUROCODE</span>
         </button>
       </div>
 
       <p class="hint">
-        Tira uma foto à <strong>etiqueta</strong> do material.<br />
+        Tira uma foto à <strong>etiqueta</strong> do material.<br/>
         Inclui a <strong>descrição</strong> e o <strong>código</strong> se possível.
       </p>
     </div>
@@ -53,13 +59,14 @@
 
   <!-- DESKTOP VIEW -->
   <section id="desktopView" class="card desktop-only">
-    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda" type="button">?</button>
-
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
+    
     <div class="toolbar">
-      <button id="btnUpload" class="btn" type="button">📁 Carregar imagem</button>
+      <button id="btnUpload" class="btn">📁 Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
-      <button id="btnExport" class="btn" type="button">📊 Exportar CSV</button>
-      <button id="btnClear" class="btn danger" type="button">🗑️ Limpar Tabela</button>
+      <button id="btnExport" class="btn">📊 Exportar CSV</button>
+      <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
     </div>
 
     <div class="table-wrap">
@@ -81,22 +88,46 @@
   </section>
 
   <!-- MODAL DE AJUDA -->
-  <div id="helpModal" class="help-modal" aria-hidden="true">
+  <div id="helpModal" class="help-modal">
     <div class="help-content">
-      <button class="help-close" id="helpClose" type="button" aria-label="Fechar">&times;</button>
+      <button class="help-close" id="helpClose">&times;</button>
       <h3>💡 Como usar</h3>
-      <p><strong>Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
-      <p><strong>Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
-      <p><strong>Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
-      <p><strong>Exportar:</strong> Podes exportar os dados em formato CSV.</p>
-      <p><strong>Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
     </div>
   </div>
 
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- JS -->
-  <script src="app.js?v=ocr-only"></script>
+  <!-- JS para alternar modos -->
+  <script>
+    window.OCR_MODE = 'ocr'; // modo ativo inicial
+
+    const btnOCR   = document.getElementById('btnCamera');
+    const btnEURO  = document.getElementById('btnEurocode');
+    const inputCam = document.getElementById('cameraInput');
+
+    btnOCR.addEventListener('click', () => {
+      window.OCR_MODE = 'ocr';
+      btnOCR.classList.add('selected');
+      btnEURO.classList.remove('selected');
+      // o teu app.js já trata do fluxo do #btnCamera
+    }, { capture: true });
+
+    btnEURO.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.OCR_MODE = 'euro';
+      btnEURO.classList.add('selected');
+      btnOCR.classList.remove('selected');
+      // dispara o mesmo input para reaproveitar o teu app.js
+      inputCam.click();
+    });
+  </script>
+
+  <script src="app.js"></script>
 </body>
 </html>

@@ -1,289 +1,601 @@
-/* =========================
- * CONFIG — Netlify Functions
- * ========================= */
-const ENDPOINTS = {
-  OCR:    "/.netlify/functions/ocr-proxy",
-  LIST:   "/.netlify/functions/list-ocr",
-  SAVE:   "/.netlify/functions/save-ocr",
-  DELETE: "/.netlify/functions/delete-ocr",
-  UPDATE: "/.netlify/functions/update-ocr",
-  CLEAR:  "/.netlify/functions/clear-ocr" // se não existir, não é usado
-};
+/* ===== CONFIG ===== */
+const OCR_ENDPOINT = "/api/ocr-proxy";
+const LIST_URL     = "/api/list-ocr";
+const SAVE_URL     = "/api/save-ocr";
+const DELETE_URL   = "/api/delete-ocr";
+const UPDATE_URL   = "/api/update-ocr";   // <- NOVO: editar no Neon
+const DEMO_MODE    = false;
 
-/* =========================
- * DOM
- * ========================= */
-const els = {
-  btnCamera:  document.getElementById("btnCamera"),
-  camInput:   document.getElementById("cameraInput"),
-  btnUpload:  document.getElementById("btnUpload"),
-  fileInput:  document.getElementById("fileInput"),
-  btnExport:  document.getElementById("btnExport"),
-  btnClear:   document.getElementById("btnClear"),
-  tbody:      document.getElementById("resultsBody"),
-  mobileList: document.getElementById("mobileHistoryList"),
-  toast:      document.getElementById("toast"),
-  helpBtn:    document.getElementById("helpBtn"),
-  helpBtn2:   document.getElementById("helpBtnDesktop"),
-  helpModal:  document.getElementById("helpModal"),
-  helpClose:  document.getElementById("helpClose"),
-};
+/* ===== Elements ===== */
+const isDesktop = window.matchMedia("(min-width: 900px)").matches;
+document.getElementById("viewBadge").textContent = isDesktop ? "Desktop" : "Mobile";
 
-/* =========================
- * EUROCODE PARSER
- * 4 dígitos + 2 letras + 0–5 alfanuméricos,
- * e o sufixo (posições 7..11) tem pelo menos 1 letra
- * ========================= */
-function parseEurocode(raw){
-  const text = String(raw || "").toUpperCase();
-  const tokens = text.split(/[^A-Z0-9]+/).filter(Boolean);
-  const VALID = /^\d{4}[A-Z]{2}[A-Z0-9]{0,5}$/;
-  const tailHasLetter = code => /[A-Z]/.test(code.slice(6));
+const cameraBtn     = document.getElementById("btnCamera");
+const cameraInput   = document.getElementById("cameraInput");
+const mobileStatus  = document.getElementById("mobileStatus");
+const uploadBtn     = document.getElementById("btnUpload");
+const fileInput     = document.getElementById("fileInput");
+const exportBtn     = document.getElementById("btnExport");
+const clearBtn      = document.getElementById("btnClear");
+const resultsBody   = document.getElementById("resultsBody");
+const desktopStatus = document.getElementById("desktopStatus");
+const toast         = document.getElementById("toast");
 
-  // A) match dentro de um token
-  for (const t of tokens){
-    const m = t.match(/\d{4}[A-Z]{2}[A-Z0-9]{0,5}/);
-    if (m && VALID.test(m[0]) && tailHasLetter(m[0])) return m[0];
-  }
-  // B) reconstrução entre tokens consecutivos
-  for (let i = 0; i < tokens.length - 1; i++){
-    const a = tokens[i], b = tokens[i+1];
-    if (/^\d{4}$/.test(a) && /^[A-Z]{2}/.test(b)){
-      const code = (a + b).slice(0, 11);
-      if (VALID.test(code) && tailHasLetter(code)) return code;
-    }
-  }
-  return null;
-}
+/* ===== CSS para texto corrido ===== */
+(function(){
+  const id = "ocr-text-style";
+  if (document.getElementById(id)) return;
+  const s = document.createElement("style");
+  s.id = id;
+  s.textContent = `
+    .ocr-text{ white-space: normal; overflow-wrap:anywhere; line-height:1.4 }
+    .error { background:#300; color:#fff; padding:6px; border-radius:6px }
+    .progress { background:#222; height:6px; border-radius:3px; margin-top:4px }
+    .progress span{ display:block; height:100%; background:#3b82f6; border-radius:3px }
+    .btn-icon { cursor:pointer; border:none; background:none; font-size:16px }
+  `;
+  document.head.appendChild(s);
+})();
 
-/* =========================
- * UI helpers
- * ========================= */
-let toastTimer;
-function toast(msg, kind = "ok"){
-  if (!els.toast) return;
-  els.toast.className = `toast ${kind}`;
-  els.toast.textContent = msg;
-  els.toast.style.opacity = "1";
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => els.toast.style.opacity = "0", 2600);
+/* ===== Estado ===== */
+let RESULTS = [];
+let lastFile = null;
+
+/* ===== Helpers UI ===== */
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"), 2200);
 }
-function fmtDate(ts){
-  try { return new Date(ts).toLocaleString("pt-PT"); } catch { return ts; }
+function statusEl(){ return isDesktop ? desktopStatus : mobileStatus; }
+function setStatus(html, opts={}) {
+  const el = statusEl();
+  el.classList.toggle("error", !!opts.error);
+  el.innerHTML = html || "";
 }
-function escapeHtml(s){
-  return String(s || "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;"
-  }[m]));
+function showProgress(label, pct=0, asError=false){
+  const el = statusEl();
+  el.classList.toggle("error", !!asError);
+  el.innerHTML = `
+    <div>${label}</div>
+    <div class="progress"><span style="width:${pct}%"></span></div>
+  `;
 }
-function wireHelp(){
-  const open = ()=>{ els.helpModal?.setAttribute("aria-hidden","false"); els.helpModal?.classList.add("open"); };
-  const close= ()=>{ els.helpModal?.setAttribute("aria-hidden","true");  els.helpModal?.classList.remove("open"); };
-  els.helpBtn?.addEventListener("click", open);
-  els.helpBtn2?.addEventListener("click", open);
-  els.helpClose?.addEventListener("click", close);
-  els.helpModal?.addEventListener("click", e => { if (e.target === els.helpModal) close(); });
+function updateProgress(pct){
+  const el = statusEl();
+  const bar = el.querySelector(".progress > span");
+  if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+}
+function showError(message){
+  const el = statusEl();
+  el.classList.add("error");
+  el.innerHTML = `
+    <div>❌ ${message}</div>
+    <div class="progress"><span style="width:0%"></span></div>
+    <button class="retry-btn" id="retryBtn">🔄 Tentar novamente</button>
+  `;
+  document.getElementById("retryBtn")?.addEventListener("click", ()=> lastFile && handleImage(lastFile, "retry"));
 }
 
-/* =========================
- * BACKEND
- * ========================= */
-async function apiList(){
-  const r = await fetch(ENDPOINTS.LIST, { cache: "no-store" });
-  if (!r.ok) throw new Error("Falha ao listar");
-  return await r.json(); // [{id, ts, text, eurocode}, ...]
+/* ===== Cabeçalho da tabela ===== */
+function ensureActionsHeader() {
+  if (!isDesktop) return;
+  const thead = document.querySelector("#resultsTable thead");
+  if (!thead) return;
+  thead.innerHTML = `
+    <tr>
+      <th style="width:60px">#</th>
+      <th style="width:220px">Data/Hora</th>
+      <th style="width:auto">Texto lido (OCR)</th>
+      <th style="width:110px">Ações</th>
+    </tr>
+  `;
 }
-async function apiSave(row){
-  const r = await fetch(ENDPOINTS.SAVE, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(row)
+
+/* ===== API Neon ===== */
+async function fetchServerRows(){
+  const r = await fetch(LIST_URL);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const { rows } = await r.json();
+  return rows.map(x => ({
+    id: x.id,
+    ts: new Date(x.ts).getTime(),
+    text: x.text || '',
+    filename: x.filename || '',
+    source: x.source || ''
+  }));
+}
+async function persistToDB({ ts, text, filename, origin }) {
+  const resp = await fetch(SAVE_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ts, text, filename, source: origin })
   });
-  if (!r.ok) throw new Error("Falha ao guardar");
-  return await r.json(); // { ok:true, id }
+  const txt = await resp.text().catch(()=>resp.statusText);
+  if(!resp.ok) throw new Error(txt || ('HTTP ' + resp.status));
 }
-async function apiDelete(id){
-  const r = await fetch(ENDPOINTS.DELETE, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
+async function deleteFromDB(id){
+  const resp = await fetch(DELETE_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ id })
   });
-  if (!r.ok) throw new Error("Falha ao apagar");
-  return await r.json();
+  const data = await resp.json().catch(()=>({}));
+  if (!resp.ok || data?.error) throw new Error(data?.error || ('HTTP ' + resp.status));
+  return true;
 }
-async function apiUpdate(id, patch){
-  const r = await fetch(ENDPOINTS.UPDATE, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ id, ...patch })
+/* NOVO: atualizar no Neon */
+async function updateInDB(id, text){
+  const resp = await fetch(UPDATE_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id, text })
   });
-  if (!r.ok) throw new Error("Falha ao atualizar");
-  return await r.json();
-}
-async function apiClear(){
-  const r = await fetch(ENDPOINTS.CLEAR, { method: "POST" });
-  if (!r.ok) throw new Error("Falha ao limpar");
-  return await r.json();
+  const data = await resp.json().catch(()=>({}));
+  if (!resp.ok || data?.error || !data?.ok) throw new Error(data?.error || ('HTTP ' + resp.status));
+  return data.row;
 }
 
-/* =========================
- * OCR
- * ========================= */
-async function doOCR(file){
-  const fd = new FormData();
-  fd.append("file", file, "etiqueta.jpg");
-  const res = await fetch(ENDPOINTS.OCR, { method: "POST", body: fd });
-  if (!res.ok) throw new Error(`OCR falhou (${res.status})`);
-  const data = await res.json();
-  return data?.text || data?.fullText || data?.ocr || "";
-}
-
-/* =========================
- * RENDER
- * ========================= */
-function renderTable(rows){
-  if (!els.tbody) return;
-  if (!rows?.length){ els.tbody.innerHTML = ""; return; }
-  els.tbody.innerHTML = rows.map((r, idx) => `
-    <tr>
-      <td>${rows.length - idx}</td>
-      <td>${fmtDate(r.ts)}</td>
-      <td class="ocr-cell"><pre>${escapeHtml(r.text || "")}</pre></td>
-      <td class="euro-cell"><span class="eurocode">${r.eurocode ? escapeHtml(r.eurocode) : "—"}</span></td>
+/* ===== Render da tabela ===== */
+function renderTable(){
+  if(!isDesktop) return;
+  ensureActionsHeader();
+  resultsBody.innerHTML = "";
+  RESULTS.forEach((r,i)=>{
+    const txt = (r.text || "").replace(/\s*\n\s*/g, " ");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${new Date(r.ts).toLocaleString()}</td>
+      <td><div class="ocr-text">${txt}</div></td>
       <td>
-        <button class="mini" data-edit="${r.id}">✏️</button>
-        <button class="mini danger" data-del="${r.id}">🗑️</button>
+        <button class="btn-icon editBtn" title="Editar" data-id="${r.id}">✏️</button>
+        <button class="btn-icon delBtn"  title="Apagar" data-id="${r.id}">🗑️</button>
       </td>
-    </tr>
-  `).join("");
+    `;
+    resultsBody.appendChild(tr);
+  });
+  desktopStatus.textContent = RESULTS.length ? `${RESULTS.length} registo(s).` : "Sem registos ainda.";
 }
-function renderMobile(rows){
-  if (!els.mobileList) return;
-  if (!rows?.length){
-    els.mobileList.innerHTML = `<p class="history-empty">Ainda não há capturas realizadas.</p>`;
+
+/* Delegação — editar e apagar */
+resultsBody?.addEventListener("click", async (e)=>{
+  const editBtn = e.target.closest(".editBtn");
+  const delBtn  = e.target.closest(".delBtn");
+
+  // EDITAR
+  if (editBtn) {
+    const id = Number(editBtn.dataset.id);
+    if (!id) return;
+
+    const rowEl = editBtn.closest('tr');
+    const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
+
+    const newText = prompt('Editar texto lido (OCR):', currentText);
+    if (newText === null) return; // cancelou
+
+    try{
+      editBtn.disabled = true; editBtn.textContent = '…';
+      await updateInDB(id, newText);
+      RESULTS = await fetchServerRows();
+      renderTable();
+      showToast('Registo atualizado.');
+    }catch(err){
+      console.error(err);
+      showToast('Falha ao atualizar: ' + (err.message || 'erro'));
+    }finally{
+      editBtn.disabled = false; editBtn.textContent = '✏️';
+    }
     return;
   }
-  els.mobileList.innerHTML = rows.slice(0,20).map(r => `
-    <div class="cap-row">
-      <div class="cap-time">${fmtDate(r.ts)}</div>
-      <div class="cap-euro">${r.eurocode ? `<strong>${escapeHtml(r.eurocode)}</strong>` : "—"}</div>
-      <div class="cap-text">${escapeHtml((r.text || "").slice(0,160))}${(r.text || "").length > 160 ? "…" : ""}</div>
-    </div>
-  `).join("");
-}
 
-/* =========================
- * FLOW
- * ========================= */
-async function refresh(){
+  // APAGAR
+  if(!delBtn) return;
+  const id = Number(delBtn.dataset.id);
+  if(!id) return;
+  if(!confirm("Apagar este registo da base de dados?")) return;
+
+  const old = delBtn.textContent;
+  delBtn.disabled = true; delBtn.textContent = "…";
   try{
-    const rows = await apiList();
-    renderTable(rows);
-    renderMobile(rows);
-    wireRowActions();
-  }catch(e){
-    console.error(e);
-    toast("Não consegui carregar os registos.", "err");
+    await deleteFromDB(id);
+    RESULTS = await fetchServerRows();
+    renderTable();
+    showToast("Registo apagado.");
+  }catch(err){
+    console.error(err);
+    showToast("Falha ao apagar: " + (err.message || "erro"));
+  }finally{
+    delBtn.disabled = false; delBtn.textContent = old;
   }
+});
+
+/* ===== OCR ===== */
+async function optimizeImageForOCR(file){
+  const srcBlob = file instanceof Blob ? file : new Blob([file]);
+  const bmp = await createImageBitmap(srcBlob);
+  const scale = Math.min(1600 / bmp.width, 1600 / bmp.height, 1);
+  const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+  const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d'); ctx.drawImage(bmp, 0, 0, w, h);
+  const out = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
+  return new File([out], (file.name || 'foto') + '.jpg', { type: 'image/jpeg' });
 }
-function wireRowActions(){
-  // apagar
-  document.querySelectorAll("[data-del]").forEach(btn => {
-    btn.onclick = async () => {
-      try{
-        await apiDelete(Number(btn.dataset.del));
-        toast("Registo apagado.");
-        refresh();
-      }catch(e){
-        console.error(e);
-        toast("Erro a apagar.", "err");
-      }
-    };
-  });
-  // editar eurocode
-  document.querySelectorAll("[data-edit]").forEach(btn => {
-    btn.onclick = async () => {
-      try{
-        const id = Number(btn.dataset.edit);
-        const val = prompt("Editar Eurocode:");
-        if (val === null) return;
-        const clean = (val || "").toUpperCase().replace(/[^A-Z0-9]/g,"");
-        await apiUpdate(id, { eurocode: clean });
-        toast("Eurocode atualizado.");
-        refresh();
-      }catch(e){
-        console.error(e);
-        toast("Erro a atualizar.", "err");
-      }
-    };
-  });
+async function runOCR(file){
+  if (DEMO_MODE){
+    await new Promise(r=>setTimeout(r, 500));
+    return { text: "DEMO: Texto simulado de OCR\nLinha 2: 123 ABC" };
+  }
+  const optimized = await optimizeImageForOCR(file);
+  const fd = new FormData();
+  fd.append("file", optimized, optimized.name);
+  const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
+  const t = await res.text().catch(()=>res.statusText);
+  if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
+  return JSON.parse(t);
 }
 
-async function handleFiles(files){
-  const file = files?.[0];
-  if (!file) return;
+/* ===== Fluxo ===== */
+async function handleImage(file, origin="camera"){
+  lastFile = file;
   try{
-    toast("A ler etiqueta…");
-    const text = await doOCR(file);
-    const euro = parseEurocode(text);
+    showProgress("A preparar imagem…", 10);
+    await new Promise(r=>setTimeout(r, 150));
+
+    showProgress("A otimizar…", 25);
+    const prepped = await optimizeImageForOCR(file);
+
+    showProgress("A enviar para o OCR…", 55);
+    const fd = new FormData(); fd.append("file", prepped, prepped.name);
+    const res = await fetch(OCR_ENDPOINT, { method:"POST", body: fd });
+
+    showProgress("A ler…", 80);
+    const t = await res.text().catch(()=>res.statusText);
+    if(!res.ok) throw new Error(`Falha no OCR: ${res.status} ${t}`);
+    const data = JSON.parse(t);
+
     const row = {
-      ts: new Date().toISOString(),
-      text,
-      eurocode: euro
+      id: Date.now().toString(),
+      ts: Date.now(),
+      filename: file.name || (origin==="camera" ? "captura.jpg" : "imagem"),
+      text: data?.text || (data?.qr ? `QR: ${data.qr}` : "")
     };
-    await apiSave(row);
-    toast(euro ? `EUROCODE: ${euro}` : "Texto lido. Eurocode não detetado.");
-    refresh();
-  }catch(e){
-    console.error(e);
-    toast("Falha no OCR/guardar.", "err");
+
+    showProgress("A gravar no Neon…", 90);
+    await persistToDB({ ts: row.ts, text: row.text, filename: row.filename, origin });
+
+    RESULTS = await fetchServerRows();
+    renderTable();
+
+    showProgress("Concluído ✅", 100);
+    setTimeout(()=> setStatus(""), 400);
+    showToast("OCR concluído");
+  }catch(err){
+    console.error(err);
+    showError(err.message || "Erro inesperado");
+    showToast("Falha no OCR");
   }
 }
 
-/* =========================
- * INIT
- * ========================= */
-function init(){
-  // Abrir câmara ao clicar no botão
-  els.btnCamera?.addEventListener("click", () => els.camInput?.click());
+/* ===== Bootstrap ===== */
+(async function(){
+  if(!isDesktop) return;
+  try { RESULTS = await fetchServerRows(); }
+  catch(e){ console.warn("Sem Neon:", e.message); RESULTS = []; }
+  renderTable();
+})();
 
-  // Inputs de ficheiros
-  els.camInput?.addEventListener("change", e => { handleFiles(e.target.files); e.target.value = ""; });
-  els.btnUpload?.addEventListener("click", () => els.fileInput?.click());
-  els.fileInput?.addEventListener("change", e => { handleFiles(e.target.files); e.target.value = ""; });
+/* ===== Ações ===== */
+cameraBtn?.addEventListener("click", () => cameraInput.click());
+cameraInput?.addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (file) handleImage(file, "camera");
+  cameraInput.value = "";
+});
+uploadBtn?.addEventListener("click", () => fileInput.click());
+fileInput?.addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (file) handleImage(file, "upload");
+  fileInput.value = "";
+});
+exportBtn?.addEventListener("click", async () => {
+  if(!RESULTS.length) return showToast("Nada para exportar");
+  const header = ["idx","timestamp","text"];
+  const lines = [header.join(",")].concat(
+    RESULTS.map((r,i)=>[
+      i+1,
+      new Date(r.ts).toISOString(),
+      `"${(r.text||"").replace(/"/g,'""')}"`
+    ].join(","))
+  );
+  const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "express_ocr.csv"; a.click();
+  URL.revokeObjectURL(url);
+});
+clearBtn?.addEventListener("click", ()=>{
+  RESULTS = [];
+  renderTable();
+  showToast("Vista limpa (dados no Neon mantidos)");
+});
 
-  // Exportar CSV
-  els.btnExport?.addEventListener("click", async () => {
-    try{
-      const rows = await apiList();
-      if (!rows.length) return toast("Sem dados para exportar.");
-      const csv = toCSV(rows);
-      const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `capturas_${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(a); a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
-    }catch(e){
-      console.error(e);
-      toast("Erro a exportar.", "err");
-    }
-  });
+/* ===== MODAL DE AJUDA ===== */
+const helpModal = document.getElementById("helpModal");
+const helpBtn = document.getElementById("helpBtn");
+const helpBtnDesktop = document.getElementById("helpBtnDesktop");
+const helpClose = document.getElementById("helpClose");
 
-  // Limpar tudo (se o endpoint existir)
-  els.btnClear?.addEventListener("click", async () => {
-    if (!confirm("Limpar todos os registos?")) return;
-    try{
-      await apiClear();
-      toast("Tabela limpa.");
-      refresh();
-    }catch(e){
-      console.error(e);
-      toast("Não consegui limpar (endpoint ausente?).", "err");
-    }
-  });
+function showHelpModal() { helpModal?.classList.add("show"); }
+function hideHelpModal() { helpModal?.classList.remove("show"); }
+helpBtn?.addEventListener("click", showHelpModal);
+helpBtnDesktop?.addEventListener("click", showHelpModal);
+helpClose?.addEventListener("click", hideHelpModal);
+helpModal?.addEventListener("click", (e) => { if (e.target === helpModal) hideHelpModal(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && helpModal?.classList.contains("show")) hideHelpModal();
+});
 
-  wireHelp();
-  refresh();
+/* ===== FEEDBACK VISUAL MELHORADO (mantido) ===== */
+function showToastWithType(msg, type = 'info') {
+  toast.textContent = msg;
+  toast.classList.remove('success', 'error');
+  if (type === 'success') toast.classList.add('success');
+  else if (type === 'error') toast.classList.add('error');
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2500);
 }
-document.addEventListener("DOMContentLoaded", init);
+function setCardState(state) {
+  const card = isDesktop ? document.getElementById("desktopView") : document.getElementById("mobileView");
+  card.classList.remove('success', 'error');
+  if (state === 'success') { card.classList.add('success'); setTimeout(() => card.classList.remove('success'), 3000); }
+  else if (state === 'error') { card.classList.add('error'); setTimeout(() => card.classList.remove('error'), 3000); }
+}
+function addFeedbackIcon(message, type) {
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+  return `<span class="feedback-icon">${icons[type] || icons.info}</span>${message}`;
+}
+function animateCameraButton(state) {
+  if (!cameraBtn) return;
+  cameraBtn.classList.remove('pulse');
+  if (state === 'processing') {
+    cameraBtn.style.transform = 'scale(0.95)';
+    cameraBtn.style.opacity = '0.7';
+  } else if (state === 'success') {
+    cameraBtn.style.transform = 'scale(1.05)'; cameraBtn.style.borderColor = 'var(--success)';
+    setTimeout(() => { cameraBtn.style.transform = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse'); }, 1000);
+  } else if (state === 'error') {
+    cameraBtn.style.transform = 'scale(1.05)'; cameraBtn.style.borderColor = 'var(--danger)';
+    setTimeout(() => { cameraBtn.style.transform = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse'); }, 1000);
+  } else {
+    cameraBtn.style.transform = ''; cameraBtn.style.opacity = ''; cameraBtn.style.borderColor = ''; cameraBtn.classList.add('pulse');
+  }
+}
+const originalShowToast = showToast;
+showToast = function(msg, type = 'info') { showToastWithType(msg, type); };
+const originalSetStatus = setStatus;
+setStatus = function(html, opts = {}) {
+  const el = statusEl();
+  el.classList.toggle("error", !!opts.error);
+  if (opts.error) { html = addFeedbackIcon(html, 'error'); setCardState('error'); }
+  else if (opts.success) { html = addFeedbackIcon(html, 'success'); setCardState('success'); }
+  el.innerHTML = html || "";
+};
+const originalShowError = showError;
+showError = function(message) {
+  const el = statusEl();
+  el.classList.add("error");
+  el.innerHTML = `
+    <div>${addFeedbackIcon(message, 'error')}</div>
+    <div class="progress"><span style="width:0%"></span></div>
+    <button class="retry-btn" id="retryBtn">🔄 Tentar novamente</button>
+  `;
+  document.getElementById("retryBtn")?.addEventListener("click", () => lastFile && handleImage(lastFile, "retry"));
+  setCardState('error'); animateCameraButton('error'); showToast(message, 'error');
+};
+
+/* ===== HISTÓRICO (mantido) ===== */
+let captureHistory = [];
+function addToHistory(c){ captureHistory.unshift(c); if(captureHistory.length>10) captureHistory=captureHistory.slice(0,10); localStorage.setItem('expressglass_history', JSON.stringify(captureHistory)); }
+function loadHistory(){ try{ const s=localStorage.getItem('expressglass_history'); if(s) captureHistory=JSON.parse(s);}catch(e){ captureHistory=[]; } }
+loadHistory();
+
+/* =========================
+   ADD-ON: Modo OCR vs EUROCODE
+   ========================= */
+(() => {
+  const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{5,8}$/;
+
+  // ---- helpers UI ----
+  const $ = (sel) => document.querySelector(sel);
+  const toast = (msg) => {
+    const t = $('#toast');
+    if (t) { t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200); }
+    else alert(msg);
+  };
+  const pushToMobileHistory = ({ value, raw, mode, conf, when }) => {
+    const list = $('#mobileHistoryList');
+    if (!list) return;
+    const empty = list.querySelector('.history-empty');
+    if (empty) empty.remove();
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `
+      <div class="h-top">
+        <span class="h-mode">${mode.toUpperCase()}</span>
+        <span class="h-time">${new Date(when).toLocaleString()}</span>
+        <span class="h-conf">${Math.round(conf*100)}%</span>
+      </div>
+      <div class="h-text">${(value || raw || '').toString().replace(/[<>]/g, s => ({'<':'&lt;','>':'&gt;'}[s]))}</div>
+    `;
+    list.prepend(item);
+  };
+  const pushToDesktopTable = ({ value, raw, when }) => {
+    const tbody = $('#resultsBody');
+    const table = $('#resultsTable');
+    if (!tbody || !table) return;
+    const idx = tbody.children.length + 1;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${idx}</td>
+      <td>${new Date(when).toLocaleString()}</td>
+      <td>${(value || raw || '').toString().replace(/[<>]/g, s => ({'<':'&lt;','>':'&gt;'}[s]))}</td>
+      <td><button class="btn btn-mini" data-del>Remover</button></td>
+    `;
+    tbody.prepend(tr);
+    tr.querySelector('[data-del]')?.addEventListener('click', () => tr.remove());
+  };
+
+  // ---- Normalizações para O↔0, I↔1, S↔5, B↔8 (típico em etiquetas) ----
+  const normalizeAmbiguous = (s='') =>
+    s.toUpperCase()
+     .replaceAll('O','0')
+     .replaceAll('I','1')
+     .replaceAll('S','5')
+     .replaceAll('B','8')
+     .replace(/[^A-Z0-9\s]/g,' ');
+
+  // ---- Extrair EUROCODE de texto OCR ----
+  function pickEurocode(text) {
+    const toks = (text||'').toUpperCase().split(/[\s\r\n]+/).filter(Boolean);
+    let hit = toks.find(t => EUROCODE_REGEX.test(t));
+    if (hit) return hit;
+    const clean = normalizeAmbiguous(text);
+    return clean.split(/\s+/).find(t => EUROCODE_REGEX.test(t)) || null;
+  }
+
+  // ---- Carregar Tesseract se não existir ----
+  async function ensureTesseract() {
+    if (window.Tesseract) return;
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
+      s.onload = res; s.onerror = () => rej(new Error('Falha a carregar Tesseract'));
+      document.head.appendChild(s);
+    });
+  }
+
+  // ---- OCR core (um worker reutilizável) ----
+  let workerPromise = null;
+  async function getWorker() {
+    await ensureTesseract();
+    if (!workerPromise) workerPromise = window.Tesseract.createWorker();
+    return workerPromise;
+  }
+
+  async function ocrImage(blob, mode='ocr') {
+    const worker = await getWorker();
+    let langs = 'eng';
+    let params;
+
+    if (mode === 'euro') {
+      params = {
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        user_defined_dpi: '300',
+        preserve_interword_spaces: '1'
+      };
+    } else {
+      params = {
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_/.:() ',
+        user_defined_dpi: '300',
+        preserve_interword_spaces: '1'
+      };
+    }
+
+    await worker.loadLanguage(langs);
+    await worker.initialize(langs);
+    await worker.setParameters(params);
+
+    const { data } = await worker.recognize(blob);
+    await worker.clear(); // mantém o worker pronto para próxima
+
+    const text = (data.text || '').trim();
+    const conf = (data.confidence || 0) / 100;
+
+    if (mode === 'euro') {
+      const euro = pickEurocode(text);
+      return { raw: text, value: euro, conf, mode };
+    }
+    return { raw: text, value: text, conf, mode };
+  }
+
+  // ---- integrar no input de câmara que já tens ----
+  const camInput = document.getElementById('cameraInput');
+  if (camInput) {
+    camInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const mode = (window.OCR_MODE || 'ocr');
+      const when = Date.now();
+      try {
+        const { raw, value, conf } = await ocrImage(file, mode);
+
+        if (mode === 'euro') {
+          if (!value) {
+            toast('⚠️ Não encontrei um EUROCODE válido (4 dígitos + 5–8 A/Z/0–9). Tenta aproximar e evitar reflexos.');
+            return;
+          }
+          toast(`✅ EUROCODE: ${value} • ${Math.round(conf*100)}%`);
+          pushToMobileHistory({ value, raw, mode, conf, when });
+          pushToDesktopTable({ value, raw, when });
+        } else {
+          toast(`✅ OCR lido • ${Math.round(conf*100)}%`);
+          pushToMobileHistory({ value: raw, raw, mode, conf, when });
+          pushToDesktopTable({ value: raw, raw, when });
+        }
+
+        // limpa input para permitir nova captura igual
+        e.target.value = '';
+      } catch (err) {
+        console.error(err);
+        toast('Erro no OCR: ' + (err.message || err));
+      }
+    });
+  }
+
+})();
+
+/* ========= DESKTOP: inserir linha com OCR + EUROCODE + ações ========= */
+function escapeHTML(s=''){ return s.toString().replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+function pushToDesktopTable({ raw, euro, when }) {
+  const tbody = document.querySelector('#resultsBody');
+  if (!tbody) return;
+  const idx = tbody.children.length + 1;
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${idx}</td>
+    <td>${new Date(when).toLocaleString()}</td>
+    <td class="col-ocr"><div class="cell-wrap" data-field="ocr">${escapeHTML(raw || '')}</div></td>
+    <td class="col-euro"><div class="cell-wrap" data-field="euro">${escapeHTML(euro || '')}</div></td>
+    <td class="col-actions">
+      <button class="btn btn-mini" data-edit>Editar</button>
+      <button class="btn btn-mini danger" data-del>Apagar</button>
+    </td>
+  `;
+  tbody.prepend(tr);
+
+  // Apagar
+  tr.querySelector('[data-del]')?.addEventListener('click', () => tr.remove());
+
+  // Editar/Guardar (inline nos dois campos)
+  const btnEdit = tr.querySelector('[data-edit]');
+  const ocrDiv  = tr.querySelector('[data-field="ocr"]');
+  const euroDiv = tr.querySelector('[data-field="euro"]');
+
+  btnEdit.addEventListener('click', () => {
+    const saving = btnEdit.dataset.mode === 'save';
+    if (saving) {
+      [ocrDiv, euroDiv].forEach(d => { d.contentEditable = 'false'; d.classList.remove('editing'); });
+      btnEdit.textContent = 'Editar';
+      btnEdit.dataset.mode = 'edit';
+      // aqui podes sincronizar com backend se quiseres
+    } else {
+      [ocrDiv, euroDiv].forEach(d => { d.contentEditable = 'true'; d.classList.add('editing'); });
+      btnEdit.textContent = 'Guardar';
+      btnEdit.dataset.mode = 'save';
+    }
+  });
+}
