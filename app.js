@@ -47,59 +47,58 @@ const toast         = document.getElementById("toast");
 let RESULTS = [];
 let lastFile = null;
 
-/* ===== EUROCODE (robusto, recompõe 2–3 tokens) ===== */
-const EUROCODE_REGEX = /^[0-9]{4}[A-Z0-9]{2,9}$/;
+/* ===== EUROCODE (robusto) =====
+   Regra: 4 dígitos + LETRA obrigatória + 1..8 [A-Z0-9]  →  comprimento total 6..13 */
+const EUROCODE_REGEX = /^\d{4}[A-Z][A-Z0-9]{1,8}$/;
 
 function normalizeAmbiguous(s=''){
   return s.toUpperCase()
-    .replaceAll('O','0')
-    .replaceAll('I','1')
-    .replaceAll('S','5')
-    .replaceAll('B','8')
-    .replace(/[^\dA-Z]+/g,' ')
+    .replace(/[^\dA-Z]+/g,' ')  // limpar ruído mantendo A-Z 0-9
     .trim();
+}
+// pontuação para escolher “o melhor” candidato
+const scoreCode = (c) => {
+  const letters = (c.match(/[A-Z]/g)||[]).length;
+  return letters*2 + c.length; // mais letras > mais pontos; depois comprimento
+};
+
+function findCandidates(tokens){
+  const out = [];
+  const starts4 = t => /^\d{4}/.test(t);
+  for (let i=0;i<tokens.length;i++){
+    const t0 = tokens[i];
+    // 1 token
+    if (EUROCODE_REGEX.test(t0)) out.push(t0);
+    if (!starts4(t0)) continue;
+
+    // 2 tokens colados
+    if (i+1<tokens.length){
+      const t01 = (t0 + tokens[i+1]).slice(0,13);
+      if (EUROCODE_REGEX.test(t01)) out.push(t01);
+    }
+    // 3 tokens colados (ex.: 7262 AGAMV 1R)
+    if (i+2<tokens.length){
+      const t012 = (t0 + tokens[i+1] + tokens[i+2]).slice(0,13);
+      if (EUROCODE_REGEX.test(t012)) out.push(t012);
+    }
+  }
+  // devolver o melhor por score (se empatar, o primeiro na ordem de leitura)
+  if (!out.length) return "";
+  out.sort((a,b)=> scoreCode(b)-scoreCode(a));
+  return out[0];
 }
 
 function extractEurocode(text=''){
-  const norm = normalizeAmbiguous(text);
-  if (!norm) return "";
+  // 1) tentar no texto “cru” (sem mexer em O/I/S/B)
+  const raw = text.toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+  const rawTokens = raw.split(/\s+/).filter(Boolean);
+  let hit = findCandidates(rawTokens);
+  if (hit) return hit;
 
-  // tokens só A-Z0-9
-  const toks = norm.split(/\s+/).filter(Boolean);
-
-  // helper para validar
-  const valid = v => EUROCODE_REGEX.test(v);
-
-  // 1) qualquer token isolado já válido
-  for (let t of toks) {
-    if (valid(t)) return t;
-  }
-
-  // 2) concatenar tokens adjacentes quando o 1º começa por 4 dígitos
-  const starts4digits = t => /^[0-9]{4}/.test(t);
-
-  for (let i=0;i<toks.length;i++){
-    const t0 = toks[i];
-    if (!starts4digits(t0)) continue;
-
-    // t0 + t1
-    if (i+1 < toks.length){
-      const t01 = (t0 + toks[i+1]).slice(0, 13); // limite superior 4+9
-      if (valid(t01)) return t01;
-    }
-
-    // t0 + t1 + t2 (caso “7262 AGAMV 1R”)
-    if (i+2 < toks.length){
-      const t012 = (t0 + toks[i+1] + toks[i+2]).slice(0, 13);
-      if (valid(t012)) return t012;
-    }
-
-    // fallback: se t0 for demasiado comprido (OCR colou lixo), corta até 13
-    const cut = t0.slice(0,13);
-    if (valid(cut)) return cut;
-  }
-
-  return "";
+  // 2) fallback: normalizado (apenas limpeza de ruído)
+  const normTokens = normalizeAmbiguous(text).split(/\s+/).filter(Boolean);
+  hit = findCandidates(normTokens);
+  return hit || "";
 }
 
 /* ===== Helpers UI ===== */
@@ -242,13 +241,10 @@ resultsBody?.addEventListener("click", async (e)=>{
   if (editBtn) {
     const id = Number(editBtn.dataset.id);
     if (!id) return;
-
     const rowEl = editBtn.closest('tr');
     const currentText = rowEl.querySelector('.ocr-text')?.innerText || '';
-
     const newText = prompt('Editar texto lido (OCR):', currentText);
     if (newText === null) return;
-
     try{
       editBtn.disabled = true; editBtn.textContent = '…';
       await updateInDB(id, newText);
