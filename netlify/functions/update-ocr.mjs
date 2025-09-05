@@ -9,15 +9,18 @@ export const handler = async (event) => {
       return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    // garantir que existe a coluna euro_validado
-    await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS euro_validado text`;
-
     const { id, text, euro_validado } = JSON.parse(event.body || "{}");
     const numId = Number(id);
 
     if (!numId || Number.isNaN(numId)) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing/invalid id" }) };
     }
+    if (typeof text !== 'string') {
+      return { statusCode: 400, body: JSON.stringify({ error: "Missing/invalid text" }) };
+    }
+
+    // Garante que a coluna existe
+    await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS euro_validado text`;
 
     const rows = await sql/*sql*/`
       UPDATE ocr_results
