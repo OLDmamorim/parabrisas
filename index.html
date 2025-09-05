@@ -18,9 +18,7 @@
 
   <!-- MOBILE VIEW -->
   <main id="mobileView" class="card mobile-only">
-    <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
-    
     <div class="mobile-cta">
       <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
         <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
@@ -33,7 +31,6 @@
     <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
     <div id="mobileStatus" class="status"></div>
 
-    <!-- Histórico de Capturas -->
     <div id="mobileHistory" class="history-section">
       <h3 class="history-title">📋 Últimas Capturas</h3>
       <div id="mobileHistoryList" class="history-list">
@@ -48,9 +45,7 @@
 
   <!-- DESKTOP VIEW -->
   <section id="desktopView" class="card desktop-only">
-    <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
-    
     <div class="toolbar">
       <button id="btnUpload" class="btn">📁 Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
@@ -92,129 +87,30 @@
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- App original -->
+  <!-- App -->
   <script src="app.js"></script>
 
-  <!-- ===== Mobile: preencher “Últimas Capturas” (API -> fallback tabela) ===== -->
-  <script>
-  (function(){
-    const listEl = document.getElementById('mobileHistoryList');
+  <!-- ===== Modal de Edição OCR ===== -->
+  <div id="ocrEditModal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close="1"></div>
 
-    async function fetchRowsFromAPI(){
-      try{
-        const res = await fetch('/api/list-ocr', { headers:{'Accept':'application/json'} });
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        const data = await res.json();
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data.rows))  return data.rows;
-        if (Array.isArray(data.items)) return data.items;
-        return [];
-      }catch(e){
-        return null; // força fallback
-      }
-    }
+    <div class="modal-card" role="document">
+      <div class="modal-header">
+        <h3>Editar Texto lido (OCR)</h3>
+        <button class="modal-close" id="ocrEditClose" aria-label="Fechar">×</button>
+      </div>
 
-    function pickEuro(row){
-      const c = (
-        row.euro_validado ??
-        row.euro_user ??
-        row.euroUser ??
-        row.eurocode ??
-        row.euro ??
-        ''
-      ).toString().trim();
-      return c || null;
-    }
+      <div class="modal-body">
+        <label for="ocrEditText" class="modal-label">Texto lido</label>
+        <textarea id="ocrEditText" class="modal-textarea" rows="14" spellcheck="false"></textarea>
+        <p class="modal-hint">🔒 Ao guardar, só atualiza o <b>OCR</b>. O Eurocode mantém-se igual.</p>
+      </div>
 
-    function scrapeEurocodesFromTable(limit=50){
-      const tbody = document.getElementById('resultsBody');
-      if(!tbody) return [];
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      const out = [];
-      for (const tr of rows){
-        const td = tr.querySelector('td:nth-child(4)');
-        const raw = (td?.innerText || td?.textContent || '').trim();
-        const code = raw.split(/\s+/)[0];
-        if (code) out.push(code);
-        if (out.length >= limit) break;
-      }
-      return out;
-    }
-
-    function renderList(codes){
-      if (!listEl) return;
-      if (!codes || !codes.length){
-        listEl.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
-        return;
-      }
-      const ul = document.createElement('ul');
-      ul.style.listStyle = 'none';
-      ul.style.margin = '0';
-      ul.style.padding = '0';
-      codes.forEach(code => {
-        const li = document.createElement('li');
-        li.textContent = code;
-        li.style.textAlign = 'left';
-        li.style.padding = '10px 12px';
-        li.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
-        li.style.fontWeight = '700';
-        li.style.letterSpacing = '.3px';
-        ul.appendChild(li);
-      });
-      listEl.innerHTML = '';
-      listEl.appendChild(ul);
-    }
-
-    async function refresh(){
-      const apiRows = await fetchRowsFromAPI();
-      if (apiRows){
-        const codes = apiRows.map(pickEuro).filter(Boolean);
-        renderList([...new Set(codes)].slice(0,50));
-        return;
-      }
-      const codes = scrapeEurocodesFromTable();
-      renderList([...new Set(codes)].slice(0,50));
-    }
-
-    refresh();
-
-    const tbody = document.getElementById('resultsBody');
-    if (tbody){
-      new MutationObserver(refresh)
-        .observe(tbody, { childList:true, subtree:true, characterData:true });
-    }
-
-    document.addEventListener('click', (e) => {
-      const t = e.target;
-      const txt = (t?.textContent || '').toLowerCase();
-      const isValidate = txt.includes('valid') || t?.dataset?.action === 'validate';
-      if (isValidate) setTimeout(refresh, 500);
-    });
-
-    setInterval(refresh, 10000);
-  })();
-  </script>
-
-  <!-- ===== Forçar tamanho da coluna Texto lido no desktop ===== -->
-  <script>
-  (function(){
-    const tbody = document.getElementById('resultsBody');
-    function fixCol3(){
-      document.querySelectorAll('#resultsTable tbody tr td:nth-child(3)').forEach(td=>{
-        td.style.setProperty('font-size','14px','important');
-        td.style.setProperty('line-height','1.35','important');
-        td.style.setProperty('white-space','pre-wrap','important');
-        td.style.setProperty('word-break','break-word','important');
-        td.style.setProperty('letter-spacing','0','important');
-      });
-    }
-    fixCol3();
-    if (tbody){
-      new MutationObserver(fixCol3)
-        .observe(tbody, { childList:true, subtree:true, characterData:true });
-    }
-    window.addEventListener('resize', fixCol3);
-  })();
-  </script>
+      <div class="modal-footer">
+        <button class="btn" id="ocrEditCancel">Cancelar</button>
+        <button class="btn primary" id="ocrEditSave">Guardar</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
