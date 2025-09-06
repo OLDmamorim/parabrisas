@@ -1,22 +1,28 @@
-import { sql } from "@neondatabase/serverless";
+import { sql, init, jsonHeaders } from './db.mjs';
 
-export const handler = async () => {
-  try {
-    await sql`CREATE TABLE IF NOT EXISTS ocr_capturas(
-      id SERIAL PRIMARY KEY,
-      ts TIMESTAMPTZ NOT NULL,
-      text TEXT,
-      euro_validado TEXT
-    );`;
-    const { rows } = await sql`
-      SELECT id, ts, text, euro_validado
-      FROM ocr_capturas
-      ORDER BY id DESC
-      LIMIT 200;
-    `;
-    return { statusCode: 200, body: JSON.stringify(rows) };
-  } catch (err) {
-    console.error("list-ocr error:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+export const handler = async (event) => {
+  if (event.httpMethod !== 'GET') {
+    return { statusCode: 405, headers: jsonHeaders, body: '"Method Not Allowed"' };
   }
-};
+
+  try {
+    await init();
+
+    // Garante que a coluna existe
+    await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS euro_validado text`;
+
+    const rows = await sql/*sql*/`
+      select id, ts, text, filename, source, euro_validado
+      from ocr_results
+      order by ts desc
+      limit 200
+    `;
+
+    return {
+      statusCode: 200,
+      headers: jsonHeaders,
+      body: JSON.stringify({ ok: true, rows })
+    };
+  } catch (e) {
+    return { statusCode: 500, headers: jsonHeaders, body: JSON.stringify({ ok:false, error: e.message }) };
+  }
