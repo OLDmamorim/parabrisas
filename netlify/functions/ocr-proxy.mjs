@@ -1,9 +1,7 @@
-// netlify/functions/ocr-proxy.mjs
 import vision from "@google-cloud/vision";
 import Busboy from "busboy";
 
 const makeVisionClient = () => {
-  // Lê a credencial do env var GCP_KEY_JSON (string)
   const key = process.env.GCP_KEY_JSON;
   if (!key) throw new Error("Missing GCP_KEY_JSON env var");
   const credentials = JSON.parse(key);
@@ -44,13 +42,13 @@ export const handler = async (event) => {
 
     const client = makeVisionClient();
 
-    // Aceita JSON (imageBase64) ou multipart (file)
     const ct = (event.headers["content-type"] || event.headers["Content-Type"] || "").toLowerCase();
     let imageBuffer;
+
     if (ct.includes("application/json")) {
       const { imageBase64 } = JSON.parse(event.body || "{}");
       if (!imageBase64) return { statusCode: 400, body: JSON.stringify({ error: "Sem imageBase64" }) };
-      const base64 = imageBase64.split(",")[1] || imageBase64; // aceita dataURL ou só base64
+      const base64 = imageBase64.split(",")[1] || imageBase64;
       imageBuffer = Buffer.from(base64, "base64");
     } else if (ct.includes("multipart/form-data")) {
       const { fileBuffer } = await parseMultipart(event);
@@ -65,7 +63,7 @@ export const handler = async (event) => {
 
     return { statusCode: 200, body: JSON.stringify({ ok: true, text }) };
   } catch (err) {
-    console.error("OCR error:", err);
+    console.error("ocr-proxy error:", err);
     return { statusCode: 500, body: JSON.stringify({ error: "OCR failure", details: err.message }) };
   }
 };
