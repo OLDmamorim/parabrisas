@@ -123,48 +123,15 @@ function showEditOcrModal(text) {
 }
 
 // =========================
-// Normalização MELHORADA (ajusta aqui se os nomes do backend diferirem)
+// Normalização (ajusta aqui se os nomes do backend diferirem)
 // =========================
 function normalizeRow(r){
-  // Debug: mostrar que dados estão a chegar (remover depois de testar)
-  console.log('Dados recebidos do servidor:', r);
-  
-  // Tentar encontrar a timestamp em vários campos possíveis
-  let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
-                  r.date || r.datetime || r.data || r.hora || r.created || 
-                  r.updated_at || r.updatedAt || '';
-  
-  // Se não encontrou timestamp, criar uma nova (fallback)
-  if (!timestamp) {
-    console.warn('Nenhuma timestamp encontrada nos dados, usando timestamp atual');
-    timestamp = new Date().toLocaleString('pt-PT');
-  }
-  
-  // Se a timestamp é um número (Unix timestamp), converter
-  if (typeof timestamp === 'number') {
-    timestamp = new Date(timestamp).toLocaleString('pt-PT');
-  }
-  
-  // Se a timestamp é uma string ISO, converter para formato português
-  if (typeof timestamp === 'string' && timestamp.includes('T')) {
-    try {
-      timestamp = new Date(timestamp).toLocaleString('pt-PT');
-    } catch (e) {
-      console.warn('Erro ao converter timestamp ISO:', e);
-    }
-  }
-  
-  const normalized = {
+  return {
     id:          r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
-    timestamp:   timestamp,
-    text:        r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
-    eurocode:    r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? ''
+    timestamp:   r.timestamp ?? r.datahora ?? r.created_at ?? r.createdAt ?? '',
+    text:        r.text ?? r.ocr_text ?? r.ocr ?? '',
+    eurocode:    r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? ''
   };
-  
-  // Debug: mostrar dados normalizados
-  console.log('Dados normalizados:', normalized);
-  
-  return normalized;
 }
 
 // =========================
@@ -205,35 +172,18 @@ async function fetchServerRows(){
   const res = await fetch(LIST_URL, { headers:{'Accept':'application/json'} });
   if (!res.ok) throw new Error('LIST HTTP '+res.status);
   const data = await res.json();
-  
-  // Debug: mostrar resposta completa do servidor
-  console.log('Resposta completa do servidor:', data);
-  
-  const rows = Array.isArray(data) ? data : (data.rows || data.items || data.data || []);
-  console.log('Linhas extraídas:', rows);
-  
+  const rows = Array.isArray(data) ? data : (data.rows || data.items || []);
   return rows.map(normalizeRow);
 }
 
 async function saveRowToServer({ text, eurocode, timestamp }){
-  const payload = { 
-    text, 
-    eurocode, 
-    timestamp: timestamp || new Date().toLocaleString('pt-PT')
-  };
-  
-  console.log('Enviando para o servidor:', payload);
-  
+  const payload = { text, eurocode, timestamp };
   const res = await fetch(SAVE_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('SAVE HTTP '+res.status);
-  
-  const result = await res.json().catch(()=>payload);
-  console.log('Resposta do servidor após guardar:', result);
-  
-  return normalizeRow(result);
+  return normalizeRow(await res.json().catch(()=>payload));
 }
 
 // >>> AQUI ESTÁ O PONTO CRÍTICO: EDITAR SÓ OCR, PRESERVANDO O RESTO <<<
@@ -247,22 +197,15 @@ async function updateOCRInServer(row){
     // Campos preservados (mesmos nomes que teu backend aceita; duplica onde for comum):
     eurocode: row.eurocode,
     euro_validado: row.eurocode,
-    timestamp: row.timestamp,
-    datahora: row.timestamp  // Adicionar variações
+    timestamp: row.timestamp
   };
-
-  console.log('Atualizando no servidor:', payload);
 
   const res = await fetch(UPDATE_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('UPDATE HTTP '+res.status);
-  
-  const result = await res.json().catch(()=>({ok:true}));
-  console.log('Resposta do servidor após atualizar:', result);
-  
-  return result;
+  return await res.json().catch(()=>({ok:true}));
 }
 
 async function deleteRowInServer(id){
@@ -281,14 +224,9 @@ function renderTable() {
   resultsBody.innerHTML = '';
   RESULTS.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    
-    // Debug: verificar se a timestamp existe
-    const displayTimestamp = row.timestamp || 'Sem data';
-    console.log(`Linha ${idx + 1} - Timestamp:`, displayTimestamp);
-    
     tr.innerHTML = `
       <td>${idx+1}</td>
-      <td>${displayTimestamp}</td>
+      <td>${row.timestamp || ''}</td>
       <td class="ocr-text">${(row.text || '')}</td>
       <td>${row.eurocode || ''}</td>
       <td>
@@ -407,8 +345,6 @@ fileInput?.addEventListener('change', async (e) => {
     }
 
     const ts = new Date().toLocaleString('pt-PT');
-    console.log('Timestamp criada:', ts);
-    
     await saveRowToServer({ text, eurocode: euro, timestamp: ts });
     RESULTS = await fetchServerRows();
     renderTable();
@@ -447,8 +383,6 @@ cameraInput?.addEventListener('change', async (e) => {
     }
 
     const ts = new Date().toLocaleString('pt-PT');
-    console.log('Timestamp criada (mobile):', ts);
-    
     await saveRowToServer({ text, eurocode: euro, timestamp: ts });
     RESULTS = await fetchServerRows();
     renderTable();
@@ -529,7 +463,7 @@ helpModal?.addEventListener('click', (e) => {
   if (e.target === helpModal) {
     hideHelpModal();
   }
-}); 
+});
 
 // Fechar modal com ESC
 document.addEventListener('keydown', (e) => {

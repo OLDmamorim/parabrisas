@@ -56,12 +56,6 @@
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
       <button id="btnExport" class="btn">📊 Exportar CSV</button>
       <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
-
-      <!-- >>> NOVO: Pesquisa <<< -->
-      <div class="search-wrap" title="Pesquisar nas colunas Texto lido e Eurocode (atalho '/')">
-        <input id="tableSearch" type="search" placeholder="Pesquisar… (/ para focar, Esc limpa)" autocomplete="off" />
-      </div>
-      <!-- FIM Pesquisa -->
     </div>
 
     <div class="table-wrap">
@@ -237,82 +231,6 @@
         .observe(tbody, { childList:true, subtree:true, characterData:true });
     }
     window.addEventListener('resize', fixCol3);
-  })();
-  </script>
-
-  <!-- ===== NOVO: Filtro de pesquisa da tabela ===== -->
-  <script>
-  (function(){
-    const input = document.getElementById('tableSearch');
-    const tbody = document.getElementById('resultsBody');
-    const statusEl = document.getElementById('desktopStatus');
-
-    if (!input || !tbody) return;
-
-    // normaliza (remove acentos) e baixa para comparar
-    const norm = (s='') => s.toString()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu,'')
-      .toLowerCase();
-
-    function applyFilter(){
-      const q = norm(input.value);
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      let shown = 0;
-
-      rows.forEach((tr) => {
-        // colunas 3 e 4
-        const c3 = tr.querySelector('td:nth-child(3)');
-        const c4 = tr.querySelector('td:nth-child(4)');
-        const t3 = norm(c3 ? (c3.innerText || c3.textContent) : '');
-        const t4 = norm(c4 ? (c4.innerText || c4.textContent) : '');
-
-        const match = !q || t3.includes(q) || t4.includes(q);
-        tr.style.display = match ? '' : 'none';
-      });
-
-      // renumerar apenas as visíveis
-      Array.from(tbody.querySelectorAll('tr'))
-        .filter(tr => tr.style.display !== 'none')
-        .forEach((tr, idx) => {
-          const tdIndex = tr.querySelector('td:nth-child(1)');
-          if (tdIndex) tdIndex.textContent = String(idx + 1);
-          shown = idx + 1;
-        });
-
-      const total = rows.length;
-      if (statusEl) {
-        statusEl.textContent = q
-          ? `Filtro: ${shown}/${total} linha(s) visíveis`
-          : '';
-      }
-    }
-
-    // eventos
-    input.addEventListener('input', applyFilter);
-    input.addEventListener('keydown', (e)=>{
-      if (e.key === 'Escape') {
-        input.value = '';
-        applyFilter();
-      }
-    });
-
-    // atalho global: '/' foca a pesquisa (ignora quando já estamos a escrever noutro input/textarea)
-    document.addEventListener('keydown', (e)=>{
-      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-      if (e.key === '/' && tag !== 'input' && tag !== 'textarea') {
-        e.preventDefault();
-        input.focus();
-        input.select();
-      }
-    });
-
-    // se a tabela mudar (linhas novas), reaplica o filtro atual
-    new MutationObserver(applyFilter)
-      .observe(tbody, { childList:true, subtree:true, characterData:true });
-
-    // primeira aplicação (caso já existam linhas)
-    applyFilter();
   })();
   </script>
 </body>
