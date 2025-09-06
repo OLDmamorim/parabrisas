@@ -1,69 +1,68 @@
 import vision from "@google-cloud/vision";
-import Busboy from "busboy";
 
-const makeVisionClient = () => {
-  const key = process.env.GCP_KEY_JSON;
-  if (!key) throw new Error("Missing GCP_KEY_JSON env var");
-  const credentials = JSON.parse(key);
-  return new vision.ImageAnnotatorClient({ credentials });
+// Inicializar cliente do Google Vision
+const client = new vision.ImageAnnotatorClient({
+  credentials: JSON.parse(process.env.GCP_KEY_JSON)
+});
+
+const jsonHeaders = {
+  'content-type': 'application/json',
+  'access-control-allow-origin': '*'
 };
-
-async function parseMultipart(event) {
-  return new Promise((resolve, reject) => {
-    const headers = event.headers || {};
-    const contentType = headers["content-type"] || headers["Content-Type"];
-    if (!contentType) return reject(new Error("No content-type"));
-
-    const bb = Busboy({ headers: { "content-type": contentType } });
-    const buffers = [];
-    let filename = "upload.jpg";
-
-    bb.on("file", (_name, file, info) => {
-      if (info?.filename) filename = info.filename;
-      file.on("data", (d) => buffers.push(d));
-      file.on("limit", () => reject(new Error("File too large")));
-    });
-    bb.on("error", reject);
-    bb.on("finish", () => resolve({
-      fileBuffer: Buffer.concat(buffers),
-      filename
-    }));
-
-    const body = event.isBase64Encoded ? Buffer.from(event.body, "base64") : event.body;
-    bb.end(body);
-  });
-}
 
 export const handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
+      return {
+        statusCode: 405,
+        headers: jsonHeaders,
+        body: JSON.stringify({ error: "Método não permitido" })
+      };
     }
 
-    const client = makeVisionClient();
-
-    const ct = (event.headers["content-type"] || event.headers["Content-Type"] || "").toLowerCase();
-    let imageBuffer;
-
-    if (ct.includes("application/json")) {
-      const { imageBase64 } = JSON.parse(event.body || "{}");
-      if (!imageBase64) return { statusCode: 400, body: JSON.stringify({ error: "Sem imageBase64" }) };
-      const base64 = imageBase64.split(",")[1] || imageBase64;
-      imageBuffer = Buffer.from(base64, "base64");
-    } else if (ct.includes("multipart/form-data")) {
-      const { fileBuffer } = await parseMultipart(event);
-      if (!fileBuffer?.length) return { statusCode: 400, body: JSON.stringify({ error: "Nenhum ficheiro enviado" }) };
-      imageBuffer = fileBuffer;
-    } else {
-      return { statusCode: 400, body: JSON.stringify({ error: "Content-Type inválido" }) };
+    // Parse do body JSON (não multipart)
+    const { imageBase64 } = JSON.parse(event.body || '{}');
+    
+    if (!imageBase64) {
+      return { 
+        statusCode: 400, 
+        headers: jsonHeaders,
+        body: JSON.stringify({ error: "Nenhuma imagem enviada" }) 
+      };
     }
 
-    const [result] = await client.textDetection({ image: { content: imageBuffer } });
-    const text = result?.textAnnotations?.[0]?.description || "";
+    // Converter base64 para buffer
+    const imageBuffer = Buffer.from(imageBase64, 'base64');
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true, text }) };
+    // Chamada ao Google Vision
+    const [result] = await client.textDetection({
+      image: { content: imageBuffer },
+      imageContext: {
+        languageHints: ["pt", "en"]
+      }
+    });
+
+    const detections = result.textAnnotations || [];
+    const text = detections.length ? detections[0].description : "";
+
+    return {
+      statusCode: 200,
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        text,
+        ok: true
+      })
+    };
+
   } catch (err) {
-    console.error("ocr-proxy error:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: "OCR failure", details: err.message }) };
+    console.error("Erro no OCR:", err);
+    return {
+      statusCode: 500,
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        error: "OCR failure",
+        details: err.message
+      })
+    };
   }
 };
