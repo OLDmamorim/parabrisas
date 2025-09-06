@@ -1,5 +1,5 @@
-// APP.JS (BD + Editar só OCR sem tocar no Eurocode)
-// =========================
+// APP.JS (BD + Editar só OCR sem tocar no Eurocode) — versão com correção da captura de foto
+// ==========================================================================
 
 // ---- Endpoints ----
 const OCR_ENDPOINT = '/api/ocr-proxy';     // fallback Netlify mais abaixo
@@ -63,14 +63,17 @@ function showEditOcrModal(text) {
 
     // Preencher o textarea com o texto atual
     editOcrTextarea.value = text || '';
-    
+
     // Mostrar o modal
     editOcrModal.classList.add('show');
-    
+
     // Focar no textarea e posicionar cursor no final
     setTimeout(() => {
       editOcrTextarea.focus();
-      editOcrTextarea.setSelectionRange(editOcrTextarea.value.length, editOcrTextarea.value.length);
+      editOcrTextarea.setSelectionRange(
+        editOcrTextarea.value.length,
+        editOcrTextarea.value.length
+      );
     }, 100);
 
     // Função para fechar o modal
@@ -126,45 +129,36 @@ function showEditOcrModal(text) {
 // Normalização MELHORADA (ajusta aqui se os nomes do backend diferirem)
 // =========================
 function normalizeRow(r){
-  // Debug: mostrar que dados estão a chegar (remover depois de testar)
-  console.log('Dados recebidos do servidor:', r);
-  
   // Tentar encontrar a timestamp em vários campos possíveis
-  let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
-                  r.date || r.datetime || r.data || r.hora || r.created || 
+  let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt ||
+                  r.date || r.datetime || r.data || r.hora || r.created ||
                   r.updated_at || r.updatedAt || '';
-  
+
   // Se não encontrou timestamp, criar uma nova (fallback)
   if (!timestamp) {
-    console.warn('Nenhuma timestamp encontrada nos dados, usando timestamp atual');
     timestamp = new Date().toLocaleString('pt-PT');
   }
-  
+
   // Se a timestamp é um número (Unix timestamp), converter
   if (typeof timestamp === 'number') {
     timestamp = new Date(timestamp).toLocaleString('pt-PT');
   }
-  
+
   // Se a timestamp é uma string ISO, converter para formato português
   if (typeof timestamp === 'string' && timestamp.includes('T')) {
     try {
       timestamp = new Date(timestamp).toLocaleString('pt-PT');
     } catch (e) {
-      console.warn('Erro ao converter timestamp ISO:', e);
+      // ignora erro
     }
   }
-  
-  const normalized = {
-    id:          r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
-    timestamp:   timestamp,
-    text:        r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
-    eurocode:    r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? ''
+
+  return {
+    id:        r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
+    timestamp: timestamp,
+    text:      r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
+    eurocode:  r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? ''
   };
-  
-  // Debug: mostrar dados normalizados
-  console.log('Dados normalizados:', normalized);
-  
-  return normalized;
 }
 
 // =========================
@@ -205,64 +199,42 @@ async function fetchServerRows(){
   const res = await fetch(LIST_URL, { headers:{'Accept':'application/json'} });
   if (!res.ok) throw new Error('LIST HTTP '+res.status);
   const data = await res.json();
-  
-  // Debug: mostrar resposta completa do servidor
-  console.log('Resposta completa do servidor:', data);
-  
   const rows = Array.isArray(data) ? data : (data.rows || data.items || data.data || []);
-  console.log('Linhas extraídas:', rows);
-  
   return rows.map(normalizeRow);
 }
 
 async function saveRowToServer({ text, eurocode, timestamp }){
-  const payload = { 
-    text, 
-    eurocode, 
+  const payload = {
+    text,
+    eurocode,
     timestamp: timestamp || new Date().toLocaleString('pt-PT')
   };
-  
-  console.log('Enviando para o servidor:', payload);
-  
   const res = await fetch(SAVE_URL, {
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('SAVE HTTP '+res.status);
-  
   const result = await res.json().catch(()=>payload);
-  console.log('Resposta do servidor após guardar:', result);
-  
   return normalizeRow(result);
 }
 
 // >>> AQUI ESTÁ O PONTO CRÍTICO: EDITAR SÓ OCR, PRESERVANDO O RESTO <<<
-// Muitos backends fazem "replace" do registo inteiro no update.
-// Para não perder o eurocode, enviamos também eurocode/timestamp INALTERADOS.
 async function updateOCRInServer(row){
   const payload = {
     id: row.id,
-    // OCR novo:
     text: row.text,
-    // Campos preservados (mesmos nomes que teu backend aceita; duplica onde for comum):
     eurocode: row.eurocode,
     euro_validado: row.eurocode,
     timestamp: row.timestamp,
-    datahora: row.timestamp  // Adicionar variações
+    datahora: row.timestamp
   };
-
-  console.log('Atualizando no servidor:', payload);
-
   const res = await fetch(UPDATE_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('UPDATE HTTP '+res.status);
-  
-  const result = await res.json().catch(()=>({ok:true}));
-  console.log('Resposta do servidor após atualizar:', result);
-  
-  return result;
+  return await res.json().catch(()=>({ok:true}));
 }
 
 async function deleteRowInServer(id){
@@ -281,11 +253,7 @@ function renderTable() {
   resultsBody.innerHTML = '';
   RESULTS.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    
-    // Debug: verificar se a timestamp existe
     const displayTimestamp = row.timestamp || 'Sem data';
-    console.log(`Linha ${idx + 1} - Timestamp:`, displayTimestamp);
-    
     tr.innerHTML = `
       <td>${idx+1}</td>
       <td>${displayTimestamp}</td>
@@ -298,7 +266,7 @@ function renderTable() {
     `;
     resultsBody.appendChild(tr);
   });
-  renderMobileEuroList();   // atualiza lista mobile
+  renderMobileEuroList();
 }
 
 async function deleteRowUI(idx){
@@ -325,28 +293,22 @@ async function editOCR(idx){
 
   currentEditingRow = row;
   const atual = row.text || '';
-  
+
   try {
     // Mostrar o modal e aguardar resposta
     const novo = await showEditOcrModal(atual);
-    
     if (novo === null) {
-      // Utilizador cancelou
       currentEditingRow = null;
       return;
     }
-
     // Atualizar o texto
     const updated = { ...row, text: novo };
     setStatus(desktopStatus, 'A guardar…');
-
     await updateOCRInServer(updated);
     RESULTS = await fetchServerRows();
     renderTable();
-
     setStatus(desktopStatus, 'OCR atualizado', 'success');
     showToast('Texto lido (OCR) atualizado ✅','success');
-    
   } catch(e) {
     console.error(e);
     setStatus(desktopStatus, 'Erro ao guardar', 'error');
@@ -357,7 +319,7 @@ async function editOCR(idx){
 }
 
 // =========================
-// Histórico Mobile — Eurocodes da BD
+// Histórico Mobile — Eurocodes da BD (mostra as últimas 5)
 // =========================
 function renderMobileEuroList(){
   if (!mobileHistoryList) return;
@@ -372,11 +334,12 @@ function renderMobileEuroList(){
     mobileHistoryList.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
     return;
   }
+  const last5 = codes.slice(-5).reverse();
   const frag = document.createDocumentFragment();
-  codes.forEach(c=>{
+  last5.forEach(c => {
     const div = document.createElement('div');
     div.className = 'history-item-text';
-    div.textContent = c.split(/\s+/)[0]; // só o código
+    div.textContent = c.split(/\s+/)[0];
     frag.appendChild(div);
   });
   mobileHistoryList.innerHTML = '';
@@ -386,18 +349,19 @@ function renderMobileEuroList(){
 // =========================
 // Upload Desktop -> OCR -> Eurocode -> GUARDA NA BD
 // =========================
-btnUpload?.addEventListener('click', ()=> fileInput.click());
+btnUpload?.addEventListener('click', () => fileInput.click());
 fileInput?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
   setStatus(desktopStatus, '⏳ A processar…');
-
   try{
-    const buf = await f.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-    const mime = f.type || 'image/png';
-    const img64 = `data:${mime};base64,${base64}`;
-
+    // Lê o ficheiro como DataURL para evitar estouro de stack com fotos grandes
+    const img64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(f);
+    });
     const text = await runOCR(img64);
     const euro = extractEurocode(text);
     if (!euro){
@@ -405,10 +369,7 @@ fileInput?.addEventListener('change', async (e) => {
       showToast('Nenhum Eurocode válido encontrado','error');
       return;
     }
-
     const ts = new Date().toLocaleString('pt-PT');
-    console.log('Timestamp criada:', ts);
-    
     await saveRowToServer({ text, eurocode: euro, timestamp: ts });
     RESULTS = await fetchServerRows();
     renderTable();
@@ -426,18 +387,19 @@ fileInput?.addEventListener('change', async (e) => {
 // =========================
 // Câmera Mobile -> OCR -> Eurocode -> GUARDA NA BD
 // =========================
-btnCamera?.addEventListener('click', ()=> cameraInput.click());
+btnCamera?.addEventListener('click', () => cameraInput.click());
 cameraInput?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
   setStatus(mobileStatus, '⏳ A processar…');
-
   try{
-    const buf = await f.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-    const mime = f.type || 'image/png';
-    const img64 = `data:${mime};base64,${base64}`;
-
+    // Lê o ficheiro como DataURL para evitar estouro de stack com fotos grandes
+    const img64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(f);
+    });
     const text = await runOCR(img64);
     const euro = extractEurocode(text);
     if (!euro){
@@ -445,10 +407,7 @@ cameraInput?.addEventListener('change', async (e) => {
       showToast('Nenhum Eurocode válido encontrado','error');
       return;
     }
-
     const ts = new Date().toLocaleString('pt-PT');
-    console.log('Timestamp criada (mobile):', ts);
-    
     await saveRowToServer({ text, eurocode: euro, timestamp: ts });
     RESULTS = await fetchServerRows();
     renderTable();
@@ -477,7 +436,8 @@ btnExport?.addEventListener('click', async () => {
       ['#','Data/Hora','Texto','Eurocode'],
       ...RESULTS.map((r,i)=> [i+1, r.timestamp||'', r.text||'', r.eurocode||''])
     ];
-    const csv = rows.map(r => r.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const csv = rows.map(r => r.map(c =>
+      `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -529,7 +489,7 @@ helpModal?.addEventListener('click', (e) => {
   if (e.target === helpModal) {
     hideHelpModal();
   }
-}); 
+});
 
 // Fechar modal com ESC
 document.addEventListener('keydown', (e) => {
