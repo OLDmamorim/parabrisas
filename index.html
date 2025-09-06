@@ -18,7 +18,9 @@
 
   <!-- MOBILE VIEW -->
   <main id="mobileView" class="card mobile-only">
+    <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    
     <div class="mobile-cta">
       <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
         <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
@@ -46,17 +48,14 @@
 
   <!-- DESKTOP VIEW -->
   <section id="desktopView" class="card desktop-only">
+    <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
+    
     <div class="toolbar">
       <button id="btnUpload" class="btn">📁 Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
       <button id="btnExport" class="btn">📊 Exportar CSV</button>
       <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
-
-      <!-- Pesquisa -->
-      <div class="search-wrap" title="Pesquisar nas colunas Texto lido e Eurocode (atalho '/')">
-        <input id="tableSearch" type="search" placeholder="Pesquisar… (/ para focar, Esc limpa)" autocomplete="off" />
-      </div>
     </div>
 
     <div class="table-wrap">
@@ -113,7 +112,7 @@
   <!-- App original -->
   <script src="app.js"></script>
 
-  <!-- ===== Mobile: preencher “Últimas Capturas” ===== -->
+  <!-- ===== Mobile: preencher "Últimas Capturas" (API -> fallback tabela) ===== -->
   <script>
   (function(){
     const listEl = document.getElementById('mobileHistoryList');
@@ -128,7 +127,7 @@
         if (Array.isArray(data.items)) return data.items;
         return [];
       }catch(e){
-        return null; // fallback
+        return null; // força fallback
       }
     }
 
@@ -198,9 +197,8 @@
 
     const tbody = document.getElementById('resultsBody');
     if (tbody){
-      // FIX: não escutar characterData para evitar loops
       new MutationObserver(refresh)
-        .observe(tbody, { childList:true, subtree:true });
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
     }
 
     document.addEventListener('click', (e) => {
@@ -230,78 +228,9 @@
     fixCol3();
     if (tbody){
       new MutationObserver(fixCol3)
-        .observe(tbody, { childList:true, subtree:true }); // sem characterData
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
     }
     window.addEventListener('resize', fixCol3);
-  })();
-  </script>
-
-  <!-- ===== Filtro de pesquisa da tabela (com FIX de loop) ===== -->
-  <script>
-  (function(){
-    const input = document.getElementById('tableSearch');
-    const tbody = document.getElementById('resultsBody');
-    const statusEl = document.getElementById('desktopStatus');
-
-    if (!input || !tbody) return;
-
-    const norm = (s='') => s.toString()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu,'')
-      .toLowerCase();
-
-    function applyFilter(){
-      const q = norm(input.value);
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      let shown = 0;
-
-      rows.forEach((tr) => {
-        const c3 = tr.querySelector('td:nth-child(3)');
-        const c4 = tr.querySelector('td:nth-child(4)');
-        const t3 = norm(c3 ? (c3.innerText || c3.textContent) : '');
-        const t4 = norm(c4 ? (c4.innerText || c4.textContent) : '');
-        const match = !q || t3.includes(q) || t4.includes(q);
-        tr.style.display = match ? '' : 'none';
-      });
-
-      // renumerar apenas visíveis (isto alterava characterData)
-      const visible = Array.from(tbody.querySelectorAll('tr'))
-        .filter(tr => tr.style.display !== 'none');
-
-      visible.forEach((tr, idx) => {
-        const tdIndex = tr.querySelector('td:nth-child(1)');
-        if (tdIndex) tdIndex.textContent = String(idx + 1);
-        shown = idx + 1;
-      });
-
-      const total = rows.length;
-      if (statusEl) {
-        statusEl.textContent = q ? `Filtro: ${shown}/${total} linha(s) visíveis` : '';
-      }
-    }
-
-    input.addEventListener('input', applyFilter);
-    input.addEventListener('keydown', (e)=>{
-      if (e.key === 'Escape') {
-        input.value = '';
-        applyFilter();
-      }
-    });
-
-    document.addEventListener('keydown', (e)=>{
-      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-      if (e.key === '/' && tag !== 'input' && tag !== 'textarea') {
-        e.preventDefault();
-        input.focus();
-        input.select();
-      }
-    });
-
-    // FIX: observer sem characterData para não reagir à renumeração
-    new MutationObserver(applyFilter)
-      .observe(tbody, { childList:true, subtree:true });
-
-    applyFilter();
   })();
   </script>
 </body>
