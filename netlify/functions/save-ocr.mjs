@@ -1,10 +1,11 @@
-// netlify/functions/save-ocr.mjs
 import { sql } from "@neondatabase/serverless";
+
 export const handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
       return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
     }
+
     const body = JSON.parse(event.body || "{}");
     const ts   = body.ts || body.timestamp || new Date().toISOString();
     const text = body.text ?? "";
@@ -14,13 +15,14 @@ export const handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: "Eurocode em falta" }) };
     }
 
-    // garante tabela
-    await sql`CREATE TABLE IF NOT EXISTS ocr_capturas (
-      id SERIAL PRIMARY KEY,
-      ts TIMESTAMPTZ NOT NULL,
-      text TEXT,
-      euro_validado TEXT
-    );`;
+    await sql`
+      CREATE TABLE IF NOT EXISTS ocr_capturas (
+        id SERIAL PRIMARY KEY,
+        ts TIMESTAMPTZ NOT NULL,
+        text TEXT,
+        euro_validado TEXT
+      );
+    `;
 
     const { rows } = await sql`
       INSERT INTO ocr_capturas (ts, text, euro_validado)
