@@ -1,38 +1,84 @@
-import { sql } from "@neondatabase/serverless";
+import { neon } from '@neondatabase/serverless';
+
+const CONN = process.env.NEON_DATABASE_URL;
+if (!CONN) throw new Error('NEON_DATABASE_URL não definido');
+
+const sql = neon(CONN);
+
+const jsonHeaders = {
+  'content-type': 'application/json',
+  'access-control-allow-origin': '*'
+};
+
+let inited = false;
+async function init() {
+  if (inited) return;
+  try {
+    await sql`
+      create table if not exists ocr_results (
+        id bigserial primary key,
+        ts timestamptz not null default now(),
+        text text,
+        filename text,
+        source text,
+        ip text,
+        euro_validado text
+      )
+    `;
+    inited = true;
+  } catch (e) {
+    console.error('Erro ao inicializar tabela:', e);
+    throw e;
+  }
+}
 
 export const handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, headers: jsonHeaders, body: '"Method Not Allowed"' };
+  }
+
   try {
-    if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
+    await init();
+
+    const { ts, text, filename, source, euro_validado, eurocode } = JSON.parse(event.body || '{}');
+    if (!text && !filename) {
+      return { statusCode: 400, headers: jsonHeaders, body: '"Texto ou filename obrigatório"' };
     }
 
-    const body = JSON.parse(event.body || "{}");
-    const ts   = body.ts || body.timestamp || new Date().toISOString();
-    const text = body.text ?? "";
-    const euro = body.euro_validado ?? body.eurocode ?? body.euro ?? "";
+    // Normalizar timestamp
+    const tsDate = (() => {
+      if (typeof ts === "number") return new Date(ts < 1e12 ? ts * 1000 : ts);
+      if (typeof ts === "string" && ts) {
+        const d = new Date(ts);
+        if (!Number.isNaN(d.getTime())) return d;
+      }
+      return new Date();
+    })();
 
-    if (!euro) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Eurocode em falta" }) };
-    }
+    const ip =
+      event.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      event.headers['client-ip'] || null;
 
-    await sql`
-      CREATE TABLE IF NOT EXISTS ocr_capturas (
-        id SERIAL PRIMARY KEY,
-        ts TIMESTAMPTZ NOT NULL,
-        text TEXT,
-        euro_validado TEXT
-      );
+    // Usar eurocode ou euro_validado
+    const euroFinal = euro_validado || eurocode || '';
+
+    const rows = await sql`
+      insert into ocr_results (ts, text, filename, source, ip, euro_validado)
+      values (${tsDate}, ${text || ''}, ${filename || ''}, ${source || ''}, ${ip}, ${euroFinal})
+      returning id, ts, text, filename, source, euro_validado
     `;
 
-    const { rows } = await sql`
-      INSERT INTO ocr_capturas (ts, text, euro_validado)
-      VALUES (${ts}, ${text}, ${euro})
-      RETURNING id, ts, text, euro_validado;
-    `;
-
-    return { statusCode: 200, body: JSON.stringify({ ok: true, row: rows[0] }) };
-  } catch (err) {
-    console.error("save-ocr error:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return {
+      statusCode: 200,
+      headers: jsonHeaders,
+      body: JSON.stringify({ ok: true, row: rows[0] })
+    };
+  } catch (e) {
+    console.error('Erro ao guardar:', e);
+    return { 
+      statusCode: 500, 
+      headers: jsonHeaders, 
+      body: JSON.stringify({ ok: false, error: e.message }) 
+    };
   }
 };
