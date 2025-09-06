@@ -2,85 +2,70 @@
 import vision from "@google-cloud/vision";
 import Busboy from "busboy";
 
-// Inicializar cliente do Google Vision
-const client = new vision.ImageAnnotatorClient({
-  credentials: JSON.parse(process.env.GCP_KEY_JSON)
-});
+const makeVisionClient = () => {
+  // Lê a credencial do env var GCP_KEY_JSON (string)
+  const key = process.env.GCP_KEY_JSON;
+  if (!key) throw new Error("Missing GCP_KEY_JSON env var");
+  const credentials = JSON.parse(key);
+  return new vision.ImageAnnotatorClient({ credentials });
+};
 
-// Função para ler ficheiro de upload (multipart/form-data)
-async function parseMultipartForm(event) {
+async function parseMultipart(event) {
   return new Promise((resolve, reject) => {
-    const busboy = Busboy({ headers: event.headers });
-    const formData = {};
-    let fileBuffer = Buffer.alloc(0);
+    const headers = event.headers || {};
+    const contentType = headers["content-type"] || headers["Content-Type"];
+    if (!contentType) return reject(new Error("No content-type"));
 
-    busboy.on("file", (_, file, info) => {
-      file.on("data", (data) => {
-        fileBuffer = Buffer.concat([fileBuffer, data]);
-      });
-      file.on("end", () => {
-        formData.file = fileBuffer;
-        formData.filename = info.filename;
-      });
+    const bb = Busboy({ headers: { "content-type": contentType } });
+    const buffers = [];
+    let filename = "upload.jpg";
+
+    bb.on("file", (_name, file, info) => {
+      if (info?.filename) filename = info.filename;
+      file.on("data", (d) => buffers.push(d));
+      file.on("limit", () => reject(new Error("File too large")));
     });
+    bb.on("error", reject);
+    bb.on("finish", () => resolve({
+      fileBuffer: Buffer.concat(buffers),
+      filename
+    }));
 
-    busboy.on("field", (fieldname, value) => {
-      formData[fieldname] = value;
-    });
-
-    busboy.on("finish", () => {
-      resolve(formData);
-    });
-
-    busboy.on("error", (err) => reject(err));
-
-    busboy.end(Buffer.from(event.body, "base64"));
+    const body = event.isBase64Encoded ? Buffer.from(event.body, "base64") : event.body;
+    bb.end(body);
   });
 }
 
-// Função handler Netlify
 export const handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
-      return {
-        statusCode: 405,
-        body: JSON.stringify({ error: "Método não permitido" })
-      };
+      return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
     }
 
-    const formData = await parseMultipartForm(event);
-    if (!formData.file) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Nenhum ficheiro enviado" }) };
+    const client = makeVisionClient();
+
+    // Aceita JSON (imageBase64) ou multipart (file)
+    const ct = (event.headers["content-type"] || event.headers["Content-Type"] || "").toLowerCase();
+    let imageBuffer;
+    if (ct.includes("application/json")) {
+      const { imageBase64 } = JSON.parse(event.body || "{}");
+      if (!imageBase64) return { statusCode: 400, body: JSON.stringify({ error: "Sem imageBase64" }) };
+      const base64 = imageBase64.split(",")[1] || imageBase64; // aceita dataURL ou só base64
+      imageBuffer = Buffer.from(base64, "base64");
+    } else if (ct.includes("multipart/form-data")) {
+      const { fileBuffer } = await parseMultipart(event);
+      if (!fileBuffer?.length) return { statusCode: 400, body: JSON.stringify({ error: "Nenhum ficheiro enviado" }) };
+      imageBuffer = fileBuffer;
+    } else {
+      return { statusCode: 400, body: JSON.stringify({ error: "Content-Type inválido" }) };
     }
 
-    // Chamada ao Google Vision (⚠️ removido failOn inválido)
-    const [result] = await client.textDetection({
-      image: { content: formData.file },
-      imageContext: {
-        languageHints: ["pt", "en"] // opcional
-      }
-    });
+    const [result] = await client.textDetection({ image: { content: imageBuffer } });
+    const text = result?.textAnnotations?.[0]?.description || "";
 
-    const detections = result.textAnnotations || [];
-    const text = detections.length ? detections[0].description : "";
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        text,
-        filename: formData.filename || "upload.jpg",
-        ok: true
-      })
-    };
-
+    return { statusCode: 200, body: JSON.stringify({ ok: true, text }) };
   } catch (err) {
-    console.error("Erro no OCR:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        error: "OCR failure",
-        details: err.message
-      })
-    };
+    console.error("OCR error:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: "OCR failure", details: err.message }) };
   }
 };
