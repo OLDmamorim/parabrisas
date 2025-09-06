@@ -52,99 +52,28 @@ function setStatus(el, text, mode='') {
 }
 
 // =========================
-// Funções do Modal de Edição OCR
-// =========================
-function showEditOcrModal(text) {
-  return new Promise((resolve) => {
-    if (!editOcrModal || !editOcrTextarea) {
-      resolve(null);
-      return;
-    }
-
-    // Preencher o textarea com o texto atual
-    editOcrTextarea.value = text || '';
-    
-    // Mostrar o modal
-    editOcrModal.classList.add('show');
-    
-    // Focar no textarea e posicionar cursor no final
-    setTimeout(() => {
-      editOcrTextarea.focus();
-      editOcrTextarea.setSelectionRange(editOcrTextarea.value.length, editOcrTextarea.value.length);
-    }, 100);
-
-    // Função para fechar o modal
-    function closeModal(result) {
-      editOcrModal.classList.remove('show');
-      resolve(result);
-    }
-
-    // Event listeners temporários
-    function handleSave() {
-      const newText = editOcrTextarea.value;
-      cleanup();
-      closeModal(newText);
-    }
-
-    function handleCancel() {
-      cleanup();
-      closeModal(null);
-    }
-
-    function handleKeydown(e) {
-      if (e.key === 'Escape') {
-        handleCancel();
-      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        handleSave();
-      }
-    }
-
-    function handleBackdropClick(e) {
-      if (e.target === editOcrModal) {
-        handleCancel();
-      }
-    }
-
-    function cleanup() {
-      editOcrSave.removeEventListener('click', handleSave);
-      editOcrCancel.removeEventListener('click', handleCancel);
-      editOcrClose.removeEventListener('click', handleCancel);
-      document.removeEventListener('keydown', handleKeydown);
-      editOcrModal.removeEventListener('click', handleBackdropClick);
-    }
-
-    // Adicionar event listeners
-    editOcrSave.addEventListener('click', handleSave);
-    editOcrCancel.addEventListener('click', handleCancel);
-    editOcrClose.addEventListener('click', handleCancel);
-    document.addEventListener('keydown', handleKeydown);
-    editOcrModal.addEventListener('click', handleBackdropClick);
-  });
-}
-
-// =========================
-// Normalização MELHORADA (ajusta aqui se os nomes do backend diferirem)
+/* Normalização MELHORADA (ajusta aqui se os nomes do backend diferirem) */
 // =========================
 function normalizeRow(r){
   // Debug: mostrar que dados estão a chegar (remover depois de testar)
   console.log('Dados recebidos do servidor:', r);
-  
-  // Tentar encontrar a timestamp em vários campos possíveis
-  let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
-                  r.date || r.datetime || r.data || r.hora || r.created || 
+
+  // Tentar encontrar a timestamp em vários campos possíveis (inclui "ts")
+  let timestamp = r.timestamp || r.ts || r.datahora || r.created_at || r.createdAt ||
+                  r.date || r.datetime || r.data || r.hora || r.created ||
                   r.updated_at || r.updatedAt || '';
-  
+
   // Se não encontrou timestamp, criar uma nova (fallback)
   if (!timestamp) {
     console.warn('Nenhuma timestamp encontrada nos dados, usando timestamp atual');
     timestamp = new Date().toLocaleString('pt-PT');
   }
-  
+
   // Se a timestamp é um número (Unix timestamp), converter
   if (typeof timestamp === 'number') {
     timestamp = new Date(timestamp).toLocaleString('pt-PT');
   }
-  
+
   // Se a timestamp é uma string ISO, converter para formato português
   if (typeof timestamp === 'string' && timestamp.includes('T')) {
     try {
@@ -153,33 +82,46 @@ function normalizeRow(r){
       console.warn('Erro ao converter timestamp ISO:', e);
     }
   }
-  
+
   const normalized = {
     id:          r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
     timestamp:   timestamp,
     text:        r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
     eurocode:    r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? ''
   };
-  
+
   // Debug: mostrar dados normalizados
   console.log('Dados normalizados:', normalized);
-  
+
   return normalized;
 }
 
 // =========================
-// OCR (com fallback para Netlify Functions)
+// OCR (enviar como multipart/form-data)
 // =========================
 async function runOCR(imageBase64) {
+  // Converte dataURL -> Blob
+  function dataURLtoBlob(dataURL){
+    const [meta, b64] = dataURL.split(',');
+    const mime = (meta.match(/data:(.*?);/) || [,'image/png'])[1];
+    const bin = atob(b64);
+    const len = bin.length;
+    const u8 = new Uint8Array(len);
+    for (let i=0; i<len; i++) u8[i] = bin.charCodeAt(i);
+    return new Blob([u8], { type: mime });
+  }
+
   async function tryOnce(url){
-    const res = await fetch(url, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ imageBase64 })
-    });
+    const blob = dataURLtoBlob(imageBase64);
+    const fd = new FormData();
+    fd.append('file', blob, 'photo.jpg');
+
+    const res = await fetch(url, { method:'POST', body: fd });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json().catch(()=>({text:''}));
     return data.text || data.fullText || data.raw || '';
   }
+
   try {
     try { return await tryOnce(OCR_ENDPOINT); }
     catch { return await tryOnce('/.netlify/functions/ocr-proxy'); }
@@ -205,50 +147,54 @@ async function fetchServerRows(){
   const res = await fetch(LIST_URL, { headers:{'Accept':'application/json'} });
   if (!res.ok) throw new Error('LIST HTTP '+res.status);
   const data = await res.json();
-  
+
   // Debug: mostrar resposta completa do servidor
   console.log('Resposta completa do servidor:', data);
-  
+
   const rows = Array.isArray(data) ? data : (data.rows || data.items || data.data || []);
   console.log('Linhas extraídas:', rows);
-  
+
   return rows.map(normalizeRow);
 }
 
 async function saveRowToServer({ text, eurocode, timestamp }){
-  const payload = { 
-    text, 
-    eurocode, 
-    timestamp: timestamp || new Date().toLocaleString('pt-PT')
+  // Alinha com o teu save-ocr.mjs — usa euro_validado e ts
+  const payload = {
+    ts: timestamp || new Date().toLocaleString('pt-PT'),
+    text,
+    euro_validado: eurocode,
+    filename: 'camera',
+    source: 'webapp'
   };
-  
+
   console.log('Enviando para o servidor:', payload);
-  
+
   const res = await fetch(SAVE_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('SAVE HTTP '+res.status);
-  
+
   const result = await res.json().catch(()=>payload);
   console.log('Resposta do servidor após guardar:', result);
-  
-  return normalizeRow(result);
+
+  // Normaliza o que voltou (result.row ou o próprio result)
+  const row = result.row || result;
+  return normalizeRow({
+    id: row.id,
+    ts: row.ts,
+    text: row.text,
+    euro_validado: row.euro_validado
+  });
 }
 
-// >>> AQUI ESTÁ O PONTO CRÍTICO: EDITAR SÓ OCR, PRESERVANDO O RESTO <<<
-// Muitos backends fazem "replace" do registo inteiro no update.
-// Para não perder o eurocode, enviamos também eurocode/timestamp INALTERADOS.
+// >>> EDITAR SÓ OCR, PRESERVANDO EUROCODE/TIMESTAMP <<<
 async function updateOCRInServer(row){
   const payload = {
     id: row.id,
-    // OCR novo:
-    text: row.text,
-    // Campos preservados (mesmos nomes que teu backend aceita; duplica onde for comum):
-    eurocode: row.eurocode,
-    euro_validado: row.eurocode,
-    timestamp: row.timestamp,
-    datahora: row.timestamp  // Adicionar variações
+    text: row.text,                        // novo OCR
+    euro_validado: row.eurocode,           // preserva o eurocode
+    ts: row.timestamp                      // preserva o timestamp
   };
 
   console.log('Atualizando no servidor:', payload);
@@ -258,10 +204,10 @@ async function updateOCRInServer(row){
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('UPDATE HTTP '+res.status);
-  
+
   const result = await res.json().catch(()=>({ok:true}));
   console.log('Resposta do servidor após atualizar:', result);
-  
+
   return result;
 }
 
@@ -281,11 +227,11 @@ function renderTable() {
   resultsBody.innerHTML = '';
   RESULTS.forEach((row, idx) => {
     const tr = document.createElement('tr');
-    
+
     // Debug: verificar se a timestamp existe
     const displayTimestamp = row.timestamp || 'Sem data';
     console.log(`Linha ${idx + 1} - Timestamp:`, displayTimestamp);
-    
+
     tr.innerHTML = `
       <td>${idx+1}</td>
       <td>${displayTimestamp}</td>
@@ -325,11 +271,11 @@ async function editOCR(idx){
 
   currentEditingRow = row;
   const atual = row.text || '';
-  
+
   try {
     // Mostrar o modal e aguardar resposta
     const novo = await showEditOcrModal(atual);
-    
+
     if (novo === null) {
       // Utilizador cancelou
       currentEditingRow = null;
@@ -346,7 +292,7 @@ async function editOCR(idx){
 
     setStatus(desktopStatus, 'OCR atualizado', 'success');
     showToast('Texto lido (OCR) atualizado ✅','success');
-    
+
   } catch(e) {
     console.error(e);
     setStatus(desktopStatus, 'Erro ao guardar', 'error');
@@ -408,7 +354,7 @@ fileInput?.addEventListener('change', async (e) => {
 
     const ts = new Date().toLocaleString('pt-PT');
     console.log('Timestamp criada:', ts);
-    
+
     await saveRowToServer({ text, eurocode: euro, timestamp: ts });
     RESULTS = await fetchServerRows();
     renderTable();
@@ -424,7 +370,7 @@ fileInput?.addEventListener('change', async (e) => {
 });
 
 // =========================
-// Câmera Mobile -> OCR -> Eurocode -> GUARDA NA BD
+/* Câmera Mobile -> OCR -> Eurocode -> GUARDA NA BD */
 // =========================
 btnCamera?.addEventListener('click', ()=> cameraInput.click());
 cameraInput?.addEventListener('change', async (e) => {
@@ -448,7 +394,7 @@ cameraInput?.addEventListener('change', async (e) => {
 
     const ts = new Date().toLocaleString('pt-PT');
     console.log('Timestamp criada (mobile):', ts);
-    
+
     await saveRowToServer({ text, eurocode: euro, timestamp: ts });
     RESULTS = await fetchServerRows();
     renderTable();
@@ -500,45 +446,21 @@ btnClear?.addEventListener('click', async () => {
 });
 
 // =========================
-// Event Listeners para Modal de Ajuda
+// Modal de Ajuda (abrir/fechar)
 // =========================
 const helpModal = document.getElementById('helpModal');
 const helpBtn = document.getElementById('helpBtn');
 const helpBtnDesktop = document.getElementById('helpBtnDesktop');
 const helpClose = document.getElementById('helpClose');
 
-function showHelpModal() {
-  if (helpModal) {
-    helpModal.classList.add('show');
-  }
-}
+function showHelpModal() { if (helpModal) helpModal.classList.add('show'); }
+function hideHelpModal() { if (helpModal) helpModal.classList.remove('show'); }
 
-function hideHelpModal() {
-  if (helpModal) {
-    helpModal.classList.remove('show');
-  }
-}
-
-// Event listeners para o modal de ajuda
 helpBtn?.addEventListener('click', showHelpModal);
 helpBtnDesktop?.addEventListener('click', showHelpModal);
 helpClose?.addEventListener('click', hideHelpModal);
-
-// Fechar modal ao clicar no backdrop
-helpModal?.addEventListener('click', (e) => {
-  if (e.target === helpModal) {
-    hideHelpModal();
-  }
-}); 
-
-// Fechar modal com ESC
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    if (helpModal?.classList.contains('show')) {
-      hideHelpModal();
-    }
-  }
-});
+helpModal?.addEventListener('click', (e) => { if (e.target === helpModal) hideHelpModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && helpModal?.classList.contains('show')) hideHelpModal(); });
 
 // =========================
 // Bootstrap
