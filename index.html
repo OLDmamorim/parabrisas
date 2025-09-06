@@ -18,9 +18,7 @@
 
   <!-- MOBILE VIEW -->
   <main id="mobileView" class="card mobile-only">
-    <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
-    
     <div class="mobile-cta">
       <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
         <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
@@ -48,20 +46,17 @@
 
   <!-- DESKTOP VIEW -->
   <section id="desktopView" class="card desktop-only">
-    <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
-    
     <div class="toolbar">
       <button id="btnUpload" class="btn">📁 Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
       <button id="btnExport" class="btn">📊 Exportar CSV</button>
       <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
 
-      <!-- >>> NOVO: Pesquisa <<< -->
+      <!-- Pesquisa -->
       <div class="search-wrap" title="Pesquisar nas colunas Texto lido e Eurocode (atalho '/')">
         <input id="tableSearch" type="search" placeholder="Pesquisar… (/ para focar, Esc limpa)" autocomplete="off" />
       </div>
-      <!-- FIM Pesquisa -->
     </div>
 
     <div class="table-wrap">
@@ -118,7 +113,7 @@
   <!-- App original -->
   <script src="app.js"></script>
 
-  <!-- ===== Mobile: preencher "Últimas Capturas" (API -> fallback tabela) ===== -->
+  <!-- ===== Mobile: preencher “Últimas Capturas” ===== -->
   <script>
   (function(){
     const listEl = document.getElementById('mobileHistoryList');
@@ -133,7 +128,7 @@
         if (Array.isArray(data.items)) return data.items;
         return [];
       }catch(e){
-        return null; // força fallback
+        return null; // fallback
       }
     }
 
@@ -203,8 +198,9 @@
 
     const tbody = document.getElementById('resultsBody');
     if (tbody){
+      // FIX: não escutar characterData para evitar loops
       new MutationObserver(refresh)
-        .observe(tbody, { childList:true, subtree:true, characterData:true });
+        .observe(tbody, { childList:true, subtree:true });
     }
 
     document.addEventListener('click', (e) => {
@@ -234,13 +230,13 @@
     fixCol3();
     if (tbody){
       new MutationObserver(fixCol3)
-        .observe(tbody, { childList:true, subtree:true, characterData:true });
+        .observe(tbody, { childList:true, subtree:true }); // sem characterData
     }
     window.addEventListener('resize', fixCol3);
   })();
   </script>
 
-  <!-- ===== NOVO: Filtro de pesquisa da tabela ===== -->
+  <!-- ===== Filtro de pesquisa da tabela (com FIX de loop) ===== -->
   <script>
   (function(){
     const input = document.getElementById('tableSearch');
@@ -249,7 +245,6 @@
 
     if (!input || !tbody) return;
 
-    // normaliza (remove acentos) e baixa para comparar
     const norm = (s='') => s.toString()
       .normalize('NFD')
       .replace(/\p{Diacritic}/gu,'')
@@ -261,34 +256,30 @@
       let shown = 0;
 
       rows.forEach((tr) => {
-        // colunas 3 e 4
         const c3 = tr.querySelector('td:nth-child(3)');
         const c4 = tr.querySelector('td:nth-child(4)');
         const t3 = norm(c3 ? (c3.innerText || c3.textContent) : '');
         const t4 = norm(c4 ? (c4.innerText || c4.textContent) : '');
-
         const match = !q || t3.includes(q) || t4.includes(q);
         tr.style.display = match ? '' : 'none';
       });
 
-      // renumerar apenas as visíveis
-      Array.from(tbody.querySelectorAll('tr'))
-        .filter(tr => tr.style.display !== 'none')
-        .forEach((tr, idx) => {
-          const tdIndex = tr.querySelector('td:nth-child(1)');
-          if (tdIndex) tdIndex.textContent = String(idx + 1);
-          shown = idx + 1;
-        });
+      // renumerar apenas visíveis (isto alterava characterData)
+      const visible = Array.from(tbody.querySelectorAll('tr'))
+        .filter(tr => tr.style.display !== 'none');
+
+      visible.forEach((tr, idx) => {
+        const tdIndex = tr.querySelector('td:nth-child(1)');
+        if (tdIndex) tdIndex.textContent = String(idx + 1);
+        shown = idx + 1;
+      });
 
       const total = rows.length;
       if (statusEl) {
-        statusEl.textContent = q
-          ? `Filtro: ${shown}/${total} linha(s) visíveis`
-          : '';
+        statusEl.textContent = q ? `Filtro: ${shown}/${total} linha(s) visíveis` : '';
       }
     }
 
-    // eventos
     input.addEventListener('input', applyFilter);
     input.addEventListener('keydown', (e)=>{
       if (e.key === 'Escape') {
@@ -297,7 +288,6 @@
       }
     });
 
-    // atalho global: '/' foca a pesquisa (ignora quando já estamos a escrever noutro input/textarea)
     document.addEventListener('keydown', (e)=>{
       const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
       if (e.key === '/' && tag !== 'input' && tag !== 'textarea') {
@@ -307,11 +297,10 @@
       }
     });
 
-    // se a tabela mudar (linhas novas), reaplica o filtro atual
+    // FIX: observer sem characterData para não reagir à renumeração
     new MutationObserver(applyFilter)
-      .observe(tbody, { childList:true, subtree:true, characterData:true });
+      .observe(tbody, { childList:true, subtree:true });
 
-    // primeira aplicação (caso já existam linhas)
     applyFilter();
   })();
   </script>
