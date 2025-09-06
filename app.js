@@ -608,3 +608,54 @@ document.addEventListener('keydown', (e) => {
     }, 300);
   }
 })();
+
+/* ===== DEBUG MOBILE: mostrar erro detalhado do SAVE no ecrã ===== */
+(function patchSaveForMobileDebug(){
+  if (window.__saveDebugPatched) return;
+  window.__saveDebugPatched = true;
+
+  const originalSave = window.saveRowToServer;
+
+  async function readBodySafe(res){
+    try{
+      const txt = await res.text();
+      try { return JSON.stringify(JSON.parse(txt), null, 2); } catch { return txt; }
+    }catch{ return '<sem corpo>'; }
+  }
+
+  window.saveRowToServer = async function ({ text, eurocode, timestamp }){
+    const payload = { text, eurocode, timestamp };
+    try{
+      const res = await fetch(SAVE_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok){
+        const body = await readBodySafe(res);
+        const msg =
+`❌ Erro ao guardar
+URL: ${SAVE_URL}
+HTTP: ${res.status} ${res.statusText}
+Payload: ${JSON.stringify(payload)}
+Resposta do servidor:
+${body}`;
+        // mostra em alerta (bom para telemóvel) e também no status
+        try { alert(msg.slice(0, 1500)); } catch {}
+        (window.mobileStatus || window.desktopStatus) && setStatus(mobileStatus || desktopStatus, msg, 'error');
+        throw new Error(msg);
+      }
+
+      const data = await res.json().catch(()=>payload);
+      return normalizeRow(data);
+
+    }catch(err){
+      const msg = (err && err.message) ? err.message : String(err);
+      try { alert(('❌ EXCEÇÃO SAVE\n' + msg).slice(0,1500)); } catch {}
+      (window.mobileStatus || window.desktopStatus) && setStatus(mobileStatus || desktopStatus, msg, 'error');
+      showToast('Falha ao guardar', 'error');
+      throw err;
+    }
+  };
+})();
