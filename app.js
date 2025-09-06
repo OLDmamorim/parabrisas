@@ -659,3 +659,88 @@ ${body}`;
     }
   };
 })();
+
+/* ===== HOTFIX: saver multi-formato + fallback de endpoint ===== */
+(function hardenSaves(){
+  const ENDPOINTS = [ SAVE_URL, '/.netlify/functions/save-ocr' ];
+  const PAYLOADS = (text, eurocode, timestamp) => [
+    // 1) formato atual
+    { text, eurocode, timestamp },
+    // 2) nomes "validados"
+    { text, euro_validado: eurocode, timestamp },
+    // 3) nomes "BD antigos"
+    { ocr_text: text, euro_validado: eurocode, datahora: timestamp },
+    // 4) ocr curto
+    { ocr: text, eurocode, timestamp },
+    // 5) tudo junto (alguns backends fazem UPSERT por campos extra)
+    { text, ocr_text: text, ocr: text, eurocode, euro_validado: eurocode, timestamp, datahora: timestamp }
+  ];
+
+  async function tryPost(url, body){
+    const ctrl = new AbortController();
+    const to = setTimeout(()=>ctrl.abort(), 8000); // 8s timeout
+    try{
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(body),
+        signal: ctrl.signal
+      });
+      if(!res.ok){
+        // lê o corpo para debug
+        let msg = `HTTP ${res.status} ${res.statusText}`;
+        try{ msg += ' | ' + (await res.text()).slice(0,300); }catch{}
+        throw new Error(msg);
+      }
+      const data = await res.json().catch(()=>body);
+      return data;
+    } finally { clearTimeout(to); }
+  }
+
+  // ——— SAVE (substitui a função existente) ———
+  window.saveRowToServer = async function ({ text, eurocode, timestamp }){
+    const attempts = [];
+    for (const ep of ENDPOINTS){
+      for (const p of PAYLOADS(text, eurocode, timestamp)){
+        try{
+          const data = await tryPost(ep, p);
+          // normaliza e devolve
+          const norm = normalizeRow(data);
+          setStatus(mobileStatus || desktopStatus, 'Guardado ✅', 'success');
+          showToast('Eurocode guardado ✅','success');
+          return norm;
+        }catch(err){
+          attempts.push({ ep, payload: p, err: String(err.message || err) });
+          // continua a tentar
+        }
+      }
+    }
+    // Se chegou aqui, falharam todas
+    const last = attempts[attempts.length-1] || {};
+    const msg = 'Falha ao guardar em todos os formatos.\n' +
+                (last ? (`Última tentativa: ${last.ep}\n${last.err}`) : '');
+    setStatus(mobileStatus || desktopStatus, msg, 'error');
+    showToast('Erro ao guardar', 'error');
+    // opcional: abre alerta no telemóvel
+    try { alert((msg + '\n\nSugestão: verificar função save-ocr e variáveis do Neon.').slice(0,1500)); } catch {}
+    throw new Error(msg);
+  };
+
+  // ——— UPDATE OCR (também robusto) ———
+  window.updateOCRInServer = async function (row){
+    const { id, text, eurocode, timestamp } = row;
+    const base = { id };
+    const candidates = PAYLOADS(text, eurocode, timestamp).map(p => ({ ...base, ...p }));
+    const ENDPOINTS_UPDATE = [ UPDATE_URL, '/.netlify/functions/update-ocr' ];
+
+    for (const ep of ENDPOINTS_UPDATE){
+      for (const body of candidates){
+        try{
+          await tryPost(ep, body);
+          return { ok: true };
+        }catch(_){}
+      }
+    }
+    throw new Error('Falha a atualizar OCR em todos os formatos.');
+  };
+})();
