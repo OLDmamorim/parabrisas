@@ -52,7 +52,7 @@ function setStatus(el, text, mode='') {
 }
 
 // =========================
-// Funções do Modal de Edição OCR
+/* Funções do Modal de Edição OCR */
 // =========================
 function showEditOcrModal(text) {
   return new Promise((resolve) => {
@@ -70,7 +70,10 @@ function showEditOcrModal(text) {
     // Focar no textarea e posicionar cursor no final
     setTimeout(() => {
       editOcrTextarea.focus();
-      editOcrTextarea.setSelectionRange(editOcrTextarea.value.length, editOcrTextarea.value.length);
+      editOcrTextarea.setSelectionRange(
+        editOcrTextarea.value.length,
+        editOcrTextarea.value.length
+      );
     }, 100);
 
     // Função para fechar o modal
@@ -123,7 +126,7 @@ function showEditOcrModal(text) {
 }
 
 // =========================
-// Normalização (ajusta aqui se os nomes do backend diferirem)
+/* Normalização (ajusta aqui se os nomes do backend diferirem) */
 // =========================
 function normalizeRow(r){
   return {
@@ -135,7 +138,7 @@ function normalizeRow(r){
 }
 
 // =========================
-// OCR (com fallback para Netlify Functions)
+/* OCR (com fallback para Netlify Functions) */
 // =========================
 async function runOCR(imageBase64) {
   async function tryOnce(url){
@@ -158,7 +161,7 @@ async function runOCR(imageBase64) {
 }
 
 // =========================
-// Eurocode (4 dígitos + 2..9 alfanuméricos)
+/* Eurocode (4 dígitos + 2..9 alfanuméricos) */
 // =========================
 function extractEurocode(text) {
   const m = (text || '').match(/\b\d{4}[A-Za-z0-9]{2,9}\b/);
@@ -166,7 +169,7 @@ function extractEurocode(text) {
 }
 
 // =========================
-// BD: listar, guardar, atualizar (só OCR), apagar
+/* BD: listar, guardar, atualizar (só OCR), apagar */
 // =========================
 async function fetchServerRows(){
   const res = await fetch(LIST_URL, { headers:{'Accept':'application/json'} });
@@ -186,20 +189,14 @@ async function saveRowToServer({ text, eurocode, timestamp }){
   return normalizeRow(await res.json().catch(()=>payload));
 }
 
-// >>> AQUI ESTÁ O PONTO CRÍTICO: EDITAR SÓ OCR, PRESERVANDO O RESTO <<<
-// Muitos backends fazem "replace" do registo inteiro no update.
-// Para não perder o eurocode, enviamos também eurocode/timestamp INALTERADOS.
 async function updateOCRInServer(row){
   const payload = {
     id: row.id,
-    // OCR novo:
-    text: row.text,
-    // Campos preservados (mesmos nomes que teu backend aceita; duplica onde for comum):
-    eurocode: row.eurocode,
-    euro_validado: row.eurocode,
+    text: row.text,               // OCR novo
+    eurocode: row.eurocode,       // preserva
+    euro_validado: row.eurocode,  // compat
     timestamp: row.timestamp
   };
-
   const res = await fetch(UPDATE_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
@@ -218,7 +215,7 @@ async function deleteRowInServer(id){
 }
 
 // =========================
-// Render Desktop + Ações
+/* Render Desktop + Ações */
 // =========================
 function renderTable() {
   resultsBody.innerHTML = '';
@@ -255,7 +252,7 @@ async function deleteRowUI(idx){
 }
 
 // =========================
-// Editar APENAS OCR (com modal personalizado)
+/* Editar APENAS OCR (com modal personalizado) */
 // =========================
 async function editOCR(idx){
   const row = RESULTS[idx];
@@ -267,12 +264,7 @@ async function editOCR(idx){
   try {
     // Mostrar o modal e aguardar resposta
     const novo = await showEditOcrModal(atual);
-    
-    if (novo === null) {
-      // Utilizador cancelou
-      currentEditingRow = null;
-      return;
-    }
+    if (novo === null) { currentEditingRow = null; return; }
 
     // Atualizar o texto
     const updated = { ...row, text: novo };
@@ -295,7 +287,7 @@ async function editOCR(idx){
 }
 
 // =========================
-// Histórico Mobile — Eurocodes da BD
+/* Histórico Mobile — Eurocodes da BD (ULTIMAS 5) */
 // =========================
 function renderMobileEuroList(){
   if (!mobileHistoryList) return;
@@ -303,26 +295,33 @@ function renderMobileEuroList(){
     mobileHistoryList.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
     return;
   }
+
   const codes = RESULTS
     .map(r => (r.eurocode || '').toString().trim())
     .filter(Boolean);
+
   if (!codes.length){
     mobileHistoryList.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
     return;
   }
+
+  // últimas 5 (mais recentes primeiro)
+  const last5 = codes.slice(-5).reverse();
+
   const frag = document.createDocumentFragment();
-  codes.forEach(c=>{
+  last5.forEach(c=>{
     const div = document.createElement('div');
     div.className = 'history-item-text';
     div.textContent = c.split(/\s+/)[0]; // só o código
     frag.appendChild(div);
   });
+
   mobileHistoryList.innerHTML = '';
   mobileHistoryList.appendChild(frag);
 }
 
 // =========================
-// Upload Desktop -> OCR -> Eurocode -> GUARDA NA BD
+/* Upload Desktop -> OCR -> Eurocode -> GUARDA NA BD */
 // =========================
 btnUpload?.addEventListener('click', ()=> fileInput.click());
 fileInput?.addEventListener('change', async (e) => {
@@ -360,7 +359,7 @@ fileInput?.addEventListener('change', async (e) => {
 });
 
 // =========================
-// Câmera Mobile -> OCR -> Eurocode -> GUARDA NA BD
+/* Câmera Mobile -> OCR -> Eurocode -> GUARDA NA BD */
 // =========================
 btnCamera?.addEventListener('click', ()=> cameraInput.click());
 cameraInput?.addEventListener('change', async (e) => {
@@ -398,7 +397,7 @@ cameraInput?.addEventListener('change', async (e) => {
 });
 
 // =========================
-/* Exportar CSV (da BD carregada) */
+/* Exportar CSV */
 // =========================
 btnExport?.addEventListener('click', async () => {
   try{
@@ -411,7 +410,9 @@ btnExport?.addEventListener('click', async () => {
       ['#','Data/Hora','Texto','Eurocode'],
       ...RESULTS.map((r,i)=> [i+1, r.timestamp||'', r.text||'', r.eurocode||''])
     ];
-    const csv = rows.map(r => r.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const csv = rows
+      .map(r => r.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(','))
+      .join('\n');
     const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -434,48 +435,25 @@ btnClear?.addEventListener('click', async () => {
 });
 
 // =========================
-// Event Listeners para Modal de Ajuda
+/* Event Listeners para Modal de Ajuda */
 // =========================
 const helpModal = document.getElementById('helpModal');
 const helpBtn = document.getElementById('helpBtn');
 const helpBtnDesktop = document.getElementById('helpBtnDesktop');
 const helpClose = document.getElementById('helpClose');
 
-function showHelpModal() {
-  if (helpModal) {
-    helpModal.classList.add('show');
-  }
-}
-
-function hideHelpModal() {
-  if (helpModal) {
-    helpModal.classList.remove('show');
-  }
-}
-
-// Event listeners para o modal de ajuda
+function showHelpModal() { if (helpModal) helpModal.classList.add('show'); }
+function hideHelpModal() { if (helpModal) helpModal.classList.remove('show'); }
 helpBtn?.addEventListener('click', showHelpModal);
 helpBtnDesktop?.addEventListener('click', showHelpModal);
 helpClose?.addEventListener('click', hideHelpModal);
-
-// Fechar modal ao clicar no backdrop
-helpModal?.addEventListener('click', (e) => {
-  if (e.target === helpModal) {
-    hideHelpModal();
-  }
-});
-
-// Fechar modal com ESC
+helpModal?.addEventListener('click', (e) => { if (e.target === helpModal) hideHelpModal(); });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    if (helpModal?.classList.contains('show')) {
-      hideHelpModal();
-    }
-  }
+  if (e.key === 'Escape' && helpModal?.classList.contains('show')) hideHelpModal();
 });
 
 // =========================
-// Bootstrap
+/* Bootstrap */
 // =========================
 (async function init(){
   try{
@@ -491,11 +469,13 @@ document.addEventListener('keydown', (e) => {
 
 /* ========= PESQUISA ULTRA-LEVE (desktop) ========= */
 (function initTableSearch() {
-  function norm(s=''){ return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase(); }
+  function norm(s=''){
+    return s.toString().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+  }
 
   function mount() {
     const toolbar = document.querySelector('.toolbar');
-    const tbody = document.querySelector('#resultsTable tbody, #resultsBody');
+    const tbody = document.querySelector('#resultsBody') || document.querySelector('#resultsTable tbody');
     if (!toolbar || !tbody) return false;
 
     // Evitar duplicar se já existir
@@ -585,7 +565,7 @@ document.addEventListener('keydown', (e) => {
     }catch(_){ return new Date().toISOString(); }
   }
   function fill(){
-    const tbody = document.querySelector('#resultsTable tbody, #resultsBody');
+    const tbody = document.querySelector('#resultsBody') || document.querySelector('#resultsTable tbody');
     if(!tbody) return false;
     const rows = Array.from(tbody.querySelectorAll('tr'));
     if(!rows.length) return false;
@@ -609,70 +589,20 @@ document.addEventListener('keydown', (e) => {
   }
 })();
 
-/* ===== DEBUG MOBILE: mostrar erro detalhado do SAVE no ecrã ===== */
-(function patchSaveForMobileDebug(){
-  if (window.__saveDebugPatched) return;
-  window.__saveDebugPatched = true;
-
-  const originalSave = window.saveRowToServer;
-
-  async function readBodySafe(res){
-    try{
-      const txt = await res.text();
-      try { return JSON.stringify(JSON.parse(txt), null, 2); } catch { return txt; }
-    }catch{ return '<sem corpo>'; }
-  }
-
-  window.saveRowToServer = async function ({ text, eurocode, timestamp }){
-    const payload = { text, eurocode, timestamp };
-    try{
-      const res = await fetch(SAVE_URL, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok){
-        const body = await readBodySafe(res);
-        const msg =
-`❌ Erro ao guardar
-URL: ${SAVE_URL}
-HTTP: ${res.status} ${res.statusText}
-Payload: ${JSON.stringify(payload)}
-Resposta do servidor:
-${body}`;
-        // mostra em alerta (bom para telemóvel) e também no status
-        try { alert(msg.slice(0, 1500)); } catch {}
-        (window.mobileStatus || window.desktopStatus) && setStatus(mobileStatus || desktopStatus, msg, 'error');
-        throw new Error(msg);
-      }
-
-      const data = await res.json().catch(()=>payload);
-      return normalizeRow(data);
-
-    }catch(err){
-      const msg = (err && err.message) ? err.message : String(err);
-      try { alert(('❌ EXCEÇÃO SAVE\n' + msg).slice(0,1500)); } catch {}
-      (window.mobileStatus || window.desktopStatus) && setStatus(mobileStatus || desktopStatus, msg, 'error');
-      showToast('Falha ao guardar', 'error');
-      throw err;
-    }
-  };
-})();
-
 /* ===== HOTFIX: saver multi-formato + fallback de endpoint ===== */
 (function hardenSaves(){
-  const ENDPOINTS = [ SAVE_URL, '/.netlify/functions/save-ocr' ];
+  const ENDPOINTS_SAVE = [ SAVE_URL, '/.netlify/functions/save-ocr' ];
+  const ENDPOINTS_UPDATE = [ UPDATE_URL, '/.netlify/functions/update-ocr' ];
   const PAYLOADS = (text, eurocode, timestamp) => [
     // 1) formato atual
     { text, eurocode, timestamp },
-    // 2) nomes "validados"
+    // 2) nomes “validados”
     { text, euro_validado: eurocode, timestamp },
-    // 3) nomes "BD antigos"
+    // 3) nomes “BD antigos”
     { ocr_text: text, euro_validado: eurocode, datahora: timestamp },
     // 4) ocr curto
     { ocr: text, eurocode, timestamp },
-    // 5) tudo junto (alguns backends fazem UPSERT por campos extra)
+    // 5) tudo junto (para upserts que ignoram extras)
     { text, ocr_text: text, ocr: text, eurocode, euro_validado: eurocode, timestamp, datahora: timestamp }
   ];
 
@@ -687,51 +617,44 @@ ${body}`;
         signal: ctrl.signal
       });
       if(!res.ok){
-        // lê o corpo para debug
         let msg = `HTTP ${res.status} ${res.statusText}`;
         try{ msg += ' | ' + (await res.text()).slice(0,300); }catch{}
         throw new Error(msg);
       }
-      const data = await res.json().catch(()=>body);
-      return data;
+      return await res.json().catch(()=>body);
     } finally { clearTimeout(to); }
   }
 
   // ——— SAVE (substitui a função existente) ———
   window.saveRowToServer = async function ({ text, eurocode, timestamp }){
     const attempts = [];
-    for (const ep of ENDPOINTS){
+    for (const ep of ENDPOINTS_SAVE){
       for (const p of PAYLOADS(text, eurocode, timestamp)){
         try{
           const data = await tryPost(ep, p);
-          // normaliza e devolve
           const norm = normalizeRow(data);
           setStatus(mobileStatus || desktopStatus, 'Guardado ✅', 'success');
           showToast('Eurocode guardado ✅','success');
           return norm;
         }catch(err){
-          attempts.push({ ep, payload: p, err: String(err.message || err) });
-          // continua a tentar
+          attempts.push({ ep, err: String(err.message || err) });
         }
       }
     }
-    // Se chegou aqui, falharam todas
     const last = attempts[attempts.length-1] || {};
     const msg = 'Falha ao guardar em todos os formatos.\n' +
-                (last ? (`Última tentativa: ${last.ep}\n${last.err}`) : '');
+                (last.ep ? (`Última tentativa: ${last.ep}\n${last.err}`) : '');
     setStatus(mobileStatus || desktopStatus, msg, 'error');
     showToast('Erro ao guardar', 'error');
-    // opcional: abre alerta no telemóvel
-    try { alert((msg + '\n\nSugestão: verificar função save-ocr e variáveis do Neon.').slice(0,1500)); } catch {}
+    try { alert((msg).slice(0,1500)); } catch {}
     throw new Error(msg);
   };
 
-  // ——— UPDATE OCR (também robusto) ———
+  // ——— UPDATE OCR (robusto) ———
   window.updateOCRInServer = async function (row){
     const { id, text, eurocode, timestamp } = row;
     const base = { id };
     const candidates = PAYLOADS(text, eurocode, timestamp).map(p => ({ ...base, ...p }));
-    const ENDPOINTS_UPDATE = [ UPDATE_URL, '/.netlify/functions/update-ocr' ];
 
     for (const ep of ENDPOINTS_UPDATE){
       for (const body of candidates){
@@ -741,6 +664,9 @@ ${body}`;
         }catch(_){}
       }
     }
-    throw new Error('Falha a atualizar OCR em todos os formatos.');
+    const msg = 'Falha a atualizar OCR em todos os formatos.';
+    setStatus(mobileStatus || desktopStatus, msg, 'error');
+    showToast('Erro ao atualizar OCR', 'error');
+    throw new Error(msg);
   };
 })();
