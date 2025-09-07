@@ -35,9 +35,9 @@ body{
     color: #fff;
   }
 
-  .mobile-logo .logo-icon{
-    font-size: 56px;
-    margin-bottom: 8px;
+  .mobile-logo svg{
+    display: block;
+    margin: 0 auto 12px auto;
   }
   .mobile-logo h2{
     margin: 0 0 24px 0;
