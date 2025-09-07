@@ -1,4 +1,4 @@
-// APP.JS (BD + Editar só OCR sem tocar no Eurocode)
+// APP.JS (BD + Validação de Eurocode)
 // =========================
 
 // ---- Endpoints ----
@@ -31,8 +31,9 @@ const editOcrCancel = document.getElementById('editOcrCancel');
 const editOcrSave = document.getElementById('editOcrSave');
 
 // ---- Estado ----
-let RESULTS = [];  // [{id, timestamp, text, eurocode}, ...]
-let currentEditingRow = null; // Para guardar qual linha está a ser editada
+let RESULTS = [];
+let currentEditingRow = null;
+let currentImageData = null; // Para guardar dados da imagem durante validação
 
 // =========================
 // Utils UI
@@ -43,12 +44,167 @@ function showToast(msg, type='') {
   toast.className = 'toast show ' + type;
   setTimeout(() => { toast.className = 'toast'; }, 2200);
 }
+
 function setStatus(el, text, mode='') {
   if (!el) return;
   el.textContent = text || '';
   el.classList.remove('error','success');
   if (mode==='error') el.classList.add('error');
   if (mode==='success') el.classList.add('success');
+}
+
+// =========================
+// Extração de Eurocodes Melhorada
+// =========================
+function extractAllEurocodes(text) {
+  if (!text) return [];
+  
+  // Padrão: 4 dígitos + 2 letras + até 6 caracteres alfanuméricos
+  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
+  const matches = text.match(pattern) || [];
+  
+  // Remover duplicados e ordenar por comprimento (mais longos primeiro)
+  const unique = [...new Set(matches)];
+  return unique.sort((a, b) => b.length - a.length).slice(0, 4); // Máximo 4 opções
+}
+
+// =========================
+// Modal de Validação de Eurocode
+// =========================
+function showEurocodeValidationModal(ocrText, filename, source) {
+  const eurocodes = extractAllEurocodes(ocrText);
+  
+  if (eurocodes.length === 0) {
+    // Se não encontrar nenhum eurocode, perguntar se quer continuar sem eurocode
+    if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
+      saveToDatabase(ocrText, '', filename, source);
+    }
+    return;
+  }
+  
+  // Criar modal dinamicamente
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    font-family: Arial, sans-serif;
+  `;
+  
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  `;
+  
+  content.innerHTML = `
+    <h3 style="margin-top: 0; color: #333; text-align: center;">
+      🔍 Selecionar Eurocode
+    </h3>
+    <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; max-height: 150px; overflow-y: auto;">
+      <strong>Texto lido:</strong><br>
+      <span style="font-size: 12px; line-height: 1.4;">${ocrText.replace(/\n/g, '<br>')}</span>
+    </div>
+    <p style="margin-bottom: 15px; color: #666;">
+      <strong>Eurocodes encontrados:</strong> Clique no correto
+    </p>
+    <div id="eurocodeOptions" style="margin-bottom: 20px;">
+      ${eurocodes.map((code, index) => `
+        <button onclick="selectEurocode('${code}')" 
+                style="display: block; width: 100%; padding: 12px; margin-bottom: 8px; 
+                       background: #007acc; color: white; border: none; border-radius: 5px; 
+                       cursor: pointer; font-size: 16px; font-weight: bold; letter-spacing: 1px;"
+                onmouseover="this.style.background='#005a9e'" 
+                onmouseout="this.style.background='#007acc'">
+          ${code}
+        </button>
+      `).join('')}
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button onclick="selectEurocode('')" 
+              style="padding: 10px 20px; background: #6c757d; color: white; border: none; 
+                     border-radius: 5px; cursor: pointer;">
+        Sem Eurocode
+      </button>
+      <button onclick="closeEurocodeModal()" 
+              style="padding: 10px 20px; background: #dc3545; color: white; border: none; 
+                     border-radius: 5px; cursor: pointer;">
+        Cancelar
+      </button>
+    </div>
+  `;
+  
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  
+  // Guardar referência global para as funções
+  window.currentEurocodeModal = modal;
+  window.currentImageData = { ocrText, filename, source };
+}
+
+// Função global para selecionar eurocode
+window.selectEurocode = function(selectedCode) {
+  const { ocrText, filename, source } = window.currentImageData;
+  closeEurocodeModal();
+  saveToDatabase(ocrText, selectedCode, filename, source);
+};
+
+// Função global para fechar modal
+window.closeEurocodeModal = function() {
+  if (window.currentEurocodeModal) {
+    document.body.removeChild(window.currentEurocodeModal);
+    window.currentEurocodeModal = null;
+    window.currentImageData = null;
+  }
+};
+
+// =========================
+// Guardar na Base de Dados
+// =========================
+async function saveToDatabase(text, eurocode, filename, source) {
+  try {
+    setStatus(desktopStatus, 'A guardar na base de dados...');
+    setStatus(mobileStatus, 'A guardar na base de dados...');
+    
+    const response = await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: text,
+        eurocode: eurocode,
+        filename: filename,
+        source: source
+      })
+    });
+    
+    if (response.ok) {
+      showToast('Dados guardados com sucesso!', 'success');
+      setStatus(desktopStatus, 'Dados guardados com sucesso!', 'success');
+      setStatus(mobileStatus, 'Dados guardados com sucesso!', 'success');
+      await loadResults();
+    } else {
+      throw new Error('Erro ao guardar na base de dados');
+    }
+    
+  } catch (error) {
+    console.error('Erro ao guardar:', error);
+    showToast('Erro ao guardar na base de dados: ' + error.message, 'error');
+    setStatus(desktopStatus, 'Erro ao guardar na base de dados', 'error');
+    setStatus(mobileStatus, 'Erro ao guardar na base de dados', 'error');
+  }
 }
 
 // =========================
@@ -62,7 +218,6 @@ function openEditOcrModal(row) {
   editOcrModal.style.display = 'flex';
   editOcrTextarea.focus();
   
-  // Event listeners temporários para este modal
   const handleSave = async () => {
     const newText = editOcrTextarea.value.trim();
     if (!newText) {
@@ -124,7 +279,6 @@ function openEditOcrModal(row) {
     editOcrModal.removeEventListener('click', handleBackdropClick);
   }
   
-  // Adicionar event listeners
   editOcrSave.addEventListener('click', handleSave);
   editOcrCancel.addEventListener('click', handleCancel);
   editOcrClose.addEventListener('click', handleCancel);
@@ -133,17 +287,14 @@ function openEditOcrModal(row) {
 }
 
 // =========================
-// Normalização MELHORADA
+// Normalização
 // =========================
 function normalizeRow(r){
-  console.log('Dados recebidos do servidor:', r);
-  
   let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
                   r.date || r.datetime || r.data || r.hora || r.created || 
                   r.updated_at || r.updatedAt || r.ts || '';
   
   if (!timestamp) {
-    console.warn('Nenhuma timestamp encontrada nos dados, usando timestamp atual');
     timestamp = new Date().toLocaleString('pt-PT');
   }
   
@@ -168,39 +319,28 @@ function normalizeRow(r){
     source:      r.source ?? r.origem ?? ''
   };
   
-  console.log('Dados normalizados:', normalized);
-  
   return normalized;
 }
 
 // =========================
-// OCR (com fallback para Netlify Functions)
+// OCR
 // =========================
 async function runOCR(imageBase64) {
-  async function tryOnce(url){
-    const res = await fetch(url, {
-      method:'POST', headers:{'Content-Type':'application/json'},
+  try {
+    const res = await fetch(OCR_ENDPOINT, {
+      method:'POST', 
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ imageBase64 })
     });
+    
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json().catch(()=>({text:''}));
+    const data = await res.json();
     return data.text || data.fullText || data.raw || '';
-  }
-  try {
-    return await tryOnce(OCR_ENDPOINT);
   } catch (err) {
     console.error('Erro no OCR:', err);
     showToast('Erro no OCR', 'error');
     return '';
   }
-}
-
-// =========================
-// Eurocode (4 dígitos + 2..9 alfanuméricos)
-// =========================
-function extractEurocode(text) {
-  const m = (text || '').match(/\b\d{4}[A-Za-z0-9]{2,9}\b/);
-  return m ? m[0] : '';
 }
 
 // =========================
@@ -216,7 +356,6 @@ async function loadResults() {
     }
     
     const data = await response.json();
-    console.log('Resposta da API:', data);
     
     if (data.ok && Array.isArray(data.rows)) {
       RESULTS = data.rows.map(normalizeRow);
@@ -256,7 +395,7 @@ function renderTable() {
           ✏️
         </button>
       </td>
-      <td>${row.eurocode}</td>
+      <td style="font-weight:bold; color:#007acc;">${row.eurocode}</td>
       <td>
         <button onclick="deleteRow(${row.id})" 
                 style="padding:4px 8px; background:#dc3545; color:white; border:none; border-radius:3px; cursor:pointer;"
@@ -317,29 +456,11 @@ async function processImage(file) {
       throw new Error('Nenhum texto encontrado na imagem');
     }
     
-    // Extrair eurocode
-    const eurocode = extractEurocode(ocrText);
+    setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
+    setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     
-    // Guardar na base de dados
-    const response = await fetch(SAVE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: ocrText,
-        eurocode: eurocode,
-        filename: file.name,
-        source: 'upload'
-      })
-    });
-    
-    if (response.ok) {
-      showToast('Imagem processada com sucesso!', 'success');
-      setStatus(desktopStatus, 'Imagem processada com sucesso!', 'success');
-      setStatus(mobileStatus, 'Imagem processada com sucesso!', 'success');
-      await loadResults();
-    } else {
-      throw new Error('Erro ao guardar na base de dados');
-    }
+    // Mostrar modal de validação
+    showEurocodeValidationModal(ocrText, file.name, 'upload');
     
   } catch (error) {
     console.error('Erro ao processar imagem:', error);
@@ -462,4 +583,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================
 // Atualização automática
 // =========================
-setInterval(loadResults, 30000); // Atualizar a cada 30 segundos
+setInterval(loadResults, 30000);
