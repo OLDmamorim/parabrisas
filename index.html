@@ -4,38 +4,234 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>EXPRESSGLASS • Receção material</title>
-  <link rel="stylesheet" href="style.css?v=mobile-login-v2" />
+  <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
 </head>
 <body>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand">
+      <h1 class="title">EXPRESSGLASS</h1>
+      <p class="subtitle">Receção material</p>
+    </div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
+  </header>
 
   <!-- MOBILE VIEW -->
-  <main id="mobileView" class="mobile-card">
-    <div class="mobile-logo">
-      <!-- LOGO EXPRESSGLASS SVG -->
-      <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 64 64" fill="none">
-        <rect width="64" height="64" rx="12" fill="#fff"/>
-        <path d="M10 20h44v6H10zM10 30h44v6H10zM10 40h28v6H10z" fill="#1d4ed8"/>
-        <text x="32" y="56" font-size="12" text-anchor="middle" font-family="Arial" fill="#1d4ed8" font-weight="bold">
-          EXPRESSGLASS
-        </text>
-      </svg>
-      <h2>EXPRESSGLASS</h2>
+  <main id="mobileView" class="card mobile-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    
+    <div class="mobile-cta">
+      <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
+          <span class="emoji">📷</span>
+          <span class="mode-label">Eurocode</span>
+        </button>
+      </div>
     </div>
 
-    <form class="mobile-form">
-      <input type="text" placeholder="Username" />
-      <input type="password" placeholder="Password" />
-      <button type="submit">LOGIN</button>
-    </form>
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <div id="mobileStatus" class="status"></div>
 
-    <p class="mobile-signup">Don’t have account? <a href="#">Sign Up</a></p>
+    <!-- Histórico de Capturas -->
+    <div id="mobileHistory" class="history-section">
+      <h3 class="history-title">📋 Últimas Capturas</h3>
+      <div id="mobileHistoryList" class="history-list">
+        <p class="history-empty">Ainda não há Eurocodes guardados.</p>
+      </div>
+    </div>
+
+    <footer class="footnote">
+      <small>Feito por Marco Amorim</small>
+    </footer>
   </main>
 
   <!-- DESKTOP VIEW -->
-  <section id="desktopView" class="desktop-card">
-    <h1>Versão Desktop</h1>
-    <p>Conteúdo do portal normal...</p>
+  <section id="desktopView" class="card desktop-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
+    
+    <div class="toolbar">
+      <button id="btnUpload" class="btn">📁 Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+      <button id="btnExport" class="btn">📊 Exportar CSV</button>
+      <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th style="width:60px">#</th>
+            <th style="width:220px">Data/Hora</th>
+            <th style="width:auto">Texto lido (Eurocode)</th>
+            <th style="width:180px">Eurocode</th>
+            <th style="width:140px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div id="desktopStatus" class="status"></div>
   </section>
 
+  <!-- MODAL DE AJUDA -->
+  <div id="helpModal" class="help-modal">
+    <div class="help-content">
+      <button class="help-close" id="helpClose">&times;</button>
+      <h3>💡 Como usar</h3>
+      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO OCR -->
+  <div id="editOcrModal" class="edit-ocr-modal">
+    <div class="edit-ocr-content">
+      <div class="edit-ocr-header">
+        <h3>✏️ Editar texto lido (OCR)</h3>
+        <button class="edit-ocr-close" id="editOcrClose">&times;</button>
+      </div>
+      <div class="edit-ocr-body">
+        <textarea id="editOcrTextarea" class="edit-ocr-textarea" placeholder="Texto do OCR..."></textarea>
+      </div>
+      <div class="edit-ocr-footer">
+        <button id="editOcrCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="editOcrSave" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- App original -->
+  <script src="app.js"></script>
+
+  <!-- ===== Mobile: preencher "Últimas Capturas" (API -> fallback tabela) ===== -->
+  <script>
+  (function(){
+    const listEl = document.getElementById('mobileHistoryList');
+
+    async function fetchRowsFromAPI(){
+      try{
+        const res = await fetch('/api/list-ocr', { headers:{'Accept':'application/json'} });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data.rows))  return data.rows;
+        if (Array.isArray(data.items)) return data.items;
+        return [];
+      }catch(e){
+        return null; // força fallback
+      }
+    }
+
+    function pickEuro(row){
+      const c = (
+        row.euro_validado ??
+        row.euro_user ??
+        row.euroUser ??
+        row.eurocode ??
+        row.euro ??
+        ''
+      ).toString().trim();
+      return c || null;
+    }
+
+    function scrapeEurocodesFromTable(limit=50){
+      const tbody = document.getElementById('resultsBody');
+      if(!tbody) return [];
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const out = [];
+      for (const tr of rows){
+        const td = tr.querySelector('td:nth-child(4)');
+        const raw = (td?.innerText || td?.textContent || '').trim();
+        const code = raw.split(/\s+/)[0];
+        if (code) out.push(code);
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+
+    function renderList(codes){
+      if (!listEl) return;
+      if (!codes || !codes.length){
+        listEl.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
+        return;
+      }
+      const ul = document.createElement('ul');
+      ul.style.listStyle = 'none';
+      ul.style.margin = '0';
+      ul.style.padding = '0';
+      codes.forEach(code => {
+        const li = document.createElement('li');
+        li.textContent = code;
+        li.style.textAlign = 'left';
+        li.style.padding = '10px 12px';
+        li.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+        li.style.fontWeight = '700';
+        li.style.letterSpacing = '.3px';
+        ul.appendChild(li);
+      });
+      listEl.innerHTML = '';
+      listEl.appendChild(ul);
+    }
+
+    async function refresh(){
+      const apiRows = await fetchRowsFromAPI();
+      if (apiRows){
+        const codes = apiRows.map(pickEuro).filter(Boolean);
+        renderList([...new Set(codes)].slice(0,50));
+        return;
+      }
+      const codes = scrapeEurocodesFromTable();
+      renderList([...new Set(codes)].slice(0,50));
+    }
+
+    refresh();
+
+    const tbody = document.getElementById('resultsBody');
+    if (tbody){
+      new MutationObserver(refresh)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      const txt = (t?.textContent || '').toLowerCase();
+      const isValidate = txt.includes('valid') || t?.dataset?.action === 'validate';
+      if (isValidate) setTimeout(refresh, 500);
+    });
+
+    setInterval(refresh, 10000);
+  })();
+  </script>
+
+  <!-- ===== Forçar tamanho da coluna Texto lido no desktop ===== -->
+  <script>
+  (function(){
+    const tbody = document.getElementById('resultsBody');
+    function fixCol3(){
+      document.querySelectorAll('#resultsTable tbody tr td:nth-child(3)').forEach(td=>{
+        td.style.setProperty('font-size','14px','important');
+        td.style.setProperty('line-height','1.35','important');
+        td.style.setProperty('white-space','pre-wrap','important');
+        td.style.setProperty('word-break','break-word','important');
+        td.style.setProperty('letter-spacing','0','important');
+      });
+    }
+    fixCol3();
+    if (tbody){
+      new MutationObserver(fixCol3)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+    window.addEventListener('resize', fixCol3);
+  })();
+  </script>
 </body>
 </html>
