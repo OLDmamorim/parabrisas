@@ -1,4 +1,4 @@
-// APP.JS (BD + Validação de Eurocode + Texto Tamanho dos Cabeçalhos - CORRIGIDO)
+// APP.JS (BD + Validação de Eurocode + CSS Forçado para Texto Pequeno)
 // =========================
 
 // ---- Endpoints ----
@@ -35,6 +35,36 @@ let RESULTS = [];
 let FILTERED_RESULTS = [];
 let currentEditingRow = null;
 let currentImageData = null;
+
+// =========================
+// Adicionar CSS para forçar tamanho pequeno
+// =========================
+function addCustomCSS() {
+  const style = document.createElement('style');
+  style.textContent = `
+    /* Forçar tamanho pequeno em toda a tabela */
+    #resultsBody td {
+      font-size: 11px !important;
+      line-height: 1.2 !important;
+    }
+    
+    #resultsBody button {
+      font-size: 10px !important;
+    }
+    
+    /* Cabeçalhos também pequenos */
+    .table th {
+      font-size: 11px !important;
+    }
+    
+    /* Garantir que texto OCR fica pequeno */
+    .ocr-text {
+      font-size: 11px !important;
+      line-height: 1.2 !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 // =========================
 // Utils UI
@@ -442,7 +472,7 @@ async function loadResults() {
 }
 
 // =========================
-// Renderizar tabela (Texto REALMENTE igual aos cabeçalhos)
+// Renderizar tabela (Com classe CSS para forçar tamanho)
 // =========================
 function renderTable() {
   if (!resultsBody) return;
@@ -453,7 +483,7 @@ function renderTable() {
     const searchField = document.getElementById('searchField');
     const isSearching = searchField && searchField.value.trim();
     const message = isSearching ? 'Nenhum registo encontrado para esta procura' : 'Nenhum registo encontrado';
-    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; font-size: 11px;">${message}</td></tr>`;
+    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
   
@@ -463,23 +493,23 @@ function renderTable() {
     
     return `
     <tr>
-      <td style="font-size: 11px;">${index + 1}</td>
-      <td style="font-size: 11px;">${row.timestamp}</td>
-      <td style="font-size: 11px; line-height: 1.2; white-space: pre-wrap; word-break: break-word;">
+      <td>${index + 1}</td>
+      <td>${row.timestamp}</td>
+      <td class="ocr-text" style="white-space: pre-wrap; word-break: break-word;">
         ${row.text}
       </td>
-      <td style="font-weight: bold; color: #007acc; font-size: 11px;">${row.eurocode}</td>
+      <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
       <td>
         <div style="display: flex; gap: 8px; align-items: center;">
           <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
-                  style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; font-size: 11px; border-radius: 3px;"
+                  style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
                   title="Editar texto OCR"
                   onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
                   onmouseout="this.style.background='none'; this.style.color='#666'">
             ✏️ Editar
           </button>
           <button onclick="deleteRow(${row.id})" 
-                  style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; font-size: 11px; border-radius: 3px;"
+                  style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
                   title="Eliminar registo"
                   onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
                   onmouseout="this.style.background='none'">
@@ -648,6 +678,9 @@ if (btnClear) {
 // Inicialização
 // =========================
 document.addEventListener('DOMContentLoaded', () => {
+  // Adicionar CSS customizado primeiro
+  addCustomCSS();
+  
   loadResults();
   
   // Criar campo de procura na toolbar
