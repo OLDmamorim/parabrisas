@@ -1,4 +1,4 @@
-// APP.JS (BD + Validação de Eurocode)
+// APP.JS (BD + Validação de Eurocode + Interface Melhorada)
 // =========================
 
 // ---- Endpoints ----
@@ -32,8 +32,9 @@ const editOcrSave = document.getElementById('editOcrSave');
 
 // ---- Estado ----
 let RESULTS = [];
+let FILTERED_RESULTS = [];
 let currentEditingRow = null;
-let currentImageData = null; // Para guardar dados da imagem durante validação
+let currentImageData = null;
 
 // =========================
 // Utils UI
@@ -51,6 +52,65 @@ function setStatus(el, text, mode='') {
   el.classList.remove('error','success');
   if (mode==='error') el.classList.add('error');
   if (mode==='success') el.classList.add('success');
+}
+
+// =========================
+// Procura de Eurocode
+// =========================
+function createSearchField() {
+  const toolbar = document.querySelector('.toolbar');
+  if (!toolbar) return;
+  
+  // Verificar se já existe
+  if (document.getElementById('searchField')) return;
+  
+  const searchContainer = document.createElement('div');
+  searchContainer.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+  `;
+  
+  searchContainer.innerHTML = `
+    <label style="color: white; font-weight: bold; min-width: 120px;">🔍 Procurar Eurocode:</label>
+    <input type="text" id="searchField" placeholder="Digite o Eurocode para procurar..." 
+           style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+    <button id="clearSearch" style="padding: 8px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+      Limpar
+    </button>
+  `;
+  
+  // Inserir antes da toolbar
+  toolbar.parentNode.insertBefore(searchContainer, toolbar);
+  
+  // Event listeners
+  const searchField = document.getElementById('searchField');
+  const clearSearch = document.getElementById('clearSearch');
+  
+  searchField.addEventListener('input', (e) => {
+    filterResults(e.target.value);
+  });
+  
+  clearSearch.addEventListener('click', () => {
+    searchField.value = '';
+    filterResults('');
+  });
+}
+
+function filterResults(searchTerm) {
+  if (!searchTerm.trim()) {
+    FILTERED_RESULTS = [...RESULTS];
+  } else {
+    const term = searchTerm.toLowerCase();
+    FILTERED_RESULTS = RESULTS.filter(row => 
+      (row.eurocode || '').toLowerCase().includes(term)
+    );
+  }
+  renderTable();
 }
 
 // =========================
@@ -75,14 +135,12 @@ function showEurocodeValidationModal(ocrText, filename, source) {
   const eurocodes = extractAllEurocodes(ocrText);
   
   if (eurocodes.length === 0) {
-    // Se não encontrar nenhum eurocode, perguntar se quer continuar sem eurocode
     if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
       saveToDatabase(ocrText, '', filename, source);
     }
     return;
   }
   
-  // Criar modal dinamicamente
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed;
@@ -150,19 +208,16 @@ function showEurocodeValidationModal(ocrText, filename, source) {
   modal.appendChild(content);
   document.body.appendChild(modal);
   
-  // Guardar referência global para as funções
   window.currentEurocodeModal = modal;
   window.currentImageData = { ocrText, filename, source };
 }
 
-// Função global para selecionar eurocode
 window.selectEurocode = function(selectedCode) {
   const { ocrText, filename, source } = window.currentImageData;
   closeEurocodeModal();
   saveToDatabase(ocrText, selectedCode, filename, source);
 };
 
-// Função global para fechar modal
 window.closeEurocodeModal = function() {
   if (window.currentEurocodeModal) {
     document.body.removeChild(window.currentEurocodeModal);
@@ -359,6 +414,7 @@ async function loadResults() {
     
     if (data.ok && Array.isArray(data.rows)) {
       RESULTS = data.rows.map(normalizeRow);
+      FILTERED_RESULTS = [...RESULTS];
       renderTable();
       setStatus(desktopStatus, `${RESULTS.length} registos carregados`, 'success');
     } else {
@@ -368,6 +424,7 @@ async function loadResults() {
     console.error('Erro ao carregar dados:', error);
     setStatus(desktopStatus, 'Erro a carregar dados', 'error');
     RESULTS = [];
+    FILTERED_RESULTS = [];
     renderTable();
   }
 }
@@ -378,30 +435,41 @@ async function loadResults() {
 function renderTable() {
   if (!resultsBody) return;
   
-  if (RESULTS.length === 0) {
-    resultsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Nenhum registo encontrado</td></tr>';
+  const dataToShow = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
+  
+  if (dataToShow.length === 0) {
+    const searchField = document.getElementById('searchField');
+    const isSearching = searchField && searchField.value.trim();
+    const message = isSearching ? 'Nenhum registo encontrado para esta procura' : 'Nenhum registo encontrado';
+    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
   
-  resultsBody.innerHTML = RESULTS.map((row, index) => `
+  resultsBody.innerHTML = dataToShow.map((row, index) => `
     <tr>
       <td>${index + 1}</td>
       <td>${row.timestamp}</td>
       <td style="font-size:14px; line-height:1.35; white-space:pre-wrap; word-break:break-word;">
         ${row.text}
-        <button onclick="openEditOcrModal(RESULTS[${index}])" 
-                style="margin-left:8px; padding:2px 6px; font-size:11px; background:#007acc; color:white; border:none; border-radius:3px; cursor:pointer;"
-                title="Editar texto OCR">
-          ✏️
-        </button>
       </td>
       <td style="font-weight:bold; color:#007acc;">${row.eurocode}</td>
       <td>
-        <button onclick="deleteRow(${row.id})" 
-                style="padding:4px 8px; background:#dc3545; color:white; border:none; border-radius:3px; cursor:pointer;"
-                title="Eliminar registo">
-          🗑️
-        </button>
+        <div style="display: flex; gap: 5px; align-items: center;">
+          <button onclick="openEditOcrModal(RESULTS.find(r => r.id === ${row.id}))" 
+                  style="padding: 6px 10px; background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-size: 12px;"
+                  title="Editar texto OCR"
+                  onmouseover="this.style.background='#e9ecef'" 
+                  onmouseout="this.style.background='#f8f9fa'">
+            ✏️ Editar
+          </button>
+          <button onclick="deleteRow(${row.id})" 
+                  style="padding: 6px 10px; background: #f8f9fa; color: #dc3545; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-size: 12px;"
+                  title="Eliminar registo"
+                  onmouseover="this.style.background='#f5c6cb'; this.style.borderColor='#f5c6cb'" 
+                  onmouseout="this.style.background='#f8f9fa'; this.style.borderColor='#dee2e6'">
+            🗑️ Apagar
+          </button>
+        </div>
       </td>
     </tr>
   `).join('');
@@ -442,7 +510,6 @@ async function processImage(file) {
   setStatus(mobileStatus, 'A processar imagem...');
   
   try {
-    // Converter para base64
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -450,7 +517,6 @@ async function processImage(file) {
       reader.readAsDataURL(file);
     });
     
-    // OCR
     const ocrText = await runOCR(base64);
     if (!ocrText) {
       throw new Error('Nenhum texto encontrado na imagem');
@@ -459,7 +525,6 @@ async function processImage(file) {
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     
-    // Mostrar modal de validação
     showEurocodeValidationModal(ocrText, file.name, 'upload');
     
   } catch (error) {
@@ -474,7 +539,9 @@ async function processImage(file) {
 // Exportar CSV
 // =========================
 function exportCSV() {
-  if (RESULTS.length === 0) {
+  const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
+  
+  if (dataToExport.length === 0) {
     showToast('Nenhum dado para exportar', 'error');
     return;
   }
@@ -482,7 +549,7 @@ function exportCSV() {
   const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Ficheiro'];
   const csvContent = [
     headers.join(','),
-    ...RESULTS.map((row, index) => [
+    ...dataToExport.map((row, index) => [
       index + 1,
       `"${row.timestamp}"`,
       `"${(row.text || '').replace(/"/g, '""')}"`,
@@ -562,6 +629,9 @@ if (btnClear) {
 // =========================
 document.addEventListener('DOMContentLoaded', () => {
   loadResults();
+  
+  // Criar campo de procura
+  setTimeout(createSearchField, 100);
   
   // Detectar se é mobile ou desktop
   const isMobile = window.innerWidth <= 768;
