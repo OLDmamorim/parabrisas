@@ -1,4 +1,4 @@
-// APP.JS (BD + Validação de Eurocode + Interface Minimalista Corrigida)
+// APP.JS (BD + Validação de Eurocode + Interface Minimalista + Texto Tamanho Correto)
 // =========================
 
 // ---- Endpoints ----
@@ -284,7 +284,8 @@ function openEditOcrModal(row) {
     }
     
     try {
-      // Verificar se existe função update-ocr
+      console.log('A tentar atualizar registo:', { id: row.id, text: newText });
+      
       const response = await fetch(UPDATE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -298,24 +299,19 @@ function openEditOcrModal(row) {
       });
       
       if (response.ok) {
+        const result = await response.json();
+        console.log('Atualização bem-sucedida:', result);
         showToast('Texto atualizado com sucesso!', 'success');
         await loadResults();
         handleCancel();
       } else {
-        // Se não existir função update, simular atualização local
-        console.warn('Função update não disponível, simulando atualização local');
-        row.text = newText;
-        renderTable();
-        showToast('Texto atualizado localmente', 'success');
-        handleCancel();
+        const errorText = await response.text();
+        console.error('Erro na resposta:', response.status, errorText);
+        throw new Error(`Erro ${response.status}: ${errorText}`);
       }
     } catch (error) {
       console.error('Erro ao atualizar:', error);
-      // Fallback: atualização local
-      row.text = newText;
-      renderTable();
-      showToast('Texto atualizado localmente', 'success');
-      handleCancel();
+      showToast('Erro ao atualizar: ' + error.message, 'error');
     }
   };
   
@@ -446,7 +442,7 @@ async function loadResults() {
 }
 
 // =========================
-// Renderizar tabela (Corrigida)
+// Renderizar tabela (Texto tamanho correto)
 // =========================
 function renderTable() {
   if (!resultsBody) return;
@@ -469,10 +465,10 @@ function renderTable() {
     <tr>
       <td>${index + 1}</td>
       <td>${row.timestamp}</td>
-      <td style="font-size:14px; line-height:1.35; white-space:pre-wrap; word-break:break-word;">
+      <td style="font-size: 14px; line-height: 1.35; white-space: pre-wrap; word-break: break-word;">
         ${row.text}
       </td>
-      <td style="font-weight:bold; color:#007acc;">${row.eurocode}</td>
+      <td style="font-weight:bold; color:#007acc; font-size: 14px;">${row.eurocode}</td>
       <td>
         <div style="display: flex; gap: 8px; align-items: center;">
           <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
