@@ -1,4 +1,4 @@
-// APP.JS (BD + Validação de Eurocode + Interface Melhorada)
+// APP.JS (BD + Validação de Eurocode + Interface Minimalista)
 // =========================
 
 // ---- Endpoints ----
@@ -55,7 +55,7 @@ function setStatus(el, text, mode='') {
 }
 
 // =========================
-// Procura de Eurocode
+// Procura de Eurocode (Minimalista)
 // =========================
 function createSearchField() {
   const toolbar = document.querySelector('.toolbar');
@@ -68,19 +68,19 @@ function createSearchField() {
   searchContainer.style.cssText = `
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 5px;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 0;
   `;
   
   searchContainer.innerHTML = `
-    <label style="color: white; font-weight: bold; min-width: 120px;">🔍 Procurar Eurocode:</label>
-    <input type="text" id="searchField" placeholder="Digite o Eurocode para procurar..." 
-           style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-    <button id="clearSearch" style="padding: 8px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
-      Limpar
+    <span style="color: rgba(255,255,255,0.8); font-size: 14px; min-width: 80px;">🔍 Procurar:</span>
+    <input type="text" id="searchField" placeholder="Eurocode..." 
+           style="flex: 1; max-width: 200px; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.3); 
+                  border-radius: 4px; font-size: 14px; background: rgba(255,255,255,0.1); color: white;">
+    <button id="clearSearch" style="padding: 6px 10px; background: none; color: rgba(255,255,255,0.7); 
+                                   border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer; font-size: 12px;">
+      ✕
     </button>
   `;
   
@@ -98,6 +98,15 @@ function createSearchField() {
   clearSearch.addEventListener('click', () => {
     searchField.value = '';
     filterResults('');
+  });
+  
+  // Hover effects
+  clearSearch.addEventListener('mouseover', () => {
+    clearSearch.style.background = 'rgba(255,255,255,0.1)';
+  });
+  
+  clearSearch.addEventListener('mouseout', () => {
+    clearSearch.style.background = 'none';
   });
 }
 
@@ -430,7 +439,7 @@ async function loadResults() {
 }
 
 // =========================
-// Renderizar tabela
+// Renderizar tabela (Minimalista)
 // =========================
 function renderTable() {
   if (!resultsBody) return;
@@ -454,19 +463,19 @@ function renderTable() {
       </td>
       <td style="font-weight:bold; color:#007acc;">${row.eurocode}</td>
       <td>
-        <div style="display: flex; gap: 5px; align-items: center;">
+        <div style="display: flex; gap: 8px; align-items: center;">
           <button onclick="openEditOcrModal(RESULTS.find(r => r.id === ${row.id}))" 
-                  style="padding: 6px 10px; background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-size: 12px;"
+                  style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; font-size: 12px; border-radius: 3px;"
                   title="Editar texto OCR"
-                  onmouseover="this.style.background='#e9ecef'" 
-                  onmouseout="this.style.background='#f8f9fa'">
+                  onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
+                  onmouseout="this.style.background='none'; this.style.color='#666'">
             ✏️ Editar
           </button>
           <button onclick="deleteRow(${row.id})" 
-                  style="padding: 6px 10px; background: #f8f9fa; color: #dc3545; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-size: 12px;"
+                  style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; font-size: 12px; border-radius: 3px;"
                   title="Eliminar registo"
-                  onmouseover="this.style.background='#f5c6cb'; this.style.borderColor='#f5c6cb'" 
-                  onmouseout="this.style.background='#f8f9fa'; this.style.borderColor='#dee2e6'">
+                  onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
+                  onmouseout="this.style.background='none'">
             🗑️ Apagar
           </button>
         </div>
