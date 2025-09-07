@@ -1,4 +1,4 @@
-// APP.JS (BD + Validação de Eurocode + Interface Minimalista + Texto Tamanho Correto)
+// APP.JS (BD + Validação de Eurocode + Texto Tamanho dos Cabeçalhos)
 // =========================
 
 // ---- Endpoints ----
@@ -442,7 +442,7 @@ async function loadResults() {
 }
 
 // =========================
-// Renderizar tabela (Texto tamanho correto)
+// Renderizar tabela (Texto tamanho dos cabeçalhos)
 // =========================
 function renderTable() {
   if (!resultsBody) return;
@@ -453,7 +453,7 @@ function renderTable() {
     const searchField = document.getElementById('searchField');
     const isSearching = searchField && searchField.value.trim();
     const message = isSearching ? 'Nenhum registo encontrado para esta procura' : 'Nenhum registo encontrado';
-    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">${message}</td></tr>`;
+    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; font-size: 13px;">${message}</td></tr>`;
     return;
   }
   
@@ -463,12 +463,12 @@ function renderTable() {
     
     return `
     <tr>
-      <td>${index + 1}</td>
-      <td>${row.timestamp}</td>
-      <td style="font-size: 14px; line-height: 1.35; white-space: pre-wrap; word-break: break-word;">
+      <td style="font-size: 13px;">${index + 1}</td>
+      <td style="font-size: 13px;">${row.timestamp}</td>
+      <td style="font-size: 13px; line-height: 1.3; white-space: pre-wrap; word-break: break-word;">
         ${row.text}
       </td>
-      <td style="font-weight:bold; color:#007acc; font-size: 14px;">${row.eurocode}</td>
+      <td style="font-weight: bold; color: #007acc; font-size: 13px;">${row.eurocode}</td>
       <td>
         <div style="display: flex; gap: 8px; align-items: center;">
           <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
