@@ -204,11 +204,183 @@
         background: rgba(245, 101, 101, 0.95);
         color: white;
       }
+
+      /* Modal de Seleção de Eurocode */
+      .modern-eurocode-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 20px;
+      }
+
+      .modern-eurocode-modal.show {
+        display: flex;
+      }
+
+      .modern-modal-content {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 400px;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        animation: modalSlideUp 0.3s ease;
+      }
+
+      @keyframes modalSlideUp {
+        from {
+          transform: translateY(50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .modern-modal-header {
+        padding: 25px 25px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .modern-modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+      }
+
+      .modern-modal-icon {
+        font-size: 24px;
+      }
+
+      .modern-modal-body {
+        padding: 20px 25px;
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      .modern-ocr-section {
+        margin-bottom: 25px;
+      }
+
+      .modern-ocr-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .modern-ocr-text {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #2d3748;
+        max-height: 100px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .modern-eurocodes-section {
+        margin-bottom: 20px;
+      }
+
+      .modern-eurocodes-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 15px;
+        display: block;
+      }
+
+      .modern-eurocode-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .modern-eurocode-button {
+        background: #3182ce;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        letter-spacing: 0.5px;
+      }
+
+      .modern-eurocode-button:hover {
+        background: #2c5aa0;
+        transform: translateY(-1px);
+      }
+
+      .modern-eurocode-button:active {
+        transform: translateY(0);
+      }
+
+      .modern-modal-footer {
+        padding: 20px 25px 25px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 12px;
+      }
+
+      .modern-modal-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+      }
+
+      .modern-btn-secondary {
+        background: #6b7280;
+        color: white;
+      }
+
+      .modern-btn-secondary:hover {
+        background: #4b5563;
+      }
+
+      .modern-btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .modern-btn-danger:hover {
+        background: #dc2626;
+      }
     }
 
     /* Desktop mantém-se igual - sem alterações */
     @media (min-width: 769px) {
       .modern-mobile {
+        display: none !important;
+      }
+      .modern-eurocode-modal {
         display: none !important;
       }
     }
@@ -290,6 +462,39 @@
     </div>
   </main>
 
+  <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
+  <div id="modernEurocodeModal" class="modern-eurocode-modal">
+    <div class="modern-modal-content">
+      <div class="modern-modal-header">
+        <span class="modern-modal-icon">🔍</span>
+        <h3 class="modern-modal-title">Selecionar Eurocode</h3>
+      </div>
+      
+      <div class="modern-modal-body">
+        <!-- Texto lido -->
+        <div class="modern-ocr-section">
+          <label class="modern-ocr-label">Texto lido:</label>
+          <div id="modernOcrText" class="modern-ocr-text">
+            <!-- OCR text will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Eurocódigos encontrados -->
+        <div class="modern-eurocodes-section">
+          <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
+          <div id="modernEurocodeList" class="modern-eurocode-list">
+            <!-- Eurocode buttons will be inserted here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modern-modal-footer">
+        <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
+        <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- DESKTOP VIEW (mantém-se 100% igual ao original) -->
   <section id="desktopView" class="card desktop-only">
     <!-- Botão de ajuda -->
@@ -367,11 +572,27 @@
       '7262AGAMV1R'
     ];
 
+    // Sample OCR text
+    const sampleOcrText = `LOT: N12492026400
+Material no.
+4165739 NordGlass
+
+2765AGACIMOVZ
+
+CITROEN C4 (C41)
+
+HU: 10008447579`;
+
     // DOM Elements for modern mobile
     const modernCameraButton = document.getElementById('modernCameraButton');
     const modernCameraInput = document.getElementById('modernCameraInput');
     const modernCapturesList = document.getElementById('modernCapturesList');
     const modernStatus = document.getElementById('modernStatus');
+    const modernEurocodeModal = document.getElementById('modernEurocodeModal');
+    const modernOcrText = document.getElementById('modernOcrText');
+    const modernEurocodeList = document.getElementById('modernEurocodeList');
+    const modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
+    const modernBtnCancel = document.getElementById('modernBtnCancel');
 
     // Show modern status message
     function showModernStatus(message, type = '') {
@@ -381,6 +602,53 @@
       setTimeout(() => {
         modernStatus.className = 'modern-status';
       }, 3000);
+    }
+
+    // Show modern eurocode modal
+    function showModernEurocodeModal(ocrText, eurocodes) {
+      if (!modernEurocodeModal) return;
+      
+      // Set OCR text
+      if (modernOcrText) {
+        modernOcrText.textContent = ocrText;
+      }
+
+      // Set eurocode buttons
+      if (modernEurocodeList) {
+        modernEurocodeList.innerHTML = eurocodes.map(code => `
+          <button class="modern-eurocode-button" data-eurocode="${code}">
+            ${code}
+          </button>
+        `).join('');
+
+        // Add click handlers to eurocode buttons
+        modernEurocodeList.querySelectorAll('.modern-eurocode-button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const selectedCode = btn.dataset.eurocode;
+            hideModernEurocodeModal();
+            showModernStatus(`Eurocode ${selectedCode} selecionado!`, 'success');
+            addToModernCaptures(selectedCode);
+          });
+        });
+      }
+
+      modernEurocodeModal.classList.add('show');
+    }
+
+    // Hide modern eurocode modal
+    function hideModernEurocodeModal() {
+      if (modernEurocodeModal) {
+        modernEurocodeModal.classList.remove('show');
+      }
+    }
+
+    // Add to modern captures list
+    function addToModernCaptures(code) {
+      const currentCaptures = [...modernSampleCaptures];
+      if (!currentCaptures.includes(code)) {
+        currentCaptures.unshift(code);
+      }
+      renderModernCaptures(currentCaptures.slice(0, 5));
     }
 
     // Render modern captures list
@@ -421,11 +689,38 @@
         if (file) {
           showModernStatus('A processar imagem...', 'success');
           
-          // Simulate processing
+          // Simulate OCR processing
           setTimeout(() => {
-            showModernStatus('Código detectado com sucesso!', 'success');
-            renderModernCaptures(modernSampleCaptures);
+            showModernStatus('Texto reconhecido! Selecione o Eurocode.', 'success');
+            
+            // Show modal with sample data
+            const detectedEurocodes = ['2765AGACIMOVZ', '4165739'];
+            showModernEurocodeModal(sampleOcrText, detectedEurocodes);
           }, 2000);
+        }
+      });
+    }
+
+    // Modal button handlers
+    if (modernBtnNoEurocode) {
+      modernBtnNoEurocode.addEventListener('click', () => {
+        hideModernEurocodeModal();
+        showModernStatus('Guardado sem Eurocode', 'success');
+      });
+    }
+
+    if (modernBtnCancel) {
+      modernBtnCancel.addEventListener('click', () => {
+        hideModernEurocodeModal();
+        showModernStatus('Operação cancelada', 'error');
+      });
+    }
+
+    // Close modal when clicking outside
+    if (modernEurocodeModal) {
+      modernEurocodeModal.addEventListener('click', (e) => {
+        if (e.target === modernEurocodeModal) {
+          hideModernEurocodeModal();
         }
       });
     }
