@@ -151,49 +151,50 @@
         font-weight: 700;
       }
 
+      /* ANIMAÇÃO CORRIGIDA - Anel verde que roda ao redor do círculo */
       .modern-progress-ring {
         position: absolute;
         top: -8px;
         left: -8px;
         width: 196px;
         height: 196px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .modern-circle.processing .modern-progress-ring {
+        opacity: 1;
       }
 
       .modern-progress-ring circle {
         fill: none;
-        stroke: #22d3ee;
-        stroke-width: 3;
+        stroke: #22c55e;
+        stroke-width: 4;
         stroke-linecap: round;
         stroke-dasharray: 580;
         stroke-dashoffset: 580;
-        animation: modernProgress 2s ease-in-out infinite alternate;
-        transition: stroke 0.3s ease;
+        transform-origin: center;
       }
 
-      /* Animação normal (azul, lenta) */
-      @keyframes modernProgress {
-        0% { stroke-dashoffset: 580; }
-        100% { stroke-dashoffset: 200; }
+      /* Animação de processamento - anel verde rotativo */
+      .modern-circle.processing .modern-progress-ring circle {
+        animation: modernProcessingRing 1.5s linear infinite;
+        stroke-dasharray: 200 580;
+        stroke-dashoffset: 0;
       }
 
-      /* Animação de processamento (verde, rápida) */
-      @keyframes modernProcessing {
+      @keyframes modernProcessingRing {
         0% { 
-          stroke-dashoffset: 580; 
           transform: rotate(0deg);
+          stroke-dashoffset: 0;
+        }
+        50% {
+          stroke-dashoffset: -100;
         }
         100% { 
-          stroke-dashoffset: 0; 
           transform: rotate(360deg);
+          stroke-dashoffset: -200;
         }
-      }
-
-      .modern-circle.processing .modern-progress-ring circle {
-        stroke: #22c55e;
-        stroke-width: 4;
-        animation: modernProcessing 0.8s linear infinite;
-        stroke-dasharray: 200;
-        stroke-dashoffset: 0;
       }
 
       .modern-bottom-card {
@@ -668,7 +669,7 @@
   <!-- App original (mantém-se igual) -->
   <script src="app.js"></script>
 
-  <!-- Script para a versão mobile moderna - USA SISTEMA OCR DA VERSÃO CLÁSSICA -->
+  <!-- Script para a versão mobile moderna - VERSÃO CORRIGIDA -->
   <script>
     // DOM Elements for modern mobile
     const modernCameraButton = document.getElementById('modernCameraButton');
@@ -681,6 +682,7 @@
     const modernBtnCancel = document.getElementById('modernBtnCancel');
 
     let isProcessing = false;
+    let processingTimeout = null;
 
     // Show modern status message
     function showModernStatus(message, type = '') {
@@ -692,10 +694,12 @@
       }, 3000);
     }
 
-    // Start processing animation
+    // Start processing animation - VERSÃO CORRIGIDA
     function startProcessing() {
       if (isProcessing) return;
       isProcessing = true;
+      
+      console.log('Iniciando processamento...');
       
       if (modernCameraButton) {
         modernCameraButton.classList.add('processing');
@@ -706,12 +710,27 @@
       }
       
       showModernStatus('A processar imagem...', 'processing');
+      
+      // Timeout aumentado para 45 segundos
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+      
+      processingTimeout = setTimeout(() => {
+        if (isProcessing) {
+          console.log('Timeout de processamento atingido');
+          stopProcessing();
+          showModernStatus('Timeout - tente novamente', 'error');
+        }
+      }, 45000); // 45 segundos
     }
 
-    // Stop processing animation
+    // Stop processing animation - VERSÃO CORRIGIDA
     function stopProcessing() {
       if (!isProcessing) return;
       isProcessing = false;
+      
+      console.log('Parando processamento...');
       
       if (modernCameraButton) {
         modernCameraButton.classList.remove('processing');
@@ -720,11 +739,22 @@
           label.textContent = 'Eurocode';
         }
       }
+      
+      // Limpar timeout
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+        processingTimeout = null;
+      }
     }
 
-    // Show modern eurocode modal
+    // Show modern eurocode modal - TIMING CORRIGIDO
     function showModernEurocodeModal(ocrText, eurocodes) {
-      stopProcessing(); // Para a animação quando o modal aparece
+      console.log('Mostrando modal de eurocode...');
+      
+      // Pequeno delay para garantir que a animação para suavemente
+      setTimeout(() => {
+        stopProcessing();
+      }, 500);
       
       if (!modernEurocodeModal) return;
       
@@ -752,6 +782,9 @@
             if (window.saveEurocode) {
               window.saveEurocode(selectedCode, ocrText);
             }
+            
+            // Atualizar lista de capturas
+            setTimeout(renderModernCaptures, 500);
           });
         });
       }
@@ -813,11 +846,15 @@
       `).join('');
     }
 
-    // Modern camera button click - USA O SISTEMA DA VERSÃO CLÁSSICA
+    // Modern camera button click - VERSÃO MELHORADA
     if (modernCameraButton) {
       modernCameraButton.addEventListener('click', () => {
-        if (isProcessing) return; // Prevenir cliques durante processamento
+        if (isProcessing) {
+          console.log('Clique ignorado - já está a processar');
+          return; // Prevenir cliques durante processamento
+        }
         
+        console.log('Clique no botão da câmara moderna');
         startProcessing(); // Iniciar animação
         
         // Simular clique no botão da versão clássica (que funciona)
@@ -828,7 +865,7 @@
       });
     }
 
-    // Interceptar o modal da versão clássica e mostrar na versão moderna
+    // Interceptar o modal da versão clássica e mostrar na versão moderna - MELHORADO
     function interceptClassicModal() {
       // Observar mudanças no DOM para detectar quando o modal clássico aparece
       const observer = new MutationObserver((mutations) => {
@@ -840,6 +877,8 @@
               if (modal.style.display === 'block' || modal.classList.contains('show')) {
                 const modalText = modal.textContent || modal.innerText || '';
                 if (modalText.includes('Selecionar Eurocode') || modalText.includes('Eurocode')) {
+                  console.log('Modal clássico detectado, interceptando...');
+                  
                   // Extrair dados do modal clássico
                   const ocrTextEl = modal.querySelector('[id*="ocr"], [class*="ocr"]');
                   const eurocodeButtons = modal.querySelectorAll('button[data-eurocode], button[onclick*="eurocode"]');
@@ -854,8 +893,10 @@
                     modal.style.display = 'none';
                     modal.classList.remove('show');
                     
-                    // Mostrar modal moderno (que já para a animação)
-                    showModernEurocodeModal(ocrText, eurocodes);
+                    // Mostrar modal moderno com timing corrigido
+                    setTimeout(() => {
+                      showModernEurocodeModal(ocrText, eurocodes);
+                    }, 300);
                   }
                 }
               }
@@ -872,17 +913,18 @@
       });
     }
 
-    // Interceptar erros para parar a animação
+    // Interceptar erros para parar a animação - MELHORADO
     function interceptErrors() {
       // Observar mensagens de erro
       const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
       statusElements.forEach(statusEl => {
-        if (statusEl) {
+        if (statusEl && statusEl !== modernStatus) {
           new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
               if (mutation.type === 'childList' || mutation.type === 'characterData') {
                 const text = statusEl.textContent || statusEl.innerText || '';
                 if (text.toLowerCase().includes('erro') || text.toLowerCase().includes('error')) {
+                  console.log('Erro detectado:', text);
                   stopProcessing();
                   showModernStatus('Erro ao processar imagem', 'error');
                 }
@@ -891,38 +933,6 @@
           }).observe(statusEl, { childList: true, subtree: true, characterData: true });
         }
       });
-
-      // Timeout de segurança - se demorar mais de 10 segundos, para a animação
-      let processingTimeout;
-      
-      const originalStartProcessing = startProcessing;
-      startProcessing = function() {
-        originalStartProcessing();
-        
-        // Limpar timeout anterior
-        if (processingTimeout) {
-          clearTimeout(processingTimeout);
-        }
-        
-        // Definir novo timeout
-        processingTimeout = setTimeout(() => {
-          if (isProcessing) {
-            stopProcessing();
-            showModernStatus('Timeout - tente novamente', 'error');
-          }
-        }, 10000); // 10 segundos
-      };
-      
-      const originalStopProcessing = stopProcessing;
-      stopProcessing = function() {
-        originalStopProcessing();
-        
-        // Limpar timeout quando para manualmente
-        if (processingTimeout) {
-          clearTimeout(processingTimeout);
-          processingTimeout = null;
-        }
-      };
     }
 
     // Modal button handlers
@@ -936,6 +946,9 @@
           const ocrText = modernOcrText ? modernOcrText.textContent : '';
           window.saveWithoutEurocode(ocrText);
         }
+        
+        // Atualizar lista de capturas
+        setTimeout(renderModernCaptures, 500);
       });
     }
 
@@ -951,53 +964,46 @@
       modernEurocodeModal.addEventListener('click', (e) => {
         if (e.target === modernEurocodeModal) {
           hideModernEurocodeModal();
+          showModernStatus('Operação cancelada', 'error');
         }
       });
     }
 
-    // Initialize modern mobile with real data
-    if (window.innerWidth <= 768) {
+    // Initialize modern interface
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('Interface moderna inicializada');
       renderModernCaptures();
       interceptClassicModal();
       interceptErrors();
       
-      // Watch for changes in the results table to update captures list
-      const tbody = document.getElementById('resultsBody');
-      if (tbody) {
-        new MutationObserver(renderModernCaptures)
-          .observe(tbody, { childList: true, subtree: true, characterData: true });
-      }
-    }
+      // Atualizar lista periodicamente
+      setInterval(renderModernCaptures, 5000);
+    });
+
+    // Render initial captures
+    renderModernCaptures();
+    interceptClassicModal();
+    interceptErrors();
   </script>
 
   <!-- Scripts originais mantidos -->
   <script>
   (function(){
     const listEl = document.getElementById('mobileHistoryList');
+    if (!listEl) return;
 
     async function fetchRowsFromAPI(){
-      try{
-        const res = await fetch('/api/list-ocr', { headers:{'Accept':'application/json'} });
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        const data = await res.json();
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data.rows))  return data.rows;
-        if (Array.isArray(data.items)) return data.items;
-        return [];
-      }catch(e){
+      try {
+        const resp = await fetch('/.netlify/functions/get-rows');
+        if (!resp.ok) return null;
+        return await resp.json();
+      } catch {
         return null;
       }
     }
 
     function pickEuro(row){
-      const c = (
-        row.euro_validado ??
-        row.euro_user ??
-        row.euroUser ??
-        row.eurocode ??
-        row.euro ??
-        ''
-      ).toString().trim();
+      const c = (row?.eurocode || '').trim();
       return c || null;
     }
 
