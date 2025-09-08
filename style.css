@@ -917,3 +917,30 @@ table#resultsTable > thead > tr > th:nth-child(3) {
   font-size: 14px !important;
   line-height: 1.2 !important;
 }
+
+/* ===== MODIFICAÇÃO DO TEXTO EUROCODE ===== */
+/* Alterar o layout do botão para colocar o texto por baixo da câmara */
+.btn-square {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+/* Estilizar o texto "Eurocode" */
+.mode-label {
+  color: white !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+  letter-spacing: 0.5px !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+/* Garantir que o emoji da câmara fica centrado */
+.btn-square .emoji {
+  margin: 0 !important;
+  display: block !important;
+}
