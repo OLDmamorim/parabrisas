@@ -917,33 +917,3 @@ table#resultsTable > thead > tr > th:nth-child(3) {
   font-size: 14px !important;
   line-height: 1.2 !important;
 }
-/* ===== MODIFICAÇÃO ESPECÍFICA DO BOTÃO EUROCODE ===== */
-/* Regras muito específicas para não afetar outros elementos */
-
-/* Apenas o botão da câmara com ID btnCamera */
-#btnCamera {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px !important;
-}
-
-/* Apenas o texto dentro do botão da câmara */
-#btnCamera .mode-label {
-  color: white !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
-  letter-spacing: 0.3px !important;
-  margin: 0 !important;
-  text-align: center !important;
-  line-height: 1 !important;
-}
-
-/* Garantir que o emoji da câmara fica centrado */
-#btnCamera .emoji {
-  margin: 0 !important;
-  display: block !important;
-  font-size: 48px !important;
-}
