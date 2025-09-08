@@ -98,8 +98,8 @@
       }
 
       .modern-circle {
-        width: 150px;
-        height: 150px;
+        width: 180px;
+        height: 180px;
         background: white;
         border-radius: 50%;
         display: flex;
@@ -167,8 +167,8 @@
         position: absolute;
         top: -8px;
         left: -8px;
-        width: 196px;
-        height: 196px;
+        width: 166px;
+        height: 166px;
         opacity: 0;
         transition: opacity 0.3s ease;
       }
@@ -213,8 +213,8 @@
         position: absolute;
         top: -8px;
         left: -8px;
-        width: 196px;
-        height: 196px;
+        width: 166px;
+        height: 166px;
         opacity: 1;
         transition: opacity 0.3s ease;
       }
@@ -594,15 +594,15 @@
       <div class="modern-circle" id="modernCameraButton">
         <!-- Progress Ring -->
         <svg class="modern-progress-ring">
-          <circle cx="98" cy="98" r="92"></circle>
+          <circle cx="83" cy="83" r="77"></circle>
         </svg>
         
         <!-- Idle Blue Ring -->
         <svg class="modern-idle-ring">
-          <circle cx="98" cy="98" r="92"></circle>
+          <circle cx="83" cy="83" r="77"></circle>
         </svg>
         
-        <!-- Modern Camera Icon PNG - Corrigido v2.0 -->
+        <!-- Modern Camera Icon PNG - Corrigido v2.1 -->
         <div class="modern-camera-icon">
           <img src="camera-icon.png" alt="Câmara" />
         </div>
@@ -1119,9 +1119,24 @@
           showModernStatus('Abrindo câmara...', '');
           
           // Procurar e clicar no botão original da câmara
-          const originalCameraBtn = document.querySelector('#cameraBtn, .camera-btn, [onclick*="camera"], [onclick*="scan"]');
+          const originalCameraBtn = document.querySelector('#btnCamera, #cameraBtn, .camera-btn, [onclick*="camera"], [onclick*="scan"], [onclick*="Camera"], button[onclick*="openCamera"]');
           if (originalCameraBtn) {
+            console.log('Botão original encontrado:', originalCameraBtn);
             originalCameraBtn.click();
+          } else {
+            console.log('Botão original não encontrado, tentando outros seletores...');
+            // Tentar outros seletores comuns
+            const altButtons = document.querySelectorAll('button, input[type="button"], .btn');
+            for (const btn of altButtons) {
+              const text = (btn.textContent || btn.value || '').toLowerCase();
+              const onclick = (btn.getAttribute('onclick') || '').toLowerCase();
+              if (text.includes('camera') || text.includes('câmara') || text.includes('scan') || 
+                  onclick.includes('camera') || onclick.includes('scan')) {
+                console.log('Botão alternativo encontrado:', btn);
+                btn.click();
+                break;
+              }
+            }
           }
           
           // Aguardar pela captura da foto para iniciar animação
