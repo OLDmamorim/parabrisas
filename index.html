@@ -6,7 +6,7 @@
   <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
   <style>
-    /* ===== MODIFICAÇÃO DO LOGÓTIPO E BADGE ===== */
+    /* ===== MODIFICAÇÃO DO LOGÓTIPO ===== */
     .brand .title {
       display: none; /* Esconder o texto original */
     }
@@ -47,20 +47,9 @@
       text-align: center;
     }
     
-    /* Reposicionar o badge Mobile */
+    /* Esconder o badge Mobile */
     .view-badge {
-      position: absolute !important;
-      top: 50px !important; /* Mais abaixo */
-      right: 15px !important; /* Encostado à direita */
-      z-index: 10;
-      background: rgba(59, 130, 246, 0.9) !important;
-      color: white !important;
-      padding: 6px 12px !important;
-      border-radius: 12px !important;
-      font-size: 12px !important;
-      font-weight: 600 !important;
-      backdrop-filter: blur(10px) !important;
-      border: 1px solid rgba(255,255,255,0.2) !important;
+      display: none !important;
     }
     
     @media (max-width: 768px) {
@@ -77,13 +66,6 @@
       .brand .subtitle-new {
         font-size: 14px;
         margin: 12px 15px 0;
-      }
-      
-      .view-badge {
-        top: 40px !important;
-        right: 10px !important;
-        font-size: 11px !important;
-        padding: 5px 10px !important;
       }
     }
 
