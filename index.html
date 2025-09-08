@@ -628,28 +628,8 @@
   <!-- App original (mantém-se igual) -->
   <script src="app.js"></script>
 
-  <!-- Script para a versão mobile moderna -->
+  <!-- Script para a versão mobile moderna - CONECTADO À FUNÇÃO OCR REAL -->
   <script>
-    // Sample data for demonstration
-    const modernSampleCaptures = [
-      '2765AGACIMOVZ',
-      '6001BLGS',
-      '7289BGNM',
-      '5350AGS',
-      '7262AGAMV1R'
-    ];
-
-    // Sample OCR text
-    const sampleOcrText = `LOT: N12492026400
-Material no.
-4165739 NordGlass
-
-2765AGACIMOVZ
-
-CITROEN C4 (C41)
-
-HU: 10008447579`;
-
     // DOM Elements for modern mobile
     const modernCameraButton = document.getElementById('modernCameraButton');
     const modernCameraInput = document.getElementById('modernCameraInput');
@@ -694,7 +674,11 @@ HU: 10008447579`;
             const selectedCode = btn.dataset.eurocode;
             hideModernEurocodeModal();
             showModernStatus(`Eurocode ${selectedCode} selecionado!`, 'success');
-            addToModernCaptures(selectedCode);
+            
+            // Usar a função original para guardar o eurocode
+            if (window.saveEurocode) {
+              window.saveEurocode(selectedCode, ocrText);
+            }
           });
         });
       }
@@ -709,20 +693,35 @@ HU: 10008447579`;
       }
     }
 
-    // Add to modern captures list
-    function addToModernCaptures(code) {
-      const currentCaptures = [...modernSampleCaptures];
-      if (!currentCaptures.includes(code)) {
-        currentCaptures.unshift(code);
-      }
-      renderModernCaptures(currentCaptures.slice(0, 5));
-    }
-
-    // Render modern captures list
-    function renderModernCaptures(captures) {
+    // Render modern captures list from real data
+    function renderModernCaptures() {
       if (!modernCapturesList) return;
       
-      if (!captures || captures.length === 0) {
+      // Get real data from the original system
+      const tbody = document.getElementById('resultsBody');
+      if (!tbody) {
+        modernCapturesList.innerHTML = `
+          <div class="modern-empty-state">
+            <div class="modern-empty-icon">📷</div>
+            <div class="modern-empty-text">Ainda não há capturas</div>
+          </div>
+        `;
+        return;
+      }
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const captures = [];
+      
+      for (const tr of rows) {
+        const td = tr.querySelector('td:nth-child(4)'); // Eurocode column
+        if (td) {
+          const code = (td.innerText || td.textContent || '').trim().split(/\s+/)[0];
+          if (code) captures.push(code);
+        }
+        if (captures.length >= 5) break; // Limit to 5 most recent
+      }
+
+      if (captures.length === 0) {
         modernCapturesList.innerHTML = `
           <div class="modern-empty-state">
             <div class="modern-empty-icon">📷</div>
@@ -749,21 +748,51 @@ HU: 10008447579`;
       });
     }
 
-    // Modern file input change
+    // Modern file input change - CONECTADO À FUNÇÃO OCR REAL
     if (modernCameraInput) {
-      modernCameraInput.addEventListener('change', (e) => {
+      modernCameraInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (file) {
-          showModernStatus('A processar imagem...', 'success');
+        if (!file) return;
+
+        showModernStatus('A processar imagem...', 'success');
+
+        try {
+          // Usar a função OCR real do sistema original
+          const formData = new FormData();
+          formData.append('image', file);
+
+          const response = await fetch('/.netlify/functions/ocr-proxy', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const result = await response.json();
           
-          // Simulate OCR processing
-          setTimeout(() => {
-            showModernStatus('Texto reconhecido! Selecione o Eurocode.', 'success');
-            
-            // Show modal with sample data
-            const detectedEurocodes = ['2765AGACIMOVZ', '4165739'];
-            showModernEurocodeModal(sampleOcrText, detectedEurocodes);
-          }, 2000);
+          if (result.ok && result.text) {
+            // Usar a função original para extrair eurocódigos
+            let eurocodes = [];
+            if (window.extractAllEurocodes) {
+              eurocodes = window.extractAllEurocodes(result.text);
+            }
+
+            if (eurocodes.length > 0) {
+              showModernStatus('Texto reconhecido! Selecione o Eurocode.', 'success');
+              showModernEurocodeModal(result.text, eurocodes);
+            } else {
+              showModernStatus('Nenhum Eurocode encontrado no texto.', 'error');
+              // Ainda assim mostrar o modal para permitir "Sem Eurocode"
+              showModernEurocodeModal(result.text, []);
+            }
+          } else {
+            throw new Error('Erro no processamento OCR');
+          }
+        } catch (error) {
+          console.error('Erro OCR:', error);
+          showModernStatus('Erro ao processar imagem. Tente novamente.', 'error');
         }
       });
     }
@@ -773,6 +802,12 @@ HU: 10008447579`;
       modernBtnNoEurocode.addEventListener('click', () => {
         hideModernEurocodeModal();
         showModernStatus('Guardado sem Eurocode', 'success');
+        
+        // Usar a função original para guardar sem eurocode
+        if (window.saveWithoutEurocode) {
+          const ocrText = modernOcrText ? modernOcrText.textContent : '';
+          window.saveWithoutEurocode(ocrText);
+        }
       });
     }
 
@@ -792,9 +827,16 @@ HU: 10008447579`;
       });
     }
 
-    // Initialize modern mobile with sample data
+    // Initialize modern mobile with real data
     if (window.innerWidth <= 768) {
-      renderModernCaptures(modernSampleCaptures);
+      renderModernCaptures();
+      
+      // Watch for changes in the results table to update captures list
+      const tbody = document.getElementById('resultsBody');
+      if (tbody) {
+        new MutationObserver(renderModernCaptures)
+          .observe(tbody, { childList: true, subtree: true, characterData: true });
+      }
     }
   </script>
 
