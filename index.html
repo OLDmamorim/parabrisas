@@ -71,8 +71,17 @@
 
     /* ===== APENAS MODIFICAÇÕES PARA MOBILE ===== */
     @media (max-width: 768px) {
-      /* Esconder a versão mobile original */
-      #mobileView.card.mobile-only {
+      /* Esconder a versão mobile original quando moderna está ativa */
+      body.modern-active #mobileView.card.mobile-only {
+        display: none !important;
+      }
+
+      /* Mostrar versão mobile original quando moderna falha */
+      body.fallback-active #mobileView.card.mobile-only {
+        display: block !important;
+      }
+
+      body.fallback-active .modern-mobile {
         display: none !important;
       }
 
@@ -436,6 +445,30 @@
       .modern-btn-danger:hover {
         background: #dc2626;
       }
+
+      /* Fallback button */
+      .modern-fallback-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(255,255,255,0.9);
+        border: 2px solid #3182ce;
+        color: #3182ce;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1001;
+        transition: all 0.2s ease;
+      }
+
+      .modern-fallback-btn:hover {
+        background: #3182ce;
+        color: white;
+      }
     }
 
     /* Desktop mantém-se igual - sem alterações */
@@ -449,7 +482,7 @@
     }
   </style>
 </head>
-<body>
+<body class="modern-active">
   <!-- HEADER -->
   <header class="header">
     <div class="brand">
@@ -463,7 +496,7 @@
     <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- MOBILE VIEW ORIGINAL (escondida em mobile) -->
+  <!-- MOBILE VIEW ORIGINAL (fallback) -->
   <main id="mobileView" class="card mobile-only">
     <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
@@ -497,6 +530,11 @@
   <main class="modern-mobile mobile-only">
     <!-- Status Message -->
     <div id="modernStatus" class="modern-status"></div>
+
+    <!-- Fallback Button -->
+    <button id="modernFallbackBtn" class="modern-fallback-btn" style="display: none;">
+      Usar versão clássica
+    </button>
 
     <!-- Main Container -->
     <div class="modern-main">
@@ -628,7 +666,7 @@
   <!-- App original (mantém-se igual) -->
   <script src="app.js"></script>
 
-  <!-- Script para a versão mobile moderna - CONECTADO À FUNÇÃO OCR REAL -->
+  <!-- Script para a versão mobile moderna - COM FALLBACK -->
   <script>
     // DOM Elements for modern mobile
     const modernCameraButton = document.getElementById('modernCameraButton');
@@ -640,6 +678,23 @@
     const modernEurocodeList = document.getElementById('modernEurocodeList');
     const modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
     const modernBtnCancel = document.getElementById('modernBtnCancel');
+    const modernFallbackBtn = document.getElementById('modernFallbackBtn');
+
+    // Fallback system
+    let ocrFailureCount = 0;
+    const MAX_OCR_FAILURES = 2;
+
+    function activateFallback() {
+      document.body.className = 'fallback-active';
+      if (modernFallbackBtn) modernFallbackBtn.style.display = 'none';
+      showModernStatus('Mudou para versão clássica', 'success');
+    }
+
+    function activateModern() {
+      document.body.className = 'modern-active';
+      ocrFailureCount = 0;
+      if (modernFallbackBtn) modernFallbackBtn.style.display = 'none';
+    }
 
     // Show modern status message
     function showModernStatus(message, type = '') {
@@ -748,7 +803,7 @@
       });
     }
 
-    // Modern file input change - CONECTADO À FUNÇÃO OCR REAL
+    // Modern file input change - COM FALLBACK
     if (modernCameraInput) {
       modernCameraInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -757,7 +812,7 @@
         showModernStatus('A processar imagem...', 'success');
 
         try {
-          // Usar a função OCR real do sistema original
+          // Tentar usar a função OCR real
           const formData = new FormData();
           formData.append('image', file);
 
@@ -773,6 +828,9 @@
           const result = await response.json();
           
           if (result.ok && result.text) {
+            // Sucesso - resetar contador de falhas
+            ocrFailureCount = 0;
+            
             // Usar a função original para extrair eurocódigos
             let eurocodes = [];
             if (window.extractAllEurocodes) {
@@ -792,9 +850,26 @@
           }
         } catch (error) {
           console.error('Erro OCR:', error);
-          showModernStatus('Erro ao processar imagem. Tente novamente.', 'error');
+          ocrFailureCount++;
+          
+          if (ocrFailureCount >= MAX_OCR_FAILURES) {
+            // Ativar fallback automaticamente após muitas falhas
+            showModernStatus('Problemas com OCR. Mudando para versão clássica...', 'error');
+            if (modernFallbackBtn) modernFallbackBtn.style.display = 'block';
+            setTimeout(() => {
+              activateFallback();
+            }, 2000);
+          } else {
+            showModernStatus(`Erro ao processar imagem. Tente novamente. (${ocrFailureCount}/${MAX_OCR_FAILURES})`, 'error');
+            if (modernFallbackBtn) modernFallbackBtn.style.display = 'block';
+          }
         }
       });
+    }
+
+    // Fallback button
+    if (modernFallbackBtn) {
+      modernFallbackBtn.addEventListener('click', activateFallback);
     }
 
     // Modal button handlers
