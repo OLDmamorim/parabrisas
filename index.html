@@ -11,15 +11,54 @@
       display: none; /* Esconder o texto original */
     }
     
+    .brand .subtitle {
+      display: none; /* Esconder o subtítulo original */
+    }
+    
+    .brand {
+      width: 100%;
+      padding: 0;
+    }
+    
+    .logo-container {
+      background: white;
+      border-radius: 15px;
+      padding: 15px 20px;
+      margin: 0 20px 15px 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
     .brand .logo {
-      max-height: 40px;
-      width: auto;
-      margin-bottom: 5px;
+      max-width: 100%;
+      height: auto;
+      max-height: 50px;
+    }
+    
+    .brand .subtitle-new {
+      color: rgba(255,255,255,0.9);
+      font-size: 16px;
+      font-weight: 400;
+      margin: 0 20px;
+      text-align: center;
     }
     
     @media (max-width: 768px) {
+      .logo-container {
+        margin: 0 15px 15px 15px;
+        padding: 12px 15px;
+        border-radius: 12px;
+      }
+      
       .brand .logo {
-        max-height: 35px;
+        max-height: 40px;
+      }
+      
+      .brand .subtitle-new {
+        font-size: 14px;
+        margin: 0 15px;
       }
     }
 
@@ -407,9 +446,12 @@
   <!-- HEADER -->
   <header class="header">
     <div class="brand">
-      <img src="expressglass-logo.png" class="logo" alt="ExpressGlass - Vidros para Viaturas" />
+      <div class="logo-container">
+        <img src="expressglass-logo.png" class="logo" alt="ExpressGlass - Vidros para Viaturas" />
+      </div>
       <h1 class="title">EXPRESSGLASS</h1>
       <p class="subtitle">Receção material</p>
+      <p class="subtitle-new">Receção material</p>
     </div>
     <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
