@@ -131,22 +131,11 @@
         transform: none;
       }
 
-      /* ÍCONE DE CÂMARA PNG */
       .modern-camera-icon {
-        width: 110px;
-        height: 110px;
-        margin-bottom: 12px;
+        font-size: 50px;
+        margin-bottom: 8px;
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .modern-camera-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
       }
 
       .modern-camera-label {
@@ -205,41 +194,6 @@
         100% { 
           transform: rotate(360deg);
           stroke-dashoffset: -200;
-        }
-      }
-
-      /* LINHA AZUL ANIMADA - Roda constantemente quando não está processando */
-      .modern-idle-ring {
-        position: absolute;
-        top: -8px;
-        left: -8px;
-        width: 196px;
-        height: 196px;
-        opacity: 1;
-        transition: opacity 0.3s ease;
-      }
-
-      .modern-circle.processing .modern-idle-ring {
-        opacity: 0;
-      }
-
-      .modern-idle-ring circle {
-        fill: none;
-        stroke: #4A90E2;
-        stroke-width: 3;
-        stroke-linecap: round;
-        stroke-dasharray: 150 580;
-        stroke-dashoffset: 0;
-        transform-origin: center;
-        animation: modernIdleRing 3s linear infinite;
-      }
-
-      @keyframes modernIdleRing {
-        0% { 
-          transform: rotate(0deg);
-        }
-        100% { 
-          transform: rotate(360deg);
         }
       }
 
@@ -597,15 +551,8 @@
           <circle cx="98" cy="98" r="92"></circle>
         </svg>
         
-        <!-- Idle Blue Ring -->
-        <svg class="modern-idle-ring">
-          <circle cx="98" cy="98" r="92"></circle>
-        </svg>
-        
-        <!-- Modern Camera Icon PNG - Corrigido v2.2 -->
-        <div class="modern-camera-icon">
-          <img src="camera-icon.png" alt="Câmara" />
-        </div>
+        <!-- Camera Icon -->
+        <div class="modern-camera-icon">📷</div>
         <div class="modern-camera-label">Eurocode</div>
       </div>
     </div>
@@ -901,6 +848,25 @@
       `).join('');
     }
 
+    // Modern camera button click
+    if (modernCameraButton) {
+      modernCameraButton.addEventListener('click', () => {
+        if (isProcessing) {
+          console.log('Clique ignorado - já está a processar');
+          return; // Prevenir cliques durante processamento
+        }
+        
+        console.log('Clique no botão da câmara moderna');
+        startProcessing(); // Iniciar animação
+        
+        // Simular clique no botão da versão clássica (que funciona)
+        const classicCameraBtn = document.getElementById('btnCamera');
+        if (classicCameraBtn) {
+          classicCameraBtn.click();
+        }
+      });
+    }
+
     // CORREÇÃO PRINCIPAL: Interceptar TODOS os eventos de sucesso
     function interceptSuccessEvents() {
       // Observar mudanças na tabela de resultados (indica sucesso)
@@ -943,52 +909,6 @@
             });
           }).observe(statusEl, { childList: true, subtree: true, characterData: true });
         }
-      });
-    }
-
-    // NOVA FUNÇÃO: Interceptar início do processamento OCR
-    function interceptOCRStart() {
-      // Observar quando elementos de loading/processamento aparecem
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.type === 'childList') {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                const text = node.textContent || node.innerText || '';
-                
-                // Detectar mensagens que indicam início do OCR
-                if (text.toLowerCase().includes('processando') ||
-                    text.toLowerCase().includes('analisando') ||
-                    text.toLowerCase().includes('lendo') ||
-                    text.toLowerCase().includes('scanning') ||
-                    node.classList.contains('loading') ||
-                    node.classList.contains('processing')) {
-                  
-                  console.log('Início do OCR detectado, iniciando animação...');
-                  startProcessing();
-                }
-              }
-            });
-          }
-          
-          // Observar mudanças de texto em elementos existentes
-          if (mutation.type === 'characterData') {
-            const text = mutation.target.textContent || '';
-            if (text.toLowerCase().includes('processando') ||
-                text.toLowerCase().includes('analisando') ||
-                text.toLowerCase().includes('lendo')) {
-              
-              console.log('Início do OCR detectado via texto, iniciando animação...');
-              startProcessing();
-            }
-          }
-        });
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true
       });
     }
 
@@ -1108,41 +1028,6 @@
       interceptClassicModal();
       interceptErrors();
       interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
-      interceptOCRStart(); // NOVA: Interceptar início do OCR
-      
-      // CORREÇÃO: Event listener do botão da câmara com timing correto
-      if (modernCameraButton) {
-        modernCameraButton.addEventListener('click', () => {
-          console.log('Botão da câmara clicado');
-          
-          // NÃO iniciar animação aqui - só mostrar status
-          showModernStatus('Abrindo câmara...', '');
-          
-          // Procurar e clicar no botão original da câmara
-          const originalCameraBtn = document.querySelector('#btnCamera, #cameraBtn, .camera-btn, [onclick*="camera"], [onclick*="scan"], [onclick*="Camera"], button[onclick*="openCamera"]');
-          if (originalCameraBtn) {
-            console.log('Botão original encontrado:', originalCameraBtn);
-            originalCameraBtn.click();
-          } else {
-            console.log('Botão original não encontrado, tentando outros seletores...');
-            // Tentar outros seletores comuns
-            const altButtons = document.querySelectorAll('button, input[type="button"], .btn');
-            for (const btn of altButtons) {
-              const text = (btn.textContent || btn.value || '').toLowerCase();
-              const onclick = (btn.getAttribute('onclick') || '').toLowerCase();
-              if (text.includes('camera') || text.includes('câmara') || text.includes('scan') || 
-                  onclick.includes('camera') || onclick.includes('scan')) {
-                console.log('Botão alternativo encontrado:', btn);
-                btn.click();
-                break;
-              }
-            }
-          }
-          
-          // Aguardar pela captura da foto para iniciar animação
-          // A animação será iniciada pela interceptação do OCR
-        });
-      }
       
       // Atualizar lista periodicamente
       setInterval(renderModernCaptures, 5000);
@@ -1260,7 +1145,7 @@
     fixCol3();
     if (tbody){
       new MutationObserver(fixCol3)
-        .observe(tbody, { childList: true, subtree: true, characterData: true });
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
     }
     window.addEventListener('resize', fixCol3);
   })();
