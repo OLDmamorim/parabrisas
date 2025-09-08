@@ -149,12 +149,14 @@ function filterResults(searchTerm) {
 }
 
 // =========================
-// Extração de Eurocodes Melhorada
+// Extração de Eurocodes Melhorada - CORRIGIDA
 // =========================
 function extractAllEurocodes(text) {
   if (!text) return [];
 
-  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
+  // CORREÇÃO: Aumentar limite de caracteres de {0,6} para {0,12}
+  // Isto permite reconhecer códigos como "2765AGACIMOVZ" (4 dígitos + 2 letras + 7 caracteres)
+  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,12}\b/g;
   const matches = text.match(pattern) || [];
 
   const unique = [...new Set(matches)];
@@ -468,14 +470,14 @@ function renderTable() {
           <button onclick="deleteRow(${row.id})" 
                   style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
                   title="Eliminar registo"
-                  onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
-                  onmouseout="this.style.background='none'">
-            🗑️ Apagar
+                  onmouseover="this.style.background='rgba(220,53,69,0.1)'; this.style.color='#dc3545'" 
+                  onmouseout="this.style.background='none'; this.style.color='#dc3545'">
+            🗑️ Eliminar
           </button>
         </div>
       </td>
     </tr>
-  `;
+    `;
   }).join('');
 }
 
@@ -496,7 +498,7 @@ async function deleteRow(id) {
       showToast('Registo eliminado com sucesso!', 'success');
       await loadResults();
     } else {
-      throw new Error('Erro ao eliminar');
+      throw new Error('Erro ao eliminar registo');
     }
   } catch (error) {
     console.error('Erro ao eliminar:', error);
