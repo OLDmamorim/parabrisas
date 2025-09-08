@@ -122,10 +122,20 @@
         transform: translateY(-2px);
       }
 
+      .modern-circle.processing {
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .modern-circle.processing:hover {
+        transform: none;
+      }
+
       .modern-camera-icon {
         font-size: 50px;
         margin-bottom: 8px;
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        transition: all 0.3s ease;
       }
 
       .modern-camera-label {
@@ -133,6 +143,12 @@
         font-weight: 600;
         color: #4a5568;
         letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+      }
+
+      .modern-circle.processing .modern-camera-label {
+        color: #22c55e;
+        font-weight: 700;
       }
 
       .modern-progress-ring {
@@ -151,11 +167,33 @@
         stroke-dasharray: 580;
         stroke-dashoffset: 580;
         animation: modernProgress 2s ease-in-out infinite alternate;
+        transition: stroke 0.3s ease;
       }
 
+      /* Animação normal (azul, lenta) */
       @keyframes modernProgress {
         0% { stroke-dashoffset: 580; }
         100% { stroke-dashoffset: 200; }
+      }
+
+      /* Animação de processamento (verde, rápida) */
+      @keyframes modernProcessing {
+        0% { 
+          stroke-dashoffset: 580; 
+          transform: rotate(0deg);
+        }
+        100% { 
+          stroke-dashoffset: 0; 
+          transform: rotate(360deg);
+        }
+      }
+
+      .modern-circle.processing .modern-progress-ring circle {
+        stroke: #22c55e;
+        stroke-width: 4;
+        animation: modernProcessing 0.8s linear infinite;
+        stroke-dasharray: 200;
+        stroke-dashoffset: 0;
       }
 
       .modern-bottom-card {
@@ -265,6 +303,11 @@
 
       .modern-status.error {
         background: rgba(245, 101, 101, 0.95);
+        color: white;
+      }
+
+      .modern-status.processing {
+        background: rgba(34, 197, 94, 0.95);
         color: white;
       }
 
@@ -637,6 +680,8 @@
     const modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
     const modernBtnCancel = document.getElementById('modernBtnCancel');
 
+    let isProcessing = false;
+
     // Show modern status message
     function showModernStatus(message, type = '') {
       if (!modernStatus) return;
@@ -647,8 +692,40 @@
       }, 3000);
     }
 
+    // Start processing animation
+    function startProcessing() {
+      if (isProcessing) return;
+      isProcessing = true;
+      
+      if (modernCameraButton) {
+        modernCameraButton.classList.add('processing');
+        const label = modernCameraButton.querySelector('.modern-camera-label');
+        if (label) {
+          label.textContent = 'A processar...';
+        }
+      }
+      
+      showModernStatus('A processar imagem...', 'processing');
+    }
+
+    // Stop processing animation
+    function stopProcessing() {
+      if (!isProcessing) return;
+      isProcessing = false;
+      
+      if (modernCameraButton) {
+        modernCameraButton.classList.remove('processing');
+        const label = modernCameraButton.querySelector('.modern-camera-label');
+        if (label) {
+          label.textContent = 'Eurocode';
+        }
+      }
+    }
+
     // Show modern eurocode modal
     function showModernEurocodeModal(ocrText, eurocodes) {
+      stopProcessing(); // Para a animação quando o modal aparece
+      
       if (!modernEurocodeModal) return;
       
       // Set OCR text
@@ -687,6 +764,7 @@
       if (modernEurocodeModal) {
         modernEurocodeModal.classList.remove('show');
       }
+      stopProcessing(); // Garantir que para a animação
     }
 
     // Render modern captures list from real data
@@ -738,6 +816,10 @@
     // Modern camera button click - USA O SISTEMA DA VERSÃO CLÁSSICA
     if (modernCameraButton) {
       modernCameraButton.addEventListener('click', () => {
+        if (isProcessing) return; // Prevenir cliques durante processamento
+        
+        startProcessing(); // Iniciar animação
+        
         // Simular clique no botão da versão clássica (que funciona)
         const classicCameraBtn = document.getElementById('btnCamera');
         if (classicCameraBtn) {
@@ -772,7 +854,7 @@
                     modal.style.display = 'none';
                     modal.classList.remove('show');
                     
-                    // Mostrar modal moderno
+                    // Mostrar modal moderno (que já para a animação)
                     showModernEurocodeModal(ocrText, eurocodes);
                   }
                 }
@@ -788,6 +870,59 @@
         attributes: true,
         attributeFilter: ['style', 'class']
       });
+    }
+
+    // Interceptar erros para parar a animação
+    function interceptErrors() {
+      // Observar mensagens de erro
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('erro') || text.toLowerCase().includes('error')) {
+                  stopProcessing();
+                  showModernStatus('Erro ao processar imagem', 'error');
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+
+      // Timeout de segurança - se demorar mais de 10 segundos, para a animação
+      let processingTimeout;
+      
+      const originalStartProcessing = startProcessing;
+      startProcessing = function() {
+        originalStartProcessing();
+        
+        // Limpar timeout anterior
+        if (processingTimeout) {
+          clearTimeout(processingTimeout);
+        }
+        
+        // Definir novo timeout
+        processingTimeout = setTimeout(() => {
+          if (isProcessing) {
+            stopProcessing();
+            showModernStatus('Timeout - tente novamente', 'error');
+          }
+        }, 10000); // 10 segundos
+      };
+      
+      const originalStopProcessing = stopProcessing;
+      stopProcessing = function() {
+        originalStopProcessing();
+        
+        // Limpar timeout quando para manualmente
+        if (processingTimeout) {
+          clearTimeout(processingTimeout);
+          processingTimeout = null;
+        }
+      };
     }
 
     // Modal button handlers
@@ -824,6 +959,7 @@
     if (window.innerWidth <= 768) {
       renderModernCaptures();
       interceptClassicModal();
+      interceptErrors();
       
       // Watch for changes in the results table to update captures list
       const tbody = document.getElementById('resultsBody');
