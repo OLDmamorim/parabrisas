@@ -669,7 +669,7 @@
   <!-- App original (mantém-se igual) -->
   <script src="app.js"></script>
 
-  <!-- Script para a versão mobile moderna - VERSÃO CORRIGIDA -->
+  <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
   <script>
     // DOM Elements for modern mobile
     const modernCameraButton = document.getElementById('modernCameraButton');
@@ -694,7 +694,7 @@
       }, 3000);
     }
 
-    // Start processing animation - VERSÃO CORRIGIDA
+    // Start processing animation
     function startProcessing() {
       if (isProcessing) return;
       isProcessing = true;
@@ -725,7 +725,7 @@
       }, 45000); // 45 segundos
     }
 
-    // Stop processing animation - VERSÃO CORRIGIDA
+    // Stop processing animation
     function stopProcessing() {
       if (!isProcessing) return;
       isProcessing = false;
@@ -747,14 +747,12 @@
       }
     }
 
-    // Show modern eurocode modal - TIMING CORRIGIDO
+    // Show modern eurocode modal
     function showModernEurocodeModal(ocrText, eurocodes) {
       console.log('Mostrando modal de eurocode...');
       
-      // Pequeno delay para garantir que a animação para suavemente
-      setTimeout(() => {
-        stopProcessing();
-      }, 500);
+      // CORREÇÃO: Para a animação imediatamente quando o modal aparece
+      stopProcessing();
       
       if (!modernEurocodeModal) return;
       
@@ -778,6 +776,9 @@
             hideModernEurocodeModal();
             showModernStatus(`Eurocode ${selectedCode} selecionado!`, 'success');
             
+            // CORREÇÃO: Garantir que a animação para após seleção
+            stopProcessing();
+            
             // Usar a função original para guardar o eurocode
             if (window.saveEurocode) {
               window.saveEurocode(selectedCode, ocrText);
@@ -797,7 +798,8 @@
       if (modernEurocodeModal) {
         modernEurocodeModal.classList.remove('show');
       }
-      stopProcessing(); // Garantir que para a animação
+      // CORREÇÃO: Garantir que para a animação quando esconde o modal
+      stopProcessing();
     }
 
     // Render modern captures list from real data
@@ -846,7 +848,7 @@
       `).join('');
     }
 
-    // Modern camera button click - VERSÃO MELHORADA
+    // Modern camera button click
     if (modernCameraButton) {
       modernCameraButton.addEventListener('click', () => {
         if (isProcessing) {
@@ -865,7 +867,52 @@
       });
     }
 
-    // Interceptar o modal da versão clássica e mostrar na versão moderna - MELHORADO
+    // CORREÇÃO PRINCIPAL: Interceptar TODOS os eventos de sucesso
+    function interceptSuccessEvents() {
+      // Observar mudanças na tabela de resultados (indica sucesso)
+      const tbody = document.getElementById('resultsBody');
+      if (tbody) {
+        let lastRowCount = tbody.children.length;
+        
+        new MutationObserver((mutations) => {
+          const currentRowCount = tbody.children.length;
+          if (currentRowCount > lastRowCount) {
+            // Nova linha adicionada = sucesso
+            console.log('Nova captura detectada, parando animação...');
+            setTimeout(() => {
+              stopProcessing();
+              renderModernCaptures();
+            }, 500);
+          }
+          lastRowCount = currentRowCount;
+        }).observe(tbody, { childList: true });
+      }
+
+      // Observar mensagens de sucesso
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('sucesso') || 
+                    text.toLowerCase().includes('guardado') ||
+                    text.toLowerCase().includes('adicionado')) {
+                  console.log('Sucesso detectado:', text);
+                  setTimeout(() => {
+                    stopProcessing();
+                    renderModernCaptures();
+                  }, 500);
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+    }
+
+    // Interceptar o modal da versão clássica e mostrar na versão moderna
     function interceptClassicModal() {
       // Observar mudanças no DOM para detectar quando o modal clássico aparece
       const observer = new MutationObserver((mutations) => {
@@ -893,10 +940,8 @@
                     modal.style.display = 'none';
                     modal.classList.remove('show');
                     
-                    // Mostrar modal moderno com timing corrigido
-                    setTimeout(() => {
-                      showModernEurocodeModal(ocrText, eurocodes);
-                    }, 300);
+                    // Mostrar modal moderno (que já para a animação)
+                    showModernEurocodeModal(ocrText, eurocodes);
                   }
                 }
               }
@@ -913,7 +958,7 @@
       });
     }
 
-    // Interceptar erros para parar a animação - MELHORADO
+    // Interceptar erros para parar a animação
     function interceptErrors() {
       // Observar mensagens de erro
       const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
@@ -941,6 +986,9 @@
         hideModernEurocodeModal();
         showModernStatus('Guardado sem Eurocode', 'success');
         
+        // CORREÇÃO: Garantir que para a animação
+        stopProcessing();
+        
         // Usar a função original para guardar sem eurocode
         if (window.saveWithoutEurocode) {
           const ocrText = modernOcrText ? modernOcrText.textContent : '';
@@ -956,6 +1004,8 @@
       modernBtnCancel.addEventListener('click', () => {
         hideModernEurocodeModal();
         showModernStatus('Operação cancelada', 'error');
+        // CORREÇÃO: Para a animação quando cancela
+        stopProcessing();
       });
     }
 
@@ -965,6 +1015,8 @@
         if (e.target === modernEurocodeModal) {
           hideModernEurocodeModal();
           showModernStatus('Operação cancelada', 'error');
+          // CORREÇÃO: Para a animação quando fecha
+          stopProcessing();
         }
       });
     }
@@ -975,6 +1027,7 @@
       renderModernCaptures();
       interceptClassicModal();
       interceptErrors();
+      interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
       
       // Atualizar lista periodicamente
       setInterval(renderModernCaptures, 5000);
@@ -984,6 +1037,7 @@
     renderModernCaptures();
     interceptClassicModal();
     interceptErrors();
+    interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
   </script>
 
   <!-- Scripts originais mantidos -->
