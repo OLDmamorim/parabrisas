@@ -1,4 +1,4 @@
-import { GoogleAuth } from 'google-auth-library';
+import vision from "@google-cloud/vision";
 
 // Lista de marcas de vidros conhecidas
 const MARCAS_VIDROS = [
@@ -43,98 +43,72 @@ function detectarMarca(textoOCR) {
   return null;
 }
 
-export const handler = async (event, context) => {
-  // CORS headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-  };
+// Inicializar cliente do Google Vision
+const client = new vision.ImageAnnotatorClient({
+  credentials: JSON.parse(process.env.GCP_KEY_JSON)
+});
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
+const jsonHeaders = {
+  'content-type': 'application/json',
+  'access-control-allow-origin': '*'
+};
 
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
-  }
-
+export const handler = async (event) => {
   try {
-    const { imageBase64 } = JSON.parse(event.body);
-    
-    if (!imageBase64) {
+    if (event.httpMethod !== "POST") {
       return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Missing imageBase64' })
+        statusCode: 405,
+        headers: jsonHeaders,
+        body: JSON.stringify({ error: "Método não permitido" })
       };
     }
 
-    // Google Cloud Vision API
-    const auth = new GoogleAuth({
-      credentials: {
-        type: 'service_account',
-        project_id: process.env.GOOGLE_PROJECT_ID,
-        private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-        token_uri: 'https://oauth2.googleapis.com/token',
-        auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
-        client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.GOOGLE_CLIENT_EMAIL}`
-      },
-      scopes: ['https://www.googleapis.com/auth/cloud-platform']
-    });
-
-    const authClient = await auth.getClient();
-    const projectId = process.env.GOOGLE_PROJECT_ID;
-
-    const visionRequest = {
-      requests: [{
-        image: { content: imageBase64 },
-        features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
-      }]
-    };
-
-    const response = await authClient.request({
-      url: `https://vision.googleapis.com/v1/images:annotate`,
-      method: 'POST',
-      data: visionRequest
-    });
-
-    const detections = response.data.responses[0];
+    // Parse do body JSON (não multipart)
+    const { imageBase64 } = JSON.parse(event.body || '{}');
     
-    if (detections.error) {
-      throw new Error(detections.error.message);
+    if (!imageBase64) {
+      return { 
+        statusCode: 400, 
+        headers: jsonHeaders,
+        body: JSON.stringify({ error: "Nenhuma imagem enviada" }) 
+      };
     }
 
-    const text = detections.textAnnotations?.[0]?.description || '';
-    
+    // Converter base64 para buffer
+    const imageBuffer = Buffer.from(imageBase64, 'base64');
+
+    // Chamada ao Google Vision
+    const [result] = await client.textDetection({
+      image: { content: imageBuffer },
+      imageContext: {
+        languageHints: ["pt", "en"]
+      }
+    });
+
+    const detections = result.textAnnotations || [];
+    const text = detections.length ? detections[0].description : "";
+
     // Detectar marca no texto OCR
     const marcaDetectada = detectarMarca(text);
 
     return {
       statusCode: 200,
-      headers,
-      body: JSON.stringify({ 
-        text: text,
-        marca: marcaDetectada
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        text,
+        marca: marcaDetectada,
+        ok: true
       })
     };
 
-  } catch (error) {
-    console.error('OCR Error:', error);
+  } catch (err) {
+    console.error("Erro no OCR:", err);
     return {
       statusCode: 500,
-      headers,
-      body: JSON.stringify({ 
-        error: 'OCR processing failed',
-        details: error.message 
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        error: "OCR failure",
+        details: err.message
       })
     };
   }
