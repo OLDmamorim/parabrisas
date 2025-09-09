@@ -22,9 +22,17 @@ async function init() {
         filename text,
         source text,
         ip text,
-        euro_validado text
+        euro_validado text,
+        marca text
       )
     `;
+    
+    // Adicionar coluna marca se não existir
+    try {
+      await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS marca text`;
+    } catch (e) {
+      console.log('Coluna marca já existe ou erro menor:', e.message);
+    }
     inited = true;
   } catch (e) {
     console.error('Erro ao inicializar tabela:', e);
@@ -41,7 +49,7 @@ export const handler = async (event) => {
     await init();
 
     const rows = await sql`
-      select id, ts, text, filename, source, euro_validado
+      select id, ts, text, filename, source, euro_validado, marca
       from ocr_results
       order by ts desc
       limit 200

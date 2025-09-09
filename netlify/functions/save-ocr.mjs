@@ -22,9 +22,18 @@ async function init() {
         filename text,
         source text,
         ip text,
-        euro_validado text
+        euro_validado text,
+        marca text
       )
     `;
+    
+    // Adicionar coluna marca se não existir (para compatibilidade com BD existente)
+    try {
+      await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS marca text`;
+    } catch (e) {
+      // Coluna já existe ou erro menor, continuar
+      console.log('Coluna marca já existe ou erro menor:', e.message);
+    }
     inited = true;
   } catch (e) {
     console.error('Erro ao inicializar tabela:', e);
@@ -40,7 +49,7 @@ export const handler = async (event) => {
   try {
     await init();
 
-    const { ts, text, filename, source, euro_validado, eurocode } = JSON.parse(event.body || '{}');
+    const { ts, text, filename, source, euro_validado, eurocode, marca } = JSON.parse(event.body || '{}');
     if (!text && !filename) {
       return { statusCode: 400, headers: jsonHeaders, body: '"Texto ou filename obrigatório"' };
     }
@@ -63,9 +72,9 @@ export const handler = async (event) => {
     const euroFinal = euro_validado || eurocode || '';
 
     const rows = await sql`
-      insert into ocr_results (ts, text, filename, source, ip, euro_validado)
-      values (${tsDate}, ${text || ''}, ${filename || ''}, ${source || ''}, ${ip}, ${euroFinal})
-      returning id, ts, text, filename, source, euro_validado
+      insert into ocr_results (ts, text, filename, source, ip, euro_validado, marca)
+      values (${tsDate}, ${text || ''}, ${filename || ''}, ${source || ''}, ${ip}, ${euroFinal}, ${marca || ''})
+      returning id, ts, text, filename, source, euro_validado, marca
     `;
 
     return {

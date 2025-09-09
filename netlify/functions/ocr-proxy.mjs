@@ -1,5 +1,36 @@
 import vision from "@google-cloud/vision";
 
+// Lista de marcas de vidros conhecidas
+const MARCAS_VIDROS = [
+  'PILKINGTON', 'GUARDIAN', 'SAINT-GOBAIN', 'SEKURIT', 'FUYAO', 'XINYI', 'AGC', 'ASAHI', 'VITRO', 'CARDINAL',
+  'CARGLASS', 'BELRON', 'SAFELITE', 'AUTOGLASS', 'SPEEDY GLASS', 'GLASS DOCTOR',
+  'NIPPON SHEET GLASS', 'NSG', 'CENTRAL GLASS', 'SISECAM',
+  'SPLINTEX', 'LAMEX', 'TEMPERLITE', 'SOLEXIA', 'COOL-LITE', 'SUNGATE', 'CLIMAGUARD', 'ENERGY ADVANTAGE',
+  'AGC AUTOMOTIVE', 'GUARDIAN AUTOMOTIVE', 'PILKINGTON AUTOMOTIVE', 'SAINT GOBAIN', 'SAINT-GOBAIN SEKURIT',
+  'SEKURIT SAINT-GOBAIN', 'FUYAO GLASS', 'XINYI GLASS', 'CRISAL', 'VIDRIOS LIRQUEN', 'GUARDIAN LUXGUARD',
+  'CEBRACE', 'CORNING', 'SCHOTT', 'GUARDIAN GLASS', 'VITRO AUTOMOTIVE', 'MAGNA MIRRORS'
+];
+
+// Função para detectar marca no texto OCR
+function detectarMarca(textoOCR) {
+  if (!textoOCR || typeof textoOCR !== 'string') {
+    return null;
+  }
+  
+  const textoUpper = textoOCR.toUpperCase();
+  
+  // Procurar por cada marca na lista (ordenar por tamanho decrescente para priorizar marcas mais específicas)
+  const marcasOrdenadas = MARCAS_VIDROS.sort((a, b) => b.length - a.length);
+  
+  for (const marca of marcasOrdenadas) {
+    if (textoUpper.includes(marca.toUpperCase())) {
+      return marca;
+    }
+  }
+  
+  return null;
+}
+
 // Inicializar cliente do Google Vision
 const client = new vision.ImageAnnotatorClient({
   credentials: JSON.parse(process.env.GCP_KEY_JSON)
@@ -44,12 +75,16 @@ export const handler = async (event) => {
 
     const detections = result.textAnnotations || [];
     const text = detections.length ? detections[0].description : "";
+    
+    // Detectar marca no texto OCR
+    const marca = detectarMarca(text);
 
     return {
       statusCode: 200,
       headers: jsonHeaders,
       body: JSON.stringify({
         text,
+        marca,
         ok: true
       })
     };

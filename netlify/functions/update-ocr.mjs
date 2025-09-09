@@ -16,7 +16,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { id, text, eurocode, filename, source } = JSON.parse(event.body || '{}');
+    const { id, text, eurocode, filename, source, marca } = JSON.parse(event.body || '{}');
     
     if (!id) {
       return { statusCode: 400, headers: jsonHeaders, body: '"ID é obrigatório"' };
@@ -32,9 +32,10 @@ export const handler = async (event) => {
       set text = ${text || ''}, 
           euro_validado = ${eurocode || ''}, 
           filename = ${filename || ''}, 
-          source = ${source || ''}
+          source = ${source || ''},
+          marca = ${marca || ''}
       where id = ${id}
-      returning id, ts, text, filename, source, euro_validado
+      returning id, ts, text, filename, source, euro_validado, marca
     `;
 
     if (rows.length === 0) {
