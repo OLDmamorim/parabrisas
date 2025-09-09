@@ -57,7 +57,7 @@ body{
 /* CARDS */
 .card{
   position:relative;
-  width:min(1200px, 95vw);
+  width:min(960px, 92vw);
   margin:16px auto;
   background:var(--card);
   border:1px solid var(--cardBorder);
