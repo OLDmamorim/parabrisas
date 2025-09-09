@@ -1,14 +1,28 @@
-import vision from "@google-cloud/vision";
+import { GoogleAuth } from 'google-auth-library';
 
 // Lista de marcas de vidros conhecidas
 const MARCAS_VIDROS = [
+  // Marcas principais
   'PILKINGTON', 'GUARDIAN', 'SAINT-GOBAIN', 'SEKURIT', 'FUYAO', 'XINYI', 'AGC', 'ASAHI', 'VITRO', 'CARDINAL',
+  
+  // Marcas europeias
   'CARGLASS', 'BELRON', 'SAFELITE', 'AUTOGLASS', 'SPEEDY GLASS', 'GLASS DOCTOR',
+  
+  // Marcas asiáticas
   'NIPPON SHEET GLASS', 'NSG', 'CENTRAL GLASS', 'SISECAM',
+  
+  // Marcas específicas de parabrisas
   'SPLINTEX', 'LAMEX', 'TEMPERLITE', 'SOLEXIA', 'COOL-LITE', 'SUNGATE', 'CLIMAGUARD', 'ENERGY ADVANTAGE',
-  'AGC AUTOMOTIVE', 'GUARDIAN AUTOMOTIVE', 'PILKINGTON AUTOMOTIVE', 'SAINT GOBAIN', 'SAINT-GOBAIN SEKURIT',
-  'SEKURIT SAINT-GOBAIN', 'FUYAO GLASS', 'XINYI GLASS', 'CRISAL', 'VIDRIOS LIRQUEN', 'GUARDIAN LUXGUARD',
-  'CEBRACE', 'CORNING', 'SCHOTT', 'GUARDIAN GLASS', 'VITRO AUTOMOTIVE', 'MAGNA MIRRORS'
+  
+  // Variações e abreviações comuns
+  'AGC AUTOMOTIVE', 'GUARDIAN AUTOMOTIVE', 'PILKINGTON AUTOMOTIVE', 'SAINT GOBAIN', 'SAINT-GOBAIN SEKURIT', 
+  'SEKURIT SAINT-GOBAIN', 'FUYAO GLASS', 'XINYI GLASS',
+  
+  // Marcas portuguesas/ibéricas
+  'CRISAL', 'VIDRIOS LIRQUEN', 'GUARDIAN LUXGUARD', 'CEBRACE',
+  
+  // Outras marcas conhecidas
+  'CORNING', 'SCHOTT', 'GUARDIAN GLASS', 'VITRO AUTOMOTIVE', 'MAGNA MIRRORS'
 ];
 
 // Função para detectar marca no texto OCR
@@ -19,10 +33,8 @@ function detectarMarca(textoOCR) {
   
   const textoUpper = textoOCR.toUpperCase();
   
-  // Procurar por cada marca na lista (ordenar por tamanho decrescente para priorizar marcas mais específicas)
-  const marcasOrdenadas = MARCAS_VIDROS.sort((a, b) => b.length - a.length);
-  
-  for (const marca of marcasOrdenadas) {
+  // Procurar por cada marca na lista
+  for (const marca of MARCAS_VIDROS) {
     if (textoUpper.includes(marca.toUpperCase())) {
       return marca;
     }
@@ -31,73 +43,100 @@ function detectarMarca(textoOCR) {
   return null;
 }
 
-// Inicializar cliente do Google Vision
-const client = new vision.ImageAnnotatorClient({
-  credentials: JSON.parse(process.env.GCP_KEY_JSON)
-});
+export const handler = async (event, context) => {
+  // CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
 
-const jsonHeaders = {
-  'content-type': 'application/json',
-  'access-control-allow-origin': '*'
-};
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
 
-export const handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
   try {
-    if (event.httpMethod !== "POST") {
-      return {
-        statusCode: 405,
-        headers: jsonHeaders,
-        body: JSON.stringify({ error: "Método não permitido" })
-      };
-    }
-
-    // Parse do body JSON (não multipart)
-    const { imageBase64 } = JSON.parse(event.body || '{}');
+    const { imageBase64 } = JSON.parse(event.body);
     
     if (!imageBase64) {
-      return { 
-        statusCode: 400, 
-        headers: jsonHeaders,
-        body: JSON.stringify({ error: "Nenhuma imagem enviada" }) 
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Missing imageBase64' })
       };
     }
 
-    // Converter base64 para buffer
-    const imageBuffer = Buffer.from(imageBase64, 'base64');
-
-    // Chamada ao Google Vision
-    const [result] = await client.textDetection({
-      image: { content: imageBuffer },
-      imageContext: {
-        languageHints: ["pt", "en"]
-      }
+    // Google Cloud Vision API
+    const auth = new GoogleAuth({
+      credentials: {
+        type: 'service_account',
+        project_id: process.env.GOOGLE_PROJECT_ID,
+        private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+        token_uri: 'https://oauth2.googleapis.com/token',
+        auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+        client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.GOOGLE_CLIENT_EMAIL}`
+      },
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
     });
 
-    const detections = result.textAnnotations || [];
-    const text = detections.length ? detections[0].description : "";
+    const authClient = await auth.getClient();
+    const projectId = process.env.GOOGLE_PROJECT_ID;
+
+    const visionRequest = {
+      requests: [{
+        image: { content: imageBase64 },
+        features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
+      }]
+    };
+
+    const response = await authClient.request({
+      url: `https://vision.googleapis.com/v1/images:annotate`,
+      method: 'POST',
+      data: visionRequest
+    });
+
+    const detections = response.data.responses[0];
+    
+    if (detections.error) {
+      throw new Error(detections.error.message);
+    }
+
+    const text = detections.textAnnotations?.[0]?.description || '';
     
     // Detectar marca no texto OCR
-    const marca = detectarMarca(text);
+    const marcaDetectada = detectarMarca(text);
 
     return {
       statusCode: 200,
-      headers: jsonHeaders,
-      body: JSON.stringify({
-        text,
-        marca,
-        ok: true
+      headers,
+      body: JSON.stringify({ 
+        text: text,
+        marca: marcaDetectada
       })
     };
 
-  } catch (err) {
-    console.error("Erro no OCR:", err);
+  } catch (error) {
+    console.error('OCR Error:', error);
     return {
       statusCode: 500,
-      headers: jsonHeaders,
-      body: JSON.stringify({
-        error: "OCR failure",
-        details: err.message
+      headers,
+      body: JSON.stringify({ 
+        error: 'OCR processing failed',
+        details: error.message 
       })
     };
   }
 };
+

@@ -1,93 +1,78 @@
 import { neon } from '@neondatabase/serverless';
 
-const CONN = process.env.NEON_DATABASE_URL;
-if (!CONN) throw new Error('NEON_DATABASE_URL não definido');
+export const handler = async (event, context) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
 
-const sql = neon(CONN);
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
 
-const jsonHeaders = {
-  'content-type': 'application/json',
-  'access-control-allow-origin': '*'
-};
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
 
-let inited = false;
-async function init() {
-  if (inited) return;
   try {
+    const { text, eurocode, filename, marca } = JSON.parse(event.body);
+
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL not configured');
+    }
+
+    const sql = neon(process.env.DATABASE_URL);
+
+    // Criar tabela se não existir (com coluna marca)
     await sql`
-      create table if not exists ocr_results (
-        id bigserial primary key,
-        ts timestamptz not null default now(),
-        text text,
-        filename text,
-        source text,
-        ip text,
-        euro_validado text,
-        marca text
+      CREATE TABLE IF NOT EXISTS ocr_results (
+        id SERIAL PRIMARY KEY,
+        text TEXT,
+        eurocode VARCHAR(50),
+        filename VARCHAR(255),
+        marca VARCHAR(100),
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
-    
-    // Adicionar coluna marca se não existir (para compatibilidade com BD existente)
+
+    // Adicionar coluna marca se não existir (para compatibilidade retroativa)
     try {
-      await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS marca text`;
-    } catch (e) {
-      // Coluna já existe ou erro menor, continuar
-      console.log('Coluna marca já existe ou erro menor:', e.message);
-    }
-    inited = true;
-  } catch (e) {
-    console.error('Erro ao inicializar tabela:', e);
-    throw e;
-  }
-}
-
-export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: jsonHeaders, body: '"Method Not Allowed"' };
-  }
-
-  try {
-    await init();
-
-    const { ts, text, filename, source, euro_validado, eurocode, marca } = JSON.parse(event.body || '{}');
-    if (!text && !filename) {
-      return { statusCode: 400, headers: jsonHeaders, body: '"Texto ou filename obrigatório"' };
+      await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS marca VARCHAR(100)`;
+    } catch (error) {
+      // Coluna já existe, ignorar erro
     }
 
-    // Normalizar timestamp
-    const tsDate = (() => {
-      if (typeof ts === "number") return new Date(ts < 1e12 ? ts * 1000 : ts);
-      if (typeof ts === "string" && ts) {
-        const d = new Date(ts);
-        if (!Number.isNaN(d.getTime())) return d;
-      }
-      return new Date();
-    })();
-
-    const ip =
-      event.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-      event.headers['client-ip'] || null;
-
-    // Usar eurocode ou euro_validado
-    const euroFinal = euro_validado || eurocode || '';
-
-    const rows = await sql`
-      insert into ocr_results (ts, text, filename, source, ip, euro_validado, marca)
-      values (${tsDate}, ${text || ''}, ${filename || ''}, ${source || ''}, ${ip}, ${euroFinal}, ${marca || ''})
-      returning id, ts, text, filename, source, euro_validado, marca
+    // Inserir novo registo
+    const result = await sql`
+      INSERT INTO ocr_results (text, eurocode, filename, marca)
+      VALUES (${text || ''}, ${eurocode || ''}, ${filename || ''}, ${marca || ''})
+      RETURNING id, text, eurocode, filename, marca, timestamp
     `;
 
     return {
       statusCode: 200,
-      headers: jsonHeaders,
-      body: JSON.stringify({ ok: true, row: rows[0] })
+      headers,
+      body: JSON.stringify({
+        success: true,
+        data: result[0]
+      })
     };
-  } catch (e) {
-    console.error('Erro ao guardar:', e);
-    return { 
-      statusCode: 500, 
-      headers: jsonHeaders, 
-      body: JSON.stringify({ ok: false, error: e.message }) 
+
+  } catch (error) {
+    console.error('Save OCR Error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error: 'Failed to save OCR result',
+        details: error.message
+      })
     };
   }
 };
+
