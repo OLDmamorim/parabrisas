@@ -442,7 +442,7 @@ function renderTable() {
     const searchField = document.getElementById('searchField');
     const isSearching = searchField && searchField.value.trim();
     const message = isSearching ? 'Nenhum registo encontrado para esta procura' : 'Nenhum registo encontrado';
-    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">${message}</td></tr>`;
+    resultsBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
@@ -458,6 +458,7 @@ function renderTable() {
         ${row.text}
       </td>
       <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
+      <td style="font-weight: bold; color: #28a745;">${row.marca || ''}</td>
       <td>
         <div style="display: flex; gap: 8px; align-items: center;">
           <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
@@ -477,7 +478,7 @@ function renderTable() {
         </div>
       </td>
     </tr>
-  `;
+    `;
   }).join('');
 }
 
