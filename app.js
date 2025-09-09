@@ -591,22 +591,99 @@ async function clearTable() {
 }
 
 // =========================
-// Inicialização
+// Função para adicionar Event Listeners de forma robusta
 // =========================
+function addEventListeners() {
+  console.log('=== ADICIONANDO EVENT LISTENERS ===');
+  
+  const btnUpload = document.getElementById('btnUpload');
+  const fileInput = document.getElementById('fileInput');
+  const btnCamera = document.getElementById('btnCamera');
+  const cameraInput = document.getElementById('cameraInput');
+  const btnExport = document.getElementById('btnExport');
+  const btnClear = document.getElementById('btnClear');
+  
+  console.log('Elementos encontrados:', {
+    btnUpload: !!btnUpload,
+    fileInput: !!fileInput,
+    btnExport: !!btnExport,
+    btnClear: !!btnClear
+  });
+
+  if (btnUpload && fileInput) {
+    btnUpload.addEventListener('click', () => {
+      console.log('btnUpload clicado!');
+      fileInput.click();
+    });
+    console.log('Event listener btnUpload adicionado');
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      console.log('fileInput changed!');
+      const f = e.target.files[0];
+      if (f) processImage(f);
+    });
+    console.log('Event listener fileInput adicionado');
+  }
+
+  if (btnCamera && cameraInput) {
+    btnCamera.addEventListener('click', () => {
+      console.log('btnCamera clicado!');
+      cameraInput.click();
+    });
+    console.log('Event listener btnCamera adicionado');
+  }
+
+  if (cameraInput) {
+    cameraInput.addEventListener('change', (e) => {
+      console.log('cameraInput changed!');
+      const f = e.target.files[0];
+      if (f) processImage(f);
+    });
+    console.log('Event listener cameraInput adicionado');
+  }
+
+  if (btnExport) {
+    btnExport.addEventListener('click', () => {
+      console.log('btnExport clicado!');
+      exportCSV();
+    });
+    console.log('Event listener btnExport adicionado');
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener('click', () => {
+      console.log('btnClear clicado!');
+      clearTable();
+    });
+    console.log('Event listener btnClear adicionado');
+  }
+  
+  console.log('=== EVENT LISTENERS ADICIONADOS ===');
+}
+
+// =========================
+// Inicialização ROBUSTA
+// =========================
+
+// Método 1: Imediatamente (se DOM já estiver pronto)
+if (document.readyState === 'loading') {
+  console.log('DOM ainda carregando, aguardando DOMContentLoaded');
+} else {
+  console.log('DOM já pronto, adicionando event listeners imediatamente');
+  addEventListeners();
+}
+
+// Método 2: DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
-  addCustomCSS();     // injeta as regras finais
+  console.log('DOMContentLoaded executado');
+  addCustomCSS();
   loadResults();
   setTimeout(createSearchField, 100);
-
-  // =========================
-  // Event Listeners (movidos para dentro do DOMContentLoaded)
-  // =========================
-  if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
-  if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
-  if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', exportCSV);
-  if (btnClear)   btnClear.addEventListener('click', clearTable);
+  
+  // Adicionar event listeners
+  addEventListeners();
 
   const isMobile = window.innerWidth <= 768;
   const mobileView = document.getElementById('mobileView');
@@ -622,6 +699,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (desktopView) desktopView.style.display = 'block';
     if (viewBadge) viewBadge.textContent = 'Desktop';
   }
+});
+
+// Método 3: Fallback com setTimeout
+setTimeout(() => {
+  console.log('Fallback setTimeout executado');
+  addEventListeners();
+}, 1000);
+
+// Método 4: window.onload como último recurso
+window.addEventListener('load', () => {
+  console.log('window.onload executado');
+  addEventListeners();
 });
 
 // =========================
