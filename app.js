@@ -305,7 +305,8 @@ function openEditOcrModal(row) {
           text: newText,
           eurocode: row.eurocode || '',
           filename: row.filename || '',
-          source: row.source || ''
+          source: row.source || '',
+          marca: row.marca || ''
         })
       });
 
