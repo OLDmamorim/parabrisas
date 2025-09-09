@@ -591,22 +591,22 @@ async function clearTable() {
 }
 
 // =========================
-// Event Listeners
-// =========================
-if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
-if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
-if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-if (btnExport)  btnExport.addEventListener('click', exportCSV);
-if (btnClear)   btnClear.addEventListener('click', clearTable);
-
-// =========================
 // Inicialização
 // =========================
 document.addEventListener('DOMContentLoaded', () => {
   addCustomCSS();     // injeta as regras finais
   loadResults();
   setTimeout(createSearchField, 100);
+
+  // =========================
+  // Event Listeners (movidos para dentro do DOMContentLoaded)
+  // =========================
+  if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
+  if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
+  if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
+  if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
+  if (btnExport)  btnExport.addEventListener('click', exportCSV);
+  if (btnClear)   btnClear.addEventListener('click', clearTable);
 
   const isMobile = window.innerWidth <= 768;
   const mobileView = document.getElementById('mobileView');
