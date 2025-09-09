@@ -498,62 +498,104 @@
   <header class="header">
     <div class="brand">
       <div class="logo-container">
-        <img src="https://i.imgur.com/YourLogoHere.png" alt="EXPRESSGLASS" class="logo" 
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <div style="display: none; font-size: 24px; font-weight: bold; color: #007acc;">
-          EXPRESSGLASS
-        </div>
+        <img src="expressglass-logo.png" class="logo" alt="ExpressGlass - Vidros para Viaturas" />
       </div>
-      <div class="subtitle-new">Receção material</div>
+      <h1 class="title">EXPRESSGLASS</h1>
+      <p class="subtitle">Receção material</p>
+      <p class="subtitle-new">Receção material</p>
     </div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- MOBILE VIEW MODERNA -->
-  <section class="modern-mobile">
-    <div class="modern-main">
-      <div id="modernCameraButton" class="modern-circle">
-        <svg class="modern-progress-ring" width="196" height="196">
-          <circle cx="98" cy="98" r="90"></circle>
-        </svg>
-        <div class="modern-camera-icon">📷</div>
-        <div class="modern-camera-label">Capturar</div>
+  <!-- MOBILE VIEW ORIGINAL (escondida) -->
+  <main id="mobileView" class="card mobile-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    
+    <div class="mobile-cta">
+      <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
+          <span class="emoji">📷</span>
+          <span class="mode-label">Eurocode</span>
+        </button>
       </div>
     </div>
 
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <div id="mobileStatus" class="status"></div>
+
+    <!-- Histórico de Capturas -->
+    <div id="mobileHistory" class="history-section">
+      <h3 class="history-title">📋 Últimas Capturas</h3>
+      <div id="mobileHistoryList" class="history-list">
+        <p class="history-empty">Ainda não há Eurocodes guardados.</p>
+      </div>
+    </div>
+
+    <footer class="footnote">
+      <small>Feito por Marco Amorim</small>
+    </footer>
+  </main>
+
+  <!-- NOVA MOBILE VIEW MODERNA -->
+  <main class="modern-mobile mobile-only">
+    <!-- Status Message -->
+    <div id="modernStatus" class="modern-status"></div>
+
+    <!-- Main Container -->
+    <div class="modern-main">
+      <!-- Central Circle -->
+      <div class="modern-circle" id="modernCameraButton">
+        <!-- Progress Ring -->
+        <svg class="modern-progress-ring">
+          <circle cx="98" cy="98" r="92"></circle>
+        </svg>
+        
+        <!-- Camera Icon -->
+        <div class="modern-camera-icon">📷</div>
+        <div class="modern-camera-label">Eurocode</div>
+      </div>
+    </div>
+
+    <!-- Bottom Card -->
     <div class="modern-bottom-card">
       <div class="modern-captures-header">
-        <div class="modern-captures-icon">📋</div>
-        <div class="modern-captures-title">Últimas Capturas</div>
+        <span class="modern-captures-icon">📋</span>
+        <h2 class="modern-captures-title">Últimas Capturas</h2>
       </div>
+
       <div id="modernCapturesList" class="modern-capture-list">
-        <div class="modern-empty-state">
-          <div class="modern-empty-icon">📷</div>
-          <div class="modern-empty-text">Ainda não há capturas</div>
-        </div>
+        <!-- Will be populated by JavaScript -->
       </div>
     </div>
-  </section>
+  </main>
 
-  <!-- Status message for modern mobile -->
-  <div id="modernStatus" class="modern-status"></div>
-
-  <!-- Modal de seleção de Eurocode para mobile -->
+  <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
   <div id="modernEurocodeModal" class="modern-eurocode-modal">
     <div class="modern-modal-content">
       <div class="modern-modal-header">
-        <div class="modern-modal-icon">🔍</div>
+        <span class="modern-modal-icon">🔍</span>
         <h3 class="modern-modal-title">Selecionar Eurocode</h3>
       </div>
+      
       <div class="modern-modal-body">
+        <!-- Texto lido -->
         <div class="modern-ocr-section">
           <label class="modern-ocr-label">Texto lido:</label>
-          <div id="modernOcrText" class="modern-ocr-text"></div>
+          <div id="modernOcrText" class="modern-ocr-text">
+            <!-- OCR text will be inserted here -->
+          </div>
         </div>
+
+        <!-- Eurocódigos encontrados -->
         <div class="modern-eurocodes-section">
-          <label class="modern-eurocodes-label">Eurocodes encontrados:</label>
-          <div id="modernEurocodeList" class="modern-eurocode-list"></div>
+          <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
+          <div id="modernEurocodeList" class="modern-eurocode-list">
+            <!-- Eurocode buttons will be inserted here -->
+          </div>
         </div>
       </div>
+
       <div class="modern-modal-footer">
         <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
         <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
@@ -581,7 +623,6 @@
             <th style="width:220px">Data/Hora</th>
             <th style="width:auto">Texto lido (Eurocode)</th>
             <th style="width:180px">Eurocode</th>
-            <th style="width:120px">Marca</th>
             <th style="width:140px">Ações</th>
           </tr>
         </thead>
@@ -658,31 +699,48 @@
       if (isProcessing) return;
       isProcessing = true;
       
+      console.log('Iniciando processamento...');
+      
       if (modernCameraButton) {
         modernCameraButton.classList.add('processing');
         const label = modernCameraButton.querySelector('.modern-camera-label');
-        if (label) label.textContent = 'Processando...';
+        if (label) {
+          label.textContent = 'A processar...';
+        }
       }
       
       showModernStatus('A processar imagem...', 'processing');
       
-      // Auto-stop after 30 seconds as safety
+      // Timeout aumentado para 45 segundos
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+      
       processingTimeout = setTimeout(() => {
-        stopProcessing();
-        showModernStatus('Tempo limite excedido', 'error');
-      }, 30000);
+        if (isProcessing) {
+          console.log('Timeout de processamento atingido');
+          stopProcessing();
+          showModernStatus('Timeout - tente novamente', 'error');
+        }
+      }, 45000); // 45 segundos
     }
 
     // Stop processing animation
     function stopProcessing() {
+      if (!isProcessing) return;
       isProcessing = false;
+      
+      console.log('Parando processamento...');
       
       if (modernCameraButton) {
         modernCameraButton.classList.remove('processing');
         const label = modernCameraButton.querySelector('.modern-camera-label');
-        if (label) label.textContent = 'Capturar';
+        if (label) {
+          label.textContent = 'Eurocode';
+        }
       }
       
+      // Limpar timeout
       if (processingTimeout) {
         clearTimeout(processingTimeout);
         processingTimeout = null;
@@ -691,32 +749,47 @@
 
     // Show modern eurocode modal
     function showModernEurocodeModal(ocrText, eurocodes) {
-      if (!modernEurocodeModal || !modernOcrText || !modernEurocodeList) return;
+      console.log('Mostrando modal de eurocode...');
+      
+      // CORREÇÃO: Para a animação imediatamente quando o modal aparece
+      stopProcessing();
+      
+      if (!modernEurocodeModal) return;
       
       // Set OCR text
-      modernOcrText.textContent = ocrText;
-      
-      // Clear and populate eurocode list
-      modernEurocodeList.innerHTML = '';
-      
-      if (eurocodes && eurocodes.length > 0) {
-        eurocodes.forEach(code => {
-          const button = document.createElement('button');
-          button.className = 'modern-eurocode-button';
-          button.textContent = code;
-          button.onclick = () => selectModernEurocode(code);
-          modernEurocodeList.appendChild(button);
-        });
-      } else {
-        const noCodesMsg = document.createElement('div');
-        noCodesMsg.textContent = 'Nenhum Eurocode encontrado';
-        noCodesMsg.style.textAlign = 'center';
-        noCodesMsg.style.color = '#6b7280';
-        noCodesMsg.style.padding = '20px';
-        modernEurocodeList.appendChild(noCodesMsg);
+      if (modernOcrText) {
+        modernOcrText.textContent = ocrText;
       }
-      
-      // Show modal
+
+      // Set eurocode buttons
+      if (modernEurocodeList) {
+        modernEurocodeList.innerHTML = eurocodes.map(code => `
+          <button class="modern-eurocode-button" data-eurocode="${code}">
+            ${code}
+          </button>
+        `).join('');
+
+        // Add click handlers to eurocode buttons
+        modernEurocodeList.querySelectorAll('.modern-eurocode-button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const selectedCode = btn.dataset.eurocode;
+            hideModernEurocodeModal();
+            showModernStatus(`Eurocode ${selectedCode} selecionado!`, 'success');
+            
+            // CORREÇÃO: Garantir que a animação para após seleção
+            stopProcessing();
+            
+            // Usar a função original para guardar o eurocode
+            if (window.saveEurocode) {
+              window.saveEurocode(selectedCode, ocrText);
+            }
+            
+            // Atualizar lista de capturas
+            setTimeout(renderModernCaptures, 500);
+          });
+        });
+      }
+
       modernEurocodeModal.classList.add('show');
     }
 
@@ -725,77 +798,15 @@
       if (modernEurocodeModal) {
         modernEurocodeModal.classList.remove('show');
       }
-    }
-
-    // Select eurocode in modern interface
-    function selectModernEurocode(code) {
-      hideModernEurocodeModal();
-      
-      // Here you would typically save to database
-      // For now, just show success message
-      showModernStatus(`Eurocode ${code} guardado!`, 'success');
+      // CORREÇÃO: Garantir que para a animação quando esconde o modal
       stopProcessing();
-      
-      // Refresh captures list
-      setTimeout(renderModernCaptures, 1000);
     }
 
-    // Extract eurocodes from text (same logic as desktop)
-    function extractEurocodes(text) {
-      if (!text) return [];
-      const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
-      const matches = text.match(pattern) || [];
-      const unique = [...new Set(matches)];
-      return unique.sort((a, b) => b.length - a.length).slice(0, 4);
-    }
-
-    // Process image for modern interface
-    async function processModernImage(file) {
-      if (!file) return;
-      
-      startProcessing();
-      
-      try {
-        // Convert to base64
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-
-        // Call OCR API
-        const response = await fetch('/.netlify/functions/ocr-proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64 })
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const data = await response.json();
-        const ocrText = data.text || '';
-        
-        if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
-        
-        // Extract eurocodes
-        const eurocodes = extractEurocodes(ocrText);
-        
-        // Show modal for eurocode selection
-        showModernEurocodeModal(ocrText, eurocodes);
-        
-      } catch (error) {
-        console.error('Erro ao processar imagem:', error);
-        showModernStatus('Erro ao processar imagem: ' + error.message, 'error');
-        stopProcessing();
-      }
-    }
-
-    // Render modern captures list
+    // Render modern captures list from real data
     function renderModernCaptures() {
       if (!modernCapturesList) return;
       
-      // Try to get data from desktop table
+      // Get real data from the original system
       const tbody = document.getElementById('resultsBody');
       if (!tbody) {
         modernCapturesList.innerHTML = `
@@ -806,27 +817,19 @@
         `;
         return;
       }
-      
+
       const rows = Array.from(tbody.querySelectorAll('tr'));
-      if (rows.length === 0) {
-        modernCapturesList.innerHTML = `
-          <div class="modern-empty-state">
-            <div class="modern-empty-icon">📷</div>
-            <div class="modern-empty-text">Ainda não há capturas</div>
-          </div>
-        `;
-        return;
-      }
+      const captures = [];
       
-      // Get last 5 captures
-      const captures = rows.slice(0, 5).map(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 4) {
-          return cells[3]?.textContent?.trim() || 'Sem código';
+      for (const tr of rows) {
+        const td = tr.querySelector('td:nth-child(4)'); // Eurocode column
+        if (td) {
+          const code = (td.innerText || td.textContent || '').trim().split(/\s+/)[0];
+          if (code) captures.push(code);
         }
-        return null;
-      }).filter(Boolean);
-      
+        if (captures.length >= 5) break; // Limit to 5 most recent
+      }
+
       if (captures.length === 0) {
         modernCapturesList.innerHTML = `
           <div class="modern-empty-state">
@@ -836,116 +839,167 @@
         `;
         return;
       }
-      
+
       modernCapturesList.innerHTML = captures.map(code => `
         <div class="modern-capture-item">
-          <div class="modern-capture-code">${code}</div>
-          <div class="modern-capture-check">✓</div>
+          <span class="modern-capture-code">${code}</span>
+          <span class="modern-capture-check">✓</span>
         </div>
       `).join('');
     }
 
-    // Intercept classic modal and redirect to modern
-    function interceptClassicModal() {
-      // Override the classic showEurocodeValidationModal function
-      if (window.showEurocodeValidationModal) {
-        const originalFunction = window.showEurocodeValidationModal;
-        window.showEurocodeValidationModal = function(ocrText, filename, source) {
-          // Check if we're on mobile
-          if (window.innerWidth <= 768) {
-            const eurocodes = extractEurocodes(ocrText);
-            showModernEurocodeModal(ocrText, eurocodes);
-            return;
-          }
-          // Use original function for desktop
-          return originalFunction.call(this, ocrText, filename, source);
-        };
-      }
-    }
-
-    // Intercept errors and show in modern interface
-    function interceptErrors() {
-      // Listen for error events
-      window.addEventListener('error', (e) => {
-        if (window.innerWidth <= 768) {
-          showModernStatus('Erro: ' + e.message, 'error');
-          stopProcessing();
-        }
-      });
-      
-      // Intercept fetch errors
-      const originalFetch = window.fetch;
-      window.fetch = async function(...args) {
-        try {
-          const response = await originalFetch.apply(this, args);
-          if (!response.ok && window.innerWidth <= 768) {
-            showModernStatus(`Erro HTTP ${response.status}`, 'error');
-            stopProcessing();
-          }
-          return response;
-        } catch (error) {
-          if (window.innerWidth <= 768) {
-            showModernStatus('Erro de rede', 'error');
-            stopProcessing();
-          }
-          throw error;
-        }
-      };
-    }
-
-    // Intercept success events
-    function interceptSuccessEvents() {
-      // Listen for successful saves
-      const originalSaveToDatabase = window.saveToDatabase;
-      if (originalSaveToDatabase) {
-        window.saveToDatabase = async function(...args) {
-          try {
-            const result = await originalSaveToDatabase.apply(this, args);
-            if (window.innerWidth <= 768) {
-              showModernStatus('Dados guardados com sucesso!', 'success');
-              setTimeout(renderModernCaptures, 1000);
-            }
-            return result;
-          } catch (error) {
-            if (window.innerWidth <= 768) {
-              showModernStatus('Erro ao guardar dados', 'error');
-            }
-            throw error;
-          }
-        };
-      }
-    }
-
-    // Camera button click handler
+    // Modern camera button click
     if (modernCameraButton) {
       modernCameraButton.addEventListener('click', () => {
-        if (isProcessing) return;
+        if (isProcessing) {
+          console.log('Clique ignorado - já está a processar');
+          return; // Prevenir cliques durante processamento
+        }
         
-        // Create file input
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.capture = 'environment'; // Use back camera
+        console.log('Clique no botão da câmara moderna');
+        startProcessing(); // Iniciar animação
         
-        input.onchange = (e) => {
-          const file = e.target.files[0];
-          if (file) {
-            processModernImage(file);
-          }
-        };
-        
-        input.click();
+        // Simular clique no botão da versão clássica (que funciona)
+        const classicCameraBtn = document.getElementById('btnCamera');
+        if (classicCameraBtn) {
+          classicCameraBtn.click();
+        }
       });
     }
 
-    // No eurocode button handler
+    // CORREÇÃO PRINCIPAL: Interceptar TODOS os eventos de sucesso
+    function interceptSuccessEvents() {
+      // Observar mudanças na tabela de resultados (indica sucesso)
+      const tbody = document.getElementById('resultsBody');
+      if (tbody) {
+        let lastRowCount = tbody.children.length;
+        
+        new MutationObserver((mutations) => {
+          const currentRowCount = tbody.children.length;
+          if (currentRowCount > lastRowCount) {
+            // Nova linha adicionada = sucesso
+            console.log('Nova captura detectada, parando animação...');
+            setTimeout(() => {
+              stopProcessing();
+              renderModernCaptures();
+            }, 500);
+          }
+          lastRowCount = currentRowCount;
+        }).observe(tbody, { childList: true });
+      }
+
+      // Observar mensagens de sucesso
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('sucesso') || 
+                    text.toLowerCase().includes('guardado') ||
+                    text.toLowerCase().includes('adicionado')) {
+                  console.log('Sucesso detectado:', text);
+                  setTimeout(() => {
+                    stopProcessing();
+                    renderModernCaptures();
+                  }, 500);
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+    }
+
+    // Interceptar o modal da versão clássica e mostrar na versão moderna
+    function interceptClassicModal() {
+      // Observar mudanças no DOM para detectar quando o modal clássico aparece
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            // Procurar por modais de validação de eurocode
+            const modals = document.querySelectorAll('[id*="modal"], [class*="modal"]');
+            modals.forEach((modal) => {
+              if (modal.style.display === 'block' || modal.classList.contains('show')) {
+                const modalText = modal.textContent || modal.innerText || '';
+                if (modalText.includes('Selecionar Eurocode') || modalText.includes('Eurocode')) {
+                  console.log('Modal clássico detectado, interceptando...');
+                  
+                  // Extrair dados do modal clássico
+                  const ocrTextEl = modal.querySelector('[id*="ocr"], [class*="ocr"]');
+                  const eurocodeButtons = modal.querySelectorAll('button[data-eurocode], button[onclick*="eurocode"]');
+                  
+                  if (ocrTextEl || eurocodeButtons.length > 0) {
+                    const ocrText = ocrTextEl ? (ocrTextEl.textContent || ocrTextEl.innerText || '') : '';
+                    const eurocodes = Array.from(eurocodeButtons).map(btn => 
+                      btn.dataset.eurocode || btn.textContent.trim()
+                    ).filter(Boolean);
+                    
+                    // Esconder modal clássico
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    
+                    // Mostrar modal moderno (que já para a animação)
+                    showModernEurocodeModal(ocrText, eurocodes);
+                  }
+                }
+              }
+            });
+          }
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      });
+    }
+
+    // Interceptar erros para parar a animação
+    function interceptErrors() {
+      // Observar mensagens de erro
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('erro') || text.toLowerCase().includes('error')) {
+                  console.log('Erro detectado:', text);
+                  stopProcessing();
+                  showModernStatus('Erro ao processar imagem', 'error');
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+    }
+
+    // Modal button handlers
     if (modernBtnNoEurocode) {
       modernBtnNoEurocode.addEventListener('click', () => {
-        selectModernEurocode('');
+        hideModernEurocodeModal();
+        showModernStatus('Guardado sem Eurocode', 'success');
+        
+        // CORREÇÃO: Garantir que para a animação
+        stopProcessing();
+        
+        // Usar a função original para guardar sem eurocode
+        if (window.saveWithoutEurocode) {
+          const ocrText = modernOcrText ? modernOcrText.textContent : '';
+          window.saveWithoutEurocode(ocrText);
+        }
+        
+        // Atualizar lista de capturas
+        setTimeout(renderModernCaptures, 500);
       });
     }
 
-    // Cancel button handler
     if (modernBtnCancel) {
       modernBtnCancel.addEventListener('click', () => {
         hideModernEurocodeModal();
@@ -990,10 +1044,7 @@
   <script>
   (function(){
     const listEl = document.getElementById('mobileHistoryList');
-    if (!listEl) {
-      console.log('mobileHistoryList não encontrado');
-      return;
-    }
+    if (!listEl) return;
 
     async function fetchRowsFromAPI(){
       try {
@@ -1101,4 +1152,3 @@
   </script>
 </body>
 </html>
-

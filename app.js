@@ -149,12 +149,14 @@ function filterResults(searchTerm) {
 }
 
 // =========================
-// Extração de Eurocodes Melhorada
+// Extração de Eurocodes Melhorada - CORRIGIDA
 // =========================
 function extractAllEurocodes(text) {
   if (!text) return [];
 
-  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
+  // CORREÇÃO: Aumentar limite de caracteres de {0,6} para {0,12}
+  // Isto permite reconhecer códigos como "2765AGACIMOVZ" (4 dígitos + 2 letras + 7 caracteres)
+  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,12}\b/g;
   const matches = text.match(pattern) || [];
 
   const unique = [...new Set(matches)];
@@ -162,13 +164,14 @@ function extractAllEurocodes(text) {
 }
 
 // =========================
-// Modal de Validação de Eurocode
-// =========================function showEurocodeValidationModal(ocrText, filename, source, marca = null) {
+// Modal de Validação de Eurocode - CSS CORRIGIDO
+// =========================
+function showEurocodeValidationModal(ocrText, filename, source) {
   const eurocodes = extractAllEurocodes(ocrText);
 
   if (eurocodes.length === 0) {
     if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
-      saveToDatabase(ocrText, '', filename, source, marca);
+      saveToDatabase(ocrText, '', filename, source);
     }
     return;
   }
@@ -186,20 +189,18 @@ function extractAllEurocodes(text) {
     max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   `;
 
-  const marcaInfo = marca ? `<p style="margin-bottom: 15px; color: #28a745; font-weight: bold;">🏷️ Marca detectada: ${marca}</p>` : '';
-
   content.innerHTML = `
     <h3 style="margin-top: 0; color: #333; text-align: center;">
       🔍 Selecionar Eurocode
     </h3>
     <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; max-height: 150px; overflow-y: auto;">
-      <strong>Texto lido:</strong><br>
-      <span style="font-size: 12px; line-height: 1.4;">${ocrText.replace(/\n/g, '<br>')}</span>
+      <strong style="color: #333;">Texto lido:</strong><br>
+      <span style="font-size: 12px; line-height: 1.4; color: #333; font-weight: normal;">${ocrText.replace(/\n/g, '<br>')}</span>
     </div>
-    ${marcaInfo}
     <p style="margin-bottom: 15px; color: #666;">
       <strong>Eurocodes encontrados:</strong> Clique no correto
-    </p>`;    <div id="eurocodeOptions" style="margin-bottom: 20px;">
+    </p>
+    <div id="eurocodeOptions" style="margin-bottom: 20px;">
       ${eurocodes.map((code) => `
         <button onclick="selectEurocode('${code}')" 
                 style="display: block; width: 100%; padding: 12px; margin-bottom: 8px; 
@@ -229,13 +230,13 @@ function extractAllEurocodes(text) {
   document.body.appendChild(modal);
 
   window.currentEurocodeModal = modal;
-  window.currentImageData = { ocrText, filename, source, marca };
+  window.currentImageData = { ocrText, filename, source };
 }
 
 window.selectEurocode = function(selectedCode) {
-  const { ocrText, filename, source, marca } = window.currentImageData;
+  const { ocrText, filename, source } = window.currentImageData;
   closeEurocodeModal();
-  saveToDatabase(ocrText, selectedCode, filename, source, marca);
+  saveToDatabase(ocrText, selectedCode, filename, source);
 };
 
 window.closeEurocodeModal = function() {
@@ -249,7 +250,7 @@ window.closeEurocodeModal = function() {
 // =========================
 // Guardar na Base de Dados
 // =========================
-async function saveToDatabase(text, eurocode, filename, source, marca = null) {
+async function saveToDatabase(text, eurocode, filename, source) {
   try {
     setStatus(desktopStatus, 'A guardar na base de dados...');
     setStatus(mobileStatus, 'A guardar na base de dados...');
@@ -257,7 +258,7 @@ async function saveToDatabase(text, eurocode, filename, source, marca = null) {
     const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, eurocode, filename, source, marca })
+      body: JSON.stringify({ text, eurocode, filename, source })
     });
 
     if (response.ok) {
@@ -376,7 +377,6 @@ function normalizeRow(r){
     timestamp:   timestamp,
     text:        r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
     eurocode:    r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
-    marca:       r.marca ?? r.brand ?? r.fabricante ?? '',
     filename:    r.filename ?? r.file ?? '',
     source:      r.source ?? r.origem ?? ''
   };
@@ -393,14 +393,11 @@ async function runOCR(imageBase64) {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return {
-      text: data.text || data.fullText || data.raw || '',
-      marca: data.marca || null
-    };
+    return data.text || data.fullText || data.raw || '';
   } catch (err) {
     console.error('Erro no OCR:', err);
     showToast('Erro no OCR', 'error');
-    return { text: '', marca: null };
+    return '';
   }
 }
 
@@ -445,7 +442,7 @@ function renderTable() {
     const searchField = document.getElementById('searchField');
     const isSearching = searchField && searchField.value.trim();
     const message = isSearching ? 'Nenhum registo encontrado para esta procura' : 'Nenhum registo encontrado';
-    resultsBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">${message}</td></tr>`;
+    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
@@ -461,7 +458,6 @@ function renderTable() {
         ${row.text}
       </td>
       <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
-      <td style="font-weight: bold; color: #28a745;">${row.marca || ''}</td>
       <td>
         <div style="display: flex; gap: 8px; align-items: center;">
           <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
@@ -474,14 +470,14 @@ function renderTable() {
           <button onclick="deleteRow(${row.id})" 
                   style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
                   title="Eliminar registo"
-                  onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
-                  onmouseout="this.style.background='none'">
-            🗑️ Apagar
+                  onmouseover="this.style.background='rgba(220,53,69,0.1)'; this.style.color='#dc3545'" 
+                  onmouseout="this.style.background='none'; this.style.color='#dc3545'">
+            🗑️ Eliminar
           </button>
         </div>
       </td>
     </tr>
-  `;
+    `;
   }).join('');
 }
 
@@ -502,7 +498,7 @@ async function deleteRow(id) {
       showToast('Registo eliminado com sucesso!', 'success');
       await loadResults();
     } else {
-      throw new Error('Erro ao eliminar');
+      throw new Error('Erro ao eliminar registo');
     }
   } catch (error) {
     console.error('Erro ao eliminar:', error);
@@ -529,13 +525,13 @@ async function processImage(file) {
       reader.readAsDataURL(file);
     });
 
-    const ocrResult = await runOCR(base64);
-    if (!ocrResult.text) throw new Error('Nenhum texto encontrado na imagem');
+    const ocrText = await runOCR(base64);
+    if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
 
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
 
-    showEurocodeValidationModal(ocrResult.text, file.name, 'upload', ocrResult.marca);
+    showEurocodeValidationModal(ocrText, file.name, 'upload');
   } catch (error) {
     console.error('Erro ao processar imagem:', error);
     showToast('Erro ao processar imagem: ' + error.message, 'error');
@@ -553,7 +549,7 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Marca', 'Ficheiro'];
+  const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Ficheiro'];
   const csvContent = [
     headers.join(','),
     ...dataToExport.map((row, index) => [
@@ -561,7 +557,6 @@ function exportCSV() {
       `"${row.timestamp}"`,
       `"${(row.text || '').replace(/"/g, '""')}"`,
       `"${row.eurocode || ''}"`,
-      `"${row.marca || ''}"`,
       `"${row.filename || ''}"`
     ].join(','))
   ].join('\n');
