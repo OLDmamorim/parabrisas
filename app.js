@@ -458,6 +458,7 @@ function renderTable() {
         ${row.text}
       </td>
       <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
+      <td style="color: #22c55e; font-weight: 600;">${row.marca || ''}</td>
       <td>
         <div style="display: flex; gap: 8px; align-items: center;">
           <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
@@ -549,7 +550,7 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Ficheiro'];
+  const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Marca', 'Ficheiro'];
   const csvContent = [
     headers.join(','),
     ...dataToExport.map((row, index) => [
@@ -557,6 +558,7 @@ function exportCSV() {
       `"${row.timestamp}"`,
       `"${(row.text || '').replace(/"/g, '""')}"`,
       `"${row.eurocode || ''}"`,
+      `"${row.marca || ''}"`,
       `"${row.filename || ''}"`
     ].join(','))
   ].join('\n');
