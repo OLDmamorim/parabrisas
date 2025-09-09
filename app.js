@@ -149,12 +149,14 @@ function filterResults(searchTerm) {
 }
 
 // =========================
-// Extração de Eurocodes Melhorada
+// Extração de Eurocodes Melhorada - CORRIGIDA
 // =========================
 function extractAllEurocodes(text) {
   if (!text) return [];
 
-  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
+  // CORREÇÃO: Aumentar limite de caracteres de {0,6} para {0,12}
+  // Isto permite reconhecer códigos como "2765AGACIMOVZ" (4 dígitos + 2 letras + 7 caracteres)
+  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,12}\b/g;
   const matches = text.match(pattern) || [];
 
   const unique = [...new Set(matches)];
@@ -162,7 +164,7 @@ function extractAllEurocodes(text) {
 }
 
 // =========================
-// Modal de Validação de Eurocode
+// Modal de Validação de Eurocode - CSS CORRIGIDO
 // =========================
 function showEurocodeValidationModal(ocrText, filename, source) {
   const eurocodes = extractAllEurocodes(ocrText);
@@ -192,8 +194,8 @@ function showEurocodeValidationModal(ocrText, filename, source) {
       🔍 Selecionar Eurocode
     </h3>
     <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; max-height: 150px; overflow-y: auto;">
-      <strong>Texto lido:</strong><br>
-      <span style="font-size: 12px; line-height: 1.4;">${ocrText.replace(/\n/g, '<br>')}</span>
+      <strong style="color: #333;">Texto lido:</strong><br>
+      <span style="font-size: 12px; line-height: 1.4; color: #333; font-weight: normal;">${ocrText.replace(/\n/g, '<br>')}</span>
     </div>
     <p style="margin-bottom: 15px; color: #666;">
       <strong>Eurocodes encontrados:</strong> Clique no correto
@@ -468,14 +470,14 @@ function renderTable() {
           <button onclick="deleteRow(${row.id})" 
                   style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
                   title="Eliminar registo"
-                  onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
-                  onmouseout="this.style.background='none'">
-            🗑️ Apagar
+                  onmouseover="this.style.background='rgba(220,53,69,0.1)'; this.style.color='#dc3545'" 
+                  onmouseout="this.style.background='none'; this.style.color='#dc3545'">
+            🗑️ Eliminar
           </button>
         </div>
       </td>
     </tr>
-  `;
+    `;
   }).join('');
 }
 
@@ -496,7 +498,7 @@ async function deleteRow(id) {
       showToast('Registo eliminado com sucesso!', 'success');
       await loadResults();
     } else {
-      throw new Error('Erro ao eliminar');
+      throw new Error('Erro ao eliminar registo');
     }
   } catch (error) {
     console.error('Erro ao eliminar:', error);
@@ -591,99 +593,22 @@ async function clearTable() {
 }
 
 // =========================
-// Função para adicionar Event Listeners de forma robusta
+// Event Listeners
 // =========================
-function addEventListeners() {
-  console.log('=== ADICIONANDO EVENT LISTENERS ===');
-  
-  const btnUpload = document.getElementById('btnUpload');
-  const fileInput = document.getElementById('fileInput');
-  const btnCamera = document.getElementById('btnCamera');
-  const cameraInput = document.getElementById('cameraInput');
-  const btnExport = document.getElementById('btnExport');
-  const btnClear = document.getElementById('btnClear');
-  
-  console.log('Elementos encontrados:', {
-    btnUpload: !!btnUpload,
-    fileInput: !!fileInput,
-    btnExport: !!btnExport,
-    btnClear: !!btnClear
-  });
-
-  if (btnUpload && fileInput) {
-    btnUpload.addEventListener('click', () => {
-      console.log('btnUpload clicado!');
-      fileInput.click();
-    });
-    console.log('Event listener btnUpload adicionado');
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener('change', (e) => {
-      console.log('fileInput changed!');
-      const f = e.target.files[0];
-      if (f) processImage(f);
-    });
-    console.log('Event listener fileInput adicionado');
-  }
-
-  if (btnCamera && cameraInput) {
-    btnCamera.addEventListener('click', () => {
-      console.log('btnCamera clicado!');
-      cameraInput.click();
-    });
-    console.log('Event listener btnCamera adicionado');
-  }
-
-  if (cameraInput) {
-    cameraInput.addEventListener('change', (e) => {
-      console.log('cameraInput changed!');
-      const f = e.target.files[0];
-      if (f) processImage(f);
-    });
-    console.log('Event listener cameraInput adicionado');
-  }
-
-  if (btnExport) {
-    btnExport.addEventListener('click', () => {
-      console.log('btnExport clicado!');
-      exportCSV();
-    });
-    console.log('Event listener btnExport adicionado');
-  }
-
-  if (btnClear) {
-    btnClear.addEventListener('click', () => {
-      console.log('btnClear clicado!');
-      clearTable();
-    });
-    console.log('Event listener btnClear adicionado');
-  }
-  
-  console.log('=== EVENT LISTENERS ADICIONADOS ===');
-}
+if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
+if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
+if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
+if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
+if (btnExport)  btnExport.addEventListener('click', exportCSV);
+if (btnClear)   btnClear.addEventListener('click', clearTable);
 
 // =========================
-// Inicialização ROBUSTA
+// Inicialização
 // =========================
-
-// Método 1: Imediatamente (se DOM já estiver pronto)
-if (document.readyState === 'loading') {
-  console.log('DOM ainda carregando, aguardando DOMContentLoaded');
-} else {
-  console.log('DOM já pronto, adicionando event listeners imediatamente');
-  addEventListeners();
-}
-
-// Método 2: DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOMContentLoaded executado');
-  addCustomCSS();
+  addCustomCSS();     // injeta as regras finais
   loadResults();
   setTimeout(createSearchField, 100);
-  
-  // Adicionar event listeners
-  addEventListeners();
 
   const isMobile = window.innerWidth <= 768;
   const mobileView = document.getElementById('mobileView');
@@ -699,18 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (desktopView) desktopView.style.display = 'block';
     if (viewBadge) viewBadge.textContent = 'Desktop';
   }
-});
-
-// Método 3: Fallback com setTimeout
-setTimeout(() => {
-  console.log('Fallback setTimeout executado');
-  addEventListeners();
-}, 1000);
-
-// Método 4: window.onload como último recurso
-window.addEventListener('load', () => {
-  console.log('window.onload executado');
-  addEventListeners();
 });
 
 // =========================
