@@ -27,19 +27,26 @@ const MARCAS_VIDROS = [
 
 // Função para detectar marca no texto OCR
 function detectarMarca(textoOCR) {
+  console.log('=== DEBUG DETECÇÃO MARCA ===');
+  console.log('Texto OCR recebido:', textoOCR);
+  
   if (!textoOCR || typeof textoOCR !== 'string') {
+    console.log('Texto OCR inválido ou vazio');
     return null;
   }
   
   const textoUpper = textoOCR.toUpperCase();
+  console.log('Texto em maiúsculas:', textoUpper);
   
   // Procurar por cada marca na lista
   for (const marca of MARCAS_VIDROS) {
     if (textoUpper.includes(marca.toUpperCase())) {
+      console.log('MARCA ENCONTRADA:', marca);
       return marca;
     }
   }
   
+  console.log('Nenhuma marca encontrada no texto');
   return null;
 }
 
@@ -114,17 +121,22 @@ export const handler = async (event, context) => {
     }
 
     const text = detections.textAnnotations?.[0]?.description || '';
+    console.log('Texto extraído pelo Google Vision:', text);
     
     // Detectar marca no texto OCR
     const marcaDetectada = detectarMarca(text);
+    console.log('Marca detectada final:', marcaDetectada);
+
+    const resposta = {
+      text: text,
+      marca: marcaDetectada
+    };
+    console.log('Resposta final do OCR:', resposta);
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ 
-        text: text,
-        marca: marcaDetectada
-      })
+      body: JSON.stringify(resposta)
     };
 
   } catch (error) {
