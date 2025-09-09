@@ -1,63 +1,62 @@
 import { neon } from '@neondatabase/serverless';
 
-const CONN = process.env.NEON_DATABASE_URL;
-if (!CONN) throw new Error('NEON_DATABASE_URL não definido');
+export const handler = async (event, context) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS'
+  };
 
-const sql = neon(CONN);
-
-const jsonHeaders = {
-  'content-type': 'application/json',
-  'access-control-allow-origin': '*'
-};
-
-let inited = false;
-async function init() {
-  if (inited) return;
-  try {
-    await sql`
-      create table if not exists ocr_results (
-        id bigserial primary key,
-        ts timestamptz not null default now(),
-        text text,
-        filename text,
-        source text,
-        ip text,
-        euro_validado text
-      )
-    `;
-    inited = true;
-  } catch (e) {
-    console.error('Erro ao inicializar tabela:', e);
-    throw e;
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
   }
-}
 
-export const handler = async (event) => {
   if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers: jsonHeaders, body: '"Method Not Allowed"' };
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
-    await init();
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL not configured');
+    }
 
-    const rows = await sql`
-      select id, ts, text, filename, source, euro_validado
-      from ocr_results
-      order by ts desc
-      limit 200
+    const sql = neon(process.env.DATABASE_URL);
+
+    // Adicionar coluna marca se não existir (para compatibilidade retroativa)
+    try {
+      await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS marca VARCHAR(100)`;
+    } catch (error) {
+      // Coluna já existe, ignorar erro
+    }
+
+    // Buscar todos os registos incluindo marca
+    const results = await sql`
+      SELECT id, text, eurocode, filename, marca, 
+             TO_CHAR(timestamp, 'DD/MM/YYYY HH24:MI:SS') as timestamp
+      FROM ocr_results 
+      ORDER BY timestamp DESC
     `;
 
     return {
       statusCode: 200,
-      headers: jsonHeaders,
-      body: JSON.stringify({ ok: true, rows })
+      headers,
+      body: JSON.stringify(results)
     };
-  } catch (e) {
-    console.error('Erro na listagem:', e);
-    return { 
-      statusCode: 500, 
-      headers: jsonHeaders, 
-      body: JSON.stringify({ ok: false, error: e.message }) 
+
+  } catch (error) {
+    console.error('List OCR Error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error: 'Failed to fetch OCR results',
+        details: error.message
+      })
     };
   }
 };
+
