@@ -1,86 +1,62 @@
 import { neon } from '@neondatabase/serverless';
 
-export const handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-  };
+const CONN = process.env.NEON_DATABASE_URL;
+if (!CONN) throw new Error('NEON_DATABASE_URL não definido');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
+const sql = neon(CONN);
 
+const jsonHeaders = {
+  'content-type': 'application/json',
+  'access-control-allow-origin': '*'
+};
+
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return { statusCode: 405, headers: jsonHeaders, body: '"Method Not Allowed"' };
   }
 
   try {
-    const { id, text, eurocode, marca } = JSON.parse(event.body);
-
+    const { id, text, eurocode, filename, source } = JSON.parse(event.body || '{}');
+    
     if (!id) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'ID is required' })
-      };
+      return { statusCode: 400, headers: jsonHeaders, body: '"ID é obrigatório"' };
     }
 
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL not configured');
+    if (!text && !eurocode) {
+      return { statusCode: 400, headers: jsonHeaders, body: '"Texto ou Eurocode é obrigatório"' };
     }
 
-    const sql = neon(process.env.DATABASE_URL);
-
-    // Adicionar coluna marca se não existir (para compatibilidade retroativa)
-    try {
-      await sql`ALTER TABLE ocr_results ADD COLUMN IF NOT EXISTS marca VARCHAR(100)`;
-    } catch (error) {
-      // Coluna já existe, ignorar erro
-    }
-
-    // Atualizar registo incluindo marca
-    const result = await sql`
-      UPDATE ocr_results 
-      SET text = ${text || ''}, 
-          eurocode = ${eurocode || ''}, 
-          marca = ${marca || ''}
-      WHERE id = ${id}
-      RETURNING id, text, eurocode, filename, marca, 
-                TO_CHAR(timestamp, 'DD/MM/YYYY HH24:MI:SS') as timestamp
+    // Atualizar registo na base de dados
+    const rows = await sql`
+      update ocr_results 
+      set text = ${text || ''}, 
+          euro_validado = ${eurocode || ''}, 
+          filename = ${filename || ''}, 
+          source = ${source || ''}
+      where id = ${id}
+      returning id, ts, text, filename, source, euro_validado
     `;
 
-    if (result.length === 0) {
-      return {
-        statusCode: 404,
-        headers,
-        body: JSON.stringify({ error: 'Record not found' })
+    if (rows.length === 0) {
+      return { 
+        statusCode: 404, 
+        headers: jsonHeaders, 
+        body: JSON.stringify({ ok: false, error: 'Registo não encontrado' }) 
       };
     }
 
     return {
       statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        success: true,
-        data: result[0]
-      })
+      headers: jsonHeaders,
+      body: JSON.stringify({ ok: true, row: rows[0] })
     };
-
-  } catch (error) {
-    console.error('Update OCR Error:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        error: 'Failed to update OCR result',
-        details: error.message
-      })
+    
+  } catch (e) {
+    console.error('Erro ao atualizar:', e);
+    return { 
+      statusCode: 500, 
+      headers: jsonHeaders, 
+      body: JSON.stringify({ ok: false, error: e.message }) 
     };
   }
 };
-
