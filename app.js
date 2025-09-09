@@ -149,14 +149,12 @@ function filterResults(searchTerm) {
 }
 
 // =========================
-// Extração de Eurocodes Melhorada - CORRIGIDA
+// Extração de Eurocodes Melhorada
 // =========================
 function extractAllEurocodes(text) {
   if (!text) return [];
 
-  // CORREÇÃO: Aumentar limite de caracteres de {0,6} para {0,12}
-  // Isto permite reconhecer códigos como "2765AGACIMOVZ" (4 dígitos + 2 letras + 7 caracteres)
-  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,12}\b/g;
+  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
   const matches = text.match(pattern) || [];
 
   const unique = [...new Set(matches)];
@@ -164,7 +162,7 @@ function extractAllEurocodes(text) {
 }
 
 // =========================
-// Modal de Validação de Eurocode - CSS CORRIGIDO
+// Modal de Validação de Eurocode
 // =========================
 function showEurocodeValidationModal(ocrText, filename, source) {
   const eurocodes = extractAllEurocodes(ocrText);
@@ -194,8 +192,8 @@ function showEurocodeValidationModal(ocrText, filename, source) {
       🔍 Selecionar Eurocode
     </h3>
     <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; max-height: 150px; overflow-y: auto;">
-      <strong style="color: #333;">Texto lido:</strong><br>
-      <span style="font-size: 12px; line-height: 1.4; color: #333; font-weight: normal;">${ocrText.replace(/\n/g, '<br>')}</span>
+      <strong>Texto lido:</strong><br>
+      <span style="font-size: 12px; line-height: 1.4;">${ocrText.replace(/\n/g, '<br>')}</span>
     </div>
     <p style="margin-bottom: 15px; color: #666;">
       <strong>Eurocodes encontrados:</strong> Clique no correto
@@ -470,14 +468,14 @@ function renderTable() {
           <button onclick="deleteRow(${row.id})" 
                   style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
                   title="Eliminar registo"
-                  onmouseover="this.style.background='rgba(220,53,69,0.1)'; this.style.color='#dc3545'" 
-                  onmouseout="this.style.background='none'; this.style.color='#dc3545'">
-            🗑️ Eliminar
+                  onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
+                  onmouseout="this.style.background='none'">
+            🗑️ Apagar
           </button>
         </div>
       </td>
     </tr>
-    `;
+  `;
   }).join('');
 }
 
@@ -498,7 +496,7 @@ async function deleteRow(id) {
       showToast('Registo eliminado com sucesso!', 'success');
       await loadResults();
     } else {
-      throw new Error('Erro ao eliminar registo');
+      throw new Error('Erro ao eliminar');
     }
   } catch (error) {
     console.error('Erro ao eliminar:', error);
