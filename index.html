@@ -1,1 +1,104 @@
-Inherited file content will not be shown
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Receção material</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="brand">
+      <div class="logo-container">
+        <img src="expressglass-logo.png" alt="ExpressGlass" class="logo">
+      </div>
+      <div class="subtitle-new">Receção material</div>
+    </div>
+
+    <!-- Desktop View -->
+    <div id="desktopView" class="card desktop-only">
+      <div class="toolbar">
+        <button id="btnUpload" class="btn">📁 Carregar imagem</button>
+        <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+        <button id="btnExport" class="btn">📊 Exportar CSV</button>
+        <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
+      </div>
+
+      <div id="desktopStatus" class="status"></div>
+
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Data/Hora</th>
+              <th>Texto lido (Eurocode)</th>
+              <th>Eurocode</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody">
+            <tr>
+              <td colspan="5" style="text-align:center; padding:20px;">Nenhum registo encontrado</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mobile View -->
+    <div id="mobileView" class="card mobile-only">
+      <div class="mobile-header">
+        <button id="btnCamera" class="btn-camera">
+          <img src="camera-icon.png" alt="Câmara" class="camera-icon">
+          <span>Capturar</span>
+        </button>
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+      </div>
+
+      <div id="mobileStatus" class="status"></div>
+
+      <div class="mobile-history">
+        <h3>📋 Histórico</h3>
+        <div id="mobileHistoryList" class="history-list">
+          <p style="text-align:center; color:#666; padding:20px;">Nenhuma captura ainda</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help -->
+    <div class="help">
+      <h3>💡 Como usar</h3>
+      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+    </div>
+  </div>
+
+  <!-- Modal de edição OCR -->
+  <div id="editOcrModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>✏️ Editar Texto OCR</h3>
+        <span id="editOcrClose" class="close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <textarea id="editOcrTextarea" placeholder="Edite o texto aqui..." rows="10"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button id="editOcrCancel" class="btn secondary">Cancelar</button>
+        <button id="editOcrSave" class="btn primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>
