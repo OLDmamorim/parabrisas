@@ -447,7 +447,7 @@
 
       .modern-modal-footer {
         padding: 20px 25px 25px;
-        border-top: 1px solid 'none';
+        border-top: 1px solid #e2e8f0;
         display: flex;
         gap: 12px;
       }
@@ -528,7 +528,7 @@
     <div id="mobileHistory" class="history-section">
       <h3 class="history-title">📋 Últimas Capturas</h3>
       <div id="mobileHistoryList" class="history-list">
-        <p class="history-empty">Ainda não há Eurocodes guardados.</p>
+        <p class="history-empty">Aenda não há Eurocodes guardados.</p>
       </div>
     </div>
 
@@ -623,7 +623,7 @@
             <th style="width:220px">Data/Hora</th>
             <th style="width:auto">Texto lido (Eurocode)</th>
             <th style="width:180px">Eurocode</th>
-            <th style="width:150px">Marca</th> <!-- NOVA COLUNA ADICIONADA AQUI -->
+            <th style="width:150px">Marca</th>
             <th style="width:140px">Ações</th>
           </tr>
         </thead>
@@ -813,7 +813,7 @@
         modernCapturesList.innerHTML = `
           <div class="modern-empty-state">
             <div class="modern-empty-icon">📷</div>
-            <div class="modern-empty-text">Ainda não há capturas</div>
+            <div class='modern-empty-text'>Ainda não há capturas</div>
           </div>
         `;
         return;
@@ -835,7 +835,7 @@
         modernCapturesList.innerHTML = `
           <div class="modern-empty-state">
             <div class="modern-empty-icon">📷</div>
-            <div class="modern-empty-text">Ainda não há capturas</div>
+            <div class='modern-empty-text'>Ainda não há capturas</div>
           </div>
         `;
         return;
@@ -1086,7 +1086,7 @@
       const ul = document.createElement('ul');
       ul.style.listStyle = 'none';
       ul.style.margin = '0';
-      ul.style.padding: '0';
+      ul.style.padding = '0';
       codes.forEach(code => {
         const li = document.createElement('li');
         li.textContent = code;
