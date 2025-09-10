@@ -4,94 +4,28 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>EXPRESSGLASS • Receção material</title>
-  <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
+  <link rel="stylesheet" href="style.css?v=marca-col-acoes-icons" />
   <style>
-    /* ===== MODIFICAÇÃO DO LOGÓTIPO ===== */
-    .brand .title { display: none; }
-    .brand .subtitle { display: none; }
-    .brand { width: 100%; padding: 0; position: relative; }
-    .logo-container {
-      background: white; border-radius: 15px; padding: 15px 20px; margin: 0;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; position: relative;
+    /* LOGO no header */
+    .brand .title, .brand .subtitle { display:none }
+    .brand { width:100%; padding:0; position:relative }
+    .logo-container{
+      background:#fff; border-radius:15px; padding:15px 20px; margin:0;
+      box-shadow:0 4px 15px rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:center
     }
-    .brand .logo { max-width: 100%; height: auto; max-height: 60px; }
-    .brand .subtitle-new { color: rgba(255,255,255,0.9); font-size: 16px; font-weight: 400; margin: 15px 20px 0; text-align: center; }
-    .view-badge { display: none !important; }
+    .logo{ max-width:100%; height:auto; max-height:60px }
+    .subtitle-new{ color:rgba(255,255,255,.9); font-size:16px; font-weight:400; margin:12px 20px 0; text-align:center }
+    .view-badge{ display:none !important }
 
-    @media (max-width: 768px) {
-      .logo-container { margin: 0; padding: 12px 15px; border-radius: 12px; }
-      .brand .logo { max-height: 50px; }
-      .brand .subtitle-new { font-size: 14px; margin: 12px 15px 0; }
-    }
-
-    /* ===== APENAS MOBILE (interface moderna) ===== */
-    @media (max-width: 768px) {
-      #mobileView.card.mobile-only { display: none !important; }
-      .modern-mobile { display: flex !important; flex-direction: column; min-height: calc(100vh - 120px); padding: 0; background: transparent; border: none; box-shadow: none; margin: 0; width: 100%; }
-      .modern-main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 40px 20px 20px; }
-      .modern-circle { width: 180px; height: 180px; background: white; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 20px 40px rgba(0,0,0,0.15); margin-bottom: 40px; cursor: pointer; transition: all 0.3s ease; position: relative; }
-      .modern-circle:hover { transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
-      .modern-circle:active { transform: translateY(-2px); }
-      .modern-circle.processing { cursor: not-allowed; transform: none; }
-      .modern-circle.processing:hover { transform: none; }
-      .modern-camera-icon { font-size: 50px; margin-bottom: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); transition: all 0.3s ease; }
-      .modern-camera-label { font-size: 14px; font-weight: 600; color: #4a5568; letter-spacing: 0.5px; transition: all 0.3s ease; }
-      .modern-circle.processing .modern-camera-label { color: #22c55e; font-weight: 700; }
-
-      .modern-progress-ring { position: absolute; top: -8px; left: -8px; width: 196px; height: 196px; opacity: 0; transition: opacity 0.3s ease; }
-      .modern-circle.processing .modern-progress-ring { opacity: 1; }
-      .modern-progress-ring circle { fill: none; stroke: #22c55e; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 580; stroke-dashoffset: 580; transform-origin: center; }
-      .modern-circle.processing .modern-progress-ring circle { animation: modernProcessingRing 1.5s linear infinite; stroke-dasharray: 200 580; stroke-dashoffset: 0; }
-      @keyframes modernProcessingRing {
-        0% { transform: rotate(0deg); stroke-dashoffset: 0; }
-        50% { stroke-dashoffset: -100; }
-        100% { transform: rotate(360deg); stroke-dashoffset: -200; }
-      }
-
-      .modern-bottom-card { background: white; border-radius: 25px 25px 0 0; width: 100%; min-height: 280px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); padding: 25px 20px; margin-top: auto; }
-      .modern-captures-header { display: flex; align-items: center; margin-bottom: 20px; gap: 10px; }
-      .modern-captures-title { font-size: 18px; font-weight: 700; color: #2d3748; }
-      .modern-captures-icon { font-size: 20px; }
-      .modern-capture-list { display: flex; flex-direction: column; gap: 10px; }
-      .modern-capture-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: #f7fafc; border-radius: 10px; border-left: 4px solid #22d3ee; transition: all 0.2s ease; }
-      .modern-capture-item:hover { background: #edf2f7; transform: translateX(3px); }
-      .modern-capture-code { font-weight: 600; color: #2d3748; font-size: 13px; letter-spacing: 0.3px; }
-      .modern-capture-check { color: #22d3ee; font-size: 16px; }
-
-      .modern-status { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 10px 18px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); backdrop-filter: blur(10px); font-weight: 600; color: #2d3748; font-size: 14px; opacity: 0; transition: all 0.3s ease; z-index: 1000; }
-      .modern-status.show { opacity: 1; }
-      .modern-status.success { background: rgba(72, 187, 120, 0.95); color: white; }
-      .modern-status.error { background: rgba(245, 101, 101, 0.95); color: white; }
-      .modern-status.processing { background: rgba(34, 197, 94, 0.95); color: white; }
-
-      .modern-eurocode-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
-      .modern-eurocode-modal.show { display: flex; }
-      .modern-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 400px; max-height: 80vh; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); animation: modalSlideUp 0.3s ease; }
-      @keyframes modalSlideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-      .modern-modal-header { padding: 25px 25px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; }
-      .modern-modal-title { font-size: 20px; font-weight: 700; color: #2d3748; margin: 0; }
-      .modern-modal-icon { font-size: 24px; }
-      .modern-modal-body { padding: 20px 25px; max-height: 50vh; overflow-y: auto; }
-      .modern-ocr-section { margin-bottom: 25px; }
-      .modern-ocr-label { font-size: 14px; font-weight: 600; color: #4a5568; margin-bottom: 8px; display: block; }
-      .modern-ocr-text { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 12px; line-height: 1.4; color: #2d3748; max-height: 100px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
-      .modern-eurocodes-section { margin-bottom: 20px; }
-      .modern-eurocodes-label { font-size: 16px; font-weight: 600; color: #2d3748; margin-bottom: 15px; display: block; }
-      .modern-eurocode-list { display: flex; flex-direction: column; gap: 8px; }
-      .modern-eurocode-button { background: #3182ce; color: white; border: none; border-radius: 8px; padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; text-align: left; letter-spacing: 0.5px; }
-      .modern-eurocode-button:hover { background: #2c5aa0; transform: translateY(-1px); }
-      .modern-eurocode-button:active { transform: translateY(0); }
-      .modern-modal-footer { padding: 20px 25px 25px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; }
-      .modern-modal-btn { flex: 1; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
-      .modern-btn-secondary { background: #6b7280; color: white; }
-      .modern-btn-secondary:hover { background: #4b5563; }
-      .modern-btn-danger { background: #ef4444; color: white; }
-      .modern-btn-danger:hover { background: #dc2626; }
+    /* Input invisível que cobre o círculo (abre a câmara) */
+    .camera-picker{
+      position:absolute; inset:0; width:100%; height:100%;
+      opacity:0; cursor:pointer; -webkit-appearance:none; appearance:none;
     }
 
-    @media (min-width: 769px) {
-      .modern-mobile { display: none !important; }
-      .modern-eurocode-modal { display: none !important; }
+    @media (max-width:768px){
+      .logo{ max-height:50px }
+      .subtitle-new{ font-size:14px }
     }
   </style>
 </head>
@@ -109,11 +43,11 @@
     <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- MOBILE VIEW ORIGINAL (escondida) -->
+  <!-- MOBILE (clássico – mantido para compatibilidade) -->
   <main id="mobileView" class="card mobile-only">
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
     <div class="mobile-cta">
-      <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+      <div class="mode-grid" style="display:grid; grid-template-columns:1fr; gap:12px;">
         <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
           <span class="emoji">📷</span>
           <span class="mode-label">Eurocode</span>
@@ -130,19 +64,19 @@
       </div>
     </div>
 
-    <footer class="footnote">
-      <small>Feito por Marco Amorim</small>
-    </footer>
+    <footer class="footnote"><small>Feito por Marco Amorim</small></footer>
   </main>
 
-  <!-- NOVA MOBILE VIEW MODERNA -->
+  <!-- MOBILE MODERNO -->
   <main class="modern-mobile mobile-only">
     <div id="modernStatus" class="modern-status"></div>
-    <div class="modern-main">
-      <div class="modern-circle" id="modernCameraButton">
+    <div class="modern-main" style="display:flex; flex-direction:column; align-items:center; padding:40px 20px 20px;">
+      <div class="modern-circle" id="modernCircle" style="position:relative;">
         <svg class="modern-progress-ring"><circle cx="98" cy="98" r="92"></circle></svg>
         <div class="modern-camera-icon">📷</div>
         <div class="modern-camera-label">Eurocode</div>
+        <!-- Input real a cobrir o círculo -->
+        <input id="cameraPicker" class="camera-picker" type="file" accept="image/*" capture="environment" />
       </div>
     </div>
     <div class="modern-bottom-card">
@@ -154,7 +88,7 @@
     </div>
   </main>
 
-  <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
+  <!-- MODAL SELEÇÃO EUROCODE (mantido) -->
   <div id="modernEurocodeModal" class="modern-eurocode-modal">
     <div class="modern-modal-content">
       <div class="modern-modal-header">
@@ -178,7 +112,7 @@
     </div>
   </div>
 
-  <!-- DESKTOP VIEW -->
+  <!-- DESKTOP -->
   <section id="desktopView" class="card desktop-only">
     <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
 
@@ -196,7 +130,6 @@
             <th style="width:60px">#</th>
             <th style="width:220px">Data/Hora</th>
             <th style="width:auto">Texto lido (Eurocode)</th>
-            <!-- 👇 NOVA COLUNA -->
             <th style="width:160px">Marca</th>
             <th style="width:180px">Eurocode</th>
             <th style="width:140px">Ações</th>
@@ -214,11 +147,10 @@
     <div class="help-content">
       <button class="help-close" id="helpClose">&times;</button>
       <h3>💡 Como usar</h3>
-      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
-      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
-      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
-      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
-      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+      <p><strong>📷 Captura:</strong> Toca no círculo e tira foto da etiqueta.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente.</p>
+      <p><strong>💾 Dados:</strong> Ficam guardados na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Exporta para CSV quando quiseres.</p>
     </div>
   </div>
 
@@ -243,23 +175,20 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- App -->
-  <script src="app.js"></script>
+  <script src="app.js?v=marca-col-camera-overlay"></script>
 
-  <!-- Script mobile moderno (igual ao teu atual, sem alterações funcionais) -->
+  <!-- Script MOBILE MODERNO (mínimo necessário) -->
   <script>
-    /* Mantive toda a lógica da interface moderna (status, modal, interceptors, etc.)
-       para não te cortar nada. Só interage com a tabela existente. */
-    const modernCameraButton = document.getElementById('modernCameraButton');
-    const modernCapturesList = document.getElementById('modernCapturesList');
     const modernStatus = document.getElementById('modernStatus');
     const modernEurocodeModal = document.getElementById('modernEurocodeModal');
     const modernOcrText = document.getElementById('modernOcrText');
     const modernEurocodeList = document.getElementById('modernEurocodeList');
     const modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
     const modernBtnCancel = document.getElementById('modernBtnCancel');
+    const modernCapturesList = document.getElementById('modernCapturesList');
+    const cameraPicker = document.getElementById('cameraPicker');
 
     let isProcessing = false;
-    let processingTimeout = null;
 
     function showModernStatus(message, type = '') {
       if (!modernStatus) return;
@@ -267,124 +196,85 @@
       modernStatus.className = `modern-status show ${type}`;
       setTimeout(() => { modernStatus.className = 'modern-status'; }, 3000);
     }
-    function startProcessing() {
+    function startProcessing(){
       if (isProcessing) return;
       isProcessing = true;
-      if (modernCameraButton) {
-        modernCameraButton.classList.add('processing');
-        const label = modernCameraButton.querySelector('.modern-camera-label');
-        if (label) label.textContent = 'A processar...';
-      }
+      const circle = document.getElementById('modernCircle');
+      if (circle) circle.classList.add('processing');
       showModernStatus('A processar imagem...', 'processing');
-      if (processingTimeout) clearTimeout(processingTimeout);
-      processingTimeout = setTimeout(() => { if (isProcessing) { stopProcessing(); showModernStatus('Timeout - tente novamente', 'error'); } }, 45000);
     }
-    function stopProcessing() {
+    function stopProcessing(){
       if (!isProcessing) return;
       isProcessing = false;
-      if (modernCameraButton) {
-        modernCameraButton.classList.remove('processing');
-        const label = modernCameraButton.querySelector('.modern-camera-label');
-        if (label) label.textContent = 'Eurocode';
-      }
-      if (processingTimeout) { clearTimeout(processingTimeout); processingTimeout = null; }
+      const circle = document.getElementById('modernCircle');
+      if (circle) circle.classList.remove('processing');
     }
-    function showModernEurocodeModal(ocrText, eurocodes) {
+    window.stopProcessing = stopProcessing;
+
+    function renderModernCaptures(){
+      const tbody = document.getElementById('resultsBody');
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const captures = [];
+      for (const tr of rows){
+        const td = tr.querySelector('td:nth-child(5)'); // 5ª é Eurocode
+        const code = td ? (td.textContent || '').trim().split(/\s+/)[0] : '';
+        if (code) captures.push(code);
+        if (captures.length>=5) break;
+      }
+      modernCapturesList.innerHTML = captures.length
+        ? captures.map(c=>`<div class="modern-capture-item"><span class="modern-capture-code">${c}</span><span class="modern-capture-check">✓</span></div>`).join('')
+        : `<div class="modern-empty-state"><div class="modern-empty-icon">📷</div><div class="modern-empty-text">Ainda não há capturas</div></div>`;
+    }
+
+    // O input real dispara o fluxo
+    if (cameraPicker){
+      cameraPicker.addEventListener('change', (e)=>{
+        const f = e.target.files && e.target.files[0];
+        if (!f){ stopProcessing(); showModernStatus('Operação cancelada', 'error'); return; }
+        startProcessing();
+        if (window.processImage){
+          window.processImage(f).finally(()=>{ stopProcessing(); renderModernCaptures(); e.target.value=''; });
+        }else{
+          stopProcessing(); showModernStatus('Erro: função processImage não encontrada', 'error');
+        }
+      });
+    }
+
+    // Modal Eurocode (se quiseres usar no futuro)
+    function showModernEurocodeModal(ocrText, eurocodes){
       stopProcessing();
       if (!modernEurocodeModal) return;
       if (modernOcrText) modernOcrText.textContent = ocrText || '';
-      if (modernEurocodeList) {
-        modernEurocodeList.innerHTML = (eurocodes || []).map(code => `
-          <button class="modern-eurocode-button" data-eurocode="${code}">${code}</button>
-        `).join('');
-        modernEurocodeList.querySelectorAll('.modern-eurocode-button').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const selectedCode = btn.dataset.eurocode;
-            hideModernEurocodeModal();
-            showModernStatus(`Eurocode ${selectedCode} selecionado!`, 'success');
-            if (window.saveEurocode) window.saveEurocode(selectedCode, ocrText || '');
-            setTimeout(renderModernCaptures, 500);
-          });
+      modernEurocodeList.innerHTML = (eurocodes || []).map(c => `<button class="modern-eurocode-button" data-eurocode="${c}">${c}</button>`).join('');
+      modernEurocodeList.querySelectorAll('.modern-eurocode-button').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const code = btn.dataset.eurocode;
+          modernEurocodeModal.classList.remove('show');
+          showModernStatus(`Eurocode ${code} selecionado!`, 'success');
+          if (window.saveEurocode) window.saveEurocode(code, ocrText || '');
+          setTimeout(renderModernCaptures, 500);
         });
-      }
+      });
       modernEurocodeModal.classList.add('show');
     }
-    function hideModernEurocodeModal(){ if (modernEurocodeModal) modernEurocodeModal.classList.remove('show'); stopProcessing(); }
-    function renderModernCaptures(){
-      if (!modernCapturesList) return;
-      const tbody = document.getElementById('resultsBody');
-      if (!tbody) {
-        modernCapturesList.innerHTML = `<div class="modern-empty-state"><div class="modern-empty-icon">📷</div><div class="modern-empty-text">Ainda não há capturas</div></div>`;
-        return;
-      }
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      const captures = [];
-      for (const tr of rows) {
-        const td = tr.querySelector('td:nth-child(5)'); /* 5ª coluna agora é Eurocode */
-        if (td) {
-          const code = (td.innerText || td.textContent || '').trim().split(/\s+/)[0];
-          if (code) captures.push(code);
-        }
-        if (captures.length >= 5) break;
-      }
-      modernCapturesList.innerHTML = captures.length
-        ? captures.map(code => `<div class="modern-capture-item"><span class="modern-capture-code">${code}</span><span class="modern-capture-check">✓</span></div>`).join('')
-        : `<div class="modern-empty-state"><div class="modern-empty-icon">📷</div><div class="modern-empty-text">Ainda não há capturas</div></div>`;
-    }
-    if (modernCameraButton) {
-      modernCameraButton.addEventListener('click', () => {
-        if (isProcessing) return;
-        startProcessing();
-        const classicCameraBtn = document.getElementById('btnCamera');
-        if (classicCameraBtn) classicCameraBtn.click();
-      });
-    }
-    function interceptSuccessEvents() {
-      const tbody = document.getElementById('resultsBody');
-      if (tbody) {
-        let lastRowCount = tbody.children.length;
-        new MutationObserver(() => {
-          const currentRowCount = tbody.children.length;
-          if (currentRowCount > lastRowCount) {
-            setTimeout(() => { stopProcessing(); renderModernCaptures(); }, 500);
-          }
-          lastRowCount = currentRowCount;
-        }).observe(tbody, { childList: true });
-      }
-    }
-    function interceptErrors() {
-      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
-      statusElements.forEach(statusEl => {
-        if (statusEl && statusEl !== modernStatus) {
-          new MutationObserver((mut) => {
-            const text = statusEl.textContent || statusEl.innerText || '';
-            if (text.toLowerCase().includes('erro') || text.toLowerCase().includes('error')) {
-              stopProcessing(); showModernStatus('Erro ao processar imagem', 'error');
-            }
-          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
-        }
-      });
-    }
-    if (modernBtnNoEurocode) {
-      modernBtnNoEurocode.addEventListener('click', () => {
-        hideModernEurocodeModal(); showModernStatus('Guardado sem Eurocode', 'success'); stopProcessing();
-        if (window.saveWithoutEurocode) { const ocrText = modernOcrText ? modernOcrText.textContent : ''; window.saveWithoutEurocode(ocrText); }
+    if (modernBtnNoEurocode){
+      modernBtnNoEurocode.addEventListener('click', ()=>{
+        modernEurocodeModal.classList.remove('show');
+        showModernStatus('Guardado sem Eurocode', 'success');
+        if (window.saveWithoutEurocode) window.saveWithoutEurocode(modernOcrText ? modernOcrText.textContent : '');
         setTimeout(renderModernCaptures, 500);
       });
     }
-    if (modernBtnCancel) {
-      modernBtnCancel.addEventListener('click', () => { hideModernEurocodeModal(); showModernStatus('Operação cancelada', 'error'); stopProcessing(); });
-    }
-    if (modernEurocodeModal) {
-      modernEurocodeModal.addEventListener('click', (e) => {
-        if (e.target === modernEurocodeModal) { hideModernEurocodeModal(); showModernStatus('Operação cancelada', 'error'); stopProcessing(); }
+    if (modernBtnCancel){
+      modernBtnCancel.addEventListener('click', ()=>{
+        modernEurocodeModal.classList.remove('show');
+        stopProcessing(); showModernStatus('Operação cancelada', 'error');
       });
     }
-    document.addEventListener('DOMContentLoaded', () => {
-      renderModernCaptures(); interceptErrors(); interceptSuccessEvents();
-      setInterval(renderModernCaptures, 5000);
-    });
-    renderModernCaptures(); interceptErrors(); interceptSuccessEvents();
+
+    document.addEventListener('DOMContentLoaded', renderModernCaptures);
+    setInterval(renderModernCaptures, 5000);
   </script>
 </body>
 </html>
