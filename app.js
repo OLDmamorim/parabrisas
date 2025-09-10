@@ -9,14 +9,18 @@ const UPDATE_URL = '/.netlify/functions/update-ocr';
 const DELETE_URL = '/.netlify/functions/delete-ocr';
 
 // ---- Seletores ----
-const fileInput = document.getElementById('fileInput');
+const fileInput = document.getElementById('fileInput');      // desktop "Carregar imagem"
 const btnUpload = document.getElementById('btnUpload');
 const btnExport = document.getElementById('btnExport');
 const btnClear = document.getElementById('btnClear');
 const resultsBody = document.getElementById('resultsBody');
 const desktopStatus = document.getElementById('desktopStatus');
 
-// ---- Modal Edit OCR (já existe no teu index.html)
+// 👇 mobile clássica (input câmara e botão)
+const cameraInput = document.getElementById('cameraInput');
+const btnCamera   = document.getElementById('btnCamera');
+
+// ---- Modal Edit OCR (já existe no index.html)
 const editOcrModal = document.getElementById('editOcrModal');
 const editOcrTextarea = document.getElementById('editOcrTextarea');
 const editOcrClose = document.getElementById('editOcrClose');
@@ -127,12 +131,10 @@ function openEdit(id) {
 
   if (editOcrModal) editOcrModal.classList.add('show');
 }
-
 function closeEdit() {
   CURRENT_EDIT_ID = null;
   if (editOcrModal) editOcrModal.classList.remove('show');
 }
-
 async function saveEdit() {
   if (!CURRENT_EDIT_ID) return;
   const newText = (editOcrTextarea?.value || '').trim();
@@ -142,8 +144,6 @@ async function saveEdit() {
     const response = await fetch(UPDATE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Enviamos apenas os campos seguros (id + text). Se o teu endpoint aceitar mais,
-      // podes acrescentar eurocode/marca aqui.
       body: JSON.stringify({ id: CURRENT_EDIT_ID, text: newText })
     });
 
@@ -156,11 +156,9 @@ async function saveEdit() {
     showToast('Erro ao atualizar registo', 'error');
   }
 }
-
-// Ligações do modal
-if (editOcrClose) editOcrClose.addEventListener('click', closeEdit);
+if (editOcrClose)  editOcrClose.addEventListener('click', closeEdit);
 if (editOcrCancel) editOcrCancel.addEventListener('click', closeEdit);
-if (editOcrSave) editOcrSave.addEventListener('click', saveEdit);
+if (editOcrSave)   editOcrSave.addEventListener('click', saveEdit);
 
 // =========================
 // Eliminar registo
@@ -286,15 +284,25 @@ function exportCSV() {
 }
 
 // =========================
-/* Event Listeners */
+// Event Listeners (desktop + mobile)
 // =========================
 if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
-if (fileInput) fileInput.addEventListener('change', (e) => {
+if (fileInput)  fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) processImage(file);
+  e.target.value = ''; // permite repetir o mesmo ficheiro
 });
+
+// 👇 estes dois fazem a câmara funcionar no mobile clássico
+if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
+if (cameraInput) cameraInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) processImage(file);
+  e.target.value = ''; // permite tirar outra foto logo a seguir
+});
+
 if (btnExport) btnExport.addEventListener('click', exportCSV);
-if (btnClear) btnClear.addEventListener('click', () => {
+if (btnClear)  btnClear.addEventListener('click', () => {
   showToast('Função de limpar tabela não disponível', 'error');
 });
 
@@ -305,6 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadResults();
 });
 
-// Expor funções no escopo global (necessário para onclick inline)
+// Expor funções globais (para onclick inline)
 window.openEdit = openEdit;
 window.deleteRow = deleteRow;
