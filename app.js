@@ -8,15 +8,15 @@ const SAVE_URL     = '/.netlify/functions/save-ocr';
 const UPDATE_URL   = '/.netlify/functions/update-ocr';
 const DELETE_URL   = '/.netlify/functions/delete-ocr';
 
-// ---- Seletores ----
-const fileInput     = document.getElementById('fileInput');   // desktop
+// ---- Seletores (desktop)
+const fileInput     = document.getElementById('fileInput');
 const btnUpload     = document.getElementById('btnUpload');
 const btnExport     = document.getElementById('btnExport');
 const btnClear      = document.getElementById('btnClear');
 const resultsBody   = document.getElementById('resultsBody');
 const desktopStatus = document.getElementById('desktopStatus');
 
-// mobile (clássico)
+// ---- Seletores (mobile clássico – mantidos)
 const cameraInput = document.getElementById('cameraInput');
 const btnCamera   = document.getElementById('btnCamera');
 
@@ -31,10 +31,6 @@ const editOcrSave     = document.getElementById('editOcrSave');
 let RESULTS = [];
 let FILTERED_RESULTS = [];
 let CURRENT_EDIT_ID = null;
-
-// Aux p/ detectar cancelamento do picker
-let _pickerOpen = false;
-let _pickerTimer = null;
 
 // =========================
 // Utils
@@ -53,52 +49,6 @@ function setStatus(text, mode = '') {
   if (mode === 'error') desktopStatus.classList.add('error');
   if (mode === 'success') desktopStatus.classList.add('success');
 }
-
-// =========================
-// Abrir câmara de forma compatível
-// =========================
-function openNativeCamera() {
-  if (!cameraInput) return;
-
-  // Tornar clicável (alguns browsers não permitem click() em elementos com hidden)
-  const wasHidden = cameraInput.hasAttribute('hidden');
-  if (wasHidden) cameraInput.removeAttribute('hidden');
-
-  // esconder visualmente mas deixar interactivo
-  const prevStyle = cameraInput.getAttribute('style') || '';
-  cameraInput.setAttribute('style', prevStyle + ';position:fixed;left:-9999px;opacity:0;pointer-events:auto;');
-
-  _pickerOpen = true;
-
-  // se o user cancelar, vamos detectar pelo foco/visibilidade
-  const cancelGuard = () => {
-    if (_pickerOpen && (!cameraInput.files || cameraInput.files.length === 0)) {
-      _pickerOpen = false;
-      // avisar UI moderna se existir
-      if (window.stopProcessing) window.stopProcessing();
-      showToast('Operação cancelada', 'error');
-      setStatus('', '');
-    }
-    window.removeEventListener('focus', cancelGuard, true);
-    document.removeEventListener('visibilitychange', cancelGuard, true);
-  };
-  window.addEventListener('focus', cancelGuard, true);
-  document.addEventListener('visibilitychange', cancelGuard, true);
-
-  // Segurança extra: se nada acontecer em 10s, cancelar
-  clearTimeout(_pickerTimer);
-  _pickerTimer = setTimeout(cancelGuard, 10000);
-
-  // Abrir picker
-  cameraInput.click();
-
-  // Restaurar atributos depois (o change trata do resto)
-  setTimeout(() => {
-    cameraInput.setAttribute('style', prevStyle);
-    if (wasHidden) cameraInput.setAttribute('hidden', '');
-  }, 0);
-}
-window.openNativeCamera = openNativeCamera; // usado pela UI moderna
 
 // =========================
 // Load Results
@@ -128,7 +78,8 @@ async function loadResults() {
       renderTable();
       setStatus('Sem dados', 'error');
     }
-  } catch {
+  } catch (err) {
+    console.error(err);
     setStatus('Erro a carregar dados', 'error');
     RESULTS = []; FILTERED_RESULTS = [];
     renderTable();
@@ -153,7 +104,7 @@ function renderTable() {
       <td>${row.timestamp}</td>
       <td class="ocr-text">${row.text}</td>
       <td>${row.marca || ''}</td>
-      <td style="font-weight:700;color:#007acc;">${row.eurocode || ''}</td>
+      <td style="font-weight:700; color:#007acc;">${row.eurocode || ''}</td>
       <td class="col-actions" style="white-space:nowrap;">
         <button class="icon-btn" title="Editar" aria-label="Editar" onclick="openEdit('${row.id}')">✏️</button>
         <button class="icon-btn danger" title="Eliminar" aria-label="Eliminar" onclick="deleteRow('${row.id}')">🗑️</button>
@@ -185,11 +136,12 @@ async function saveEdit(){
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ id: CURRENT_EDIT_ID, text: newText })
     });
-    if (!resp.ok) throw new Error();
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     showToast('Registo atualizado!', 'success');
     closeEdit();
     await loadResults();
-  }catch{
+  }catch(e){
+    console.error(e);
     showToast('Erro ao atualizar registo', 'error');
   }
 }
@@ -213,7 +165,8 @@ async function deleteRow(id){
     }else{
       showToast('Falha ao eliminar registo', 'error');
     }
-  }catch{
+  }catch(e){
+    console.error(e);
     showToast('Erro ao eliminar registo', 'error');
   }
 }
@@ -240,17 +193,18 @@ async function processImage(file){
 
     if (ocrText){
       setStatus('Texto extraído!', 'success');
-      await saveToDatabase(ocrText, '', file.name, 'upload', '');
+      await saveToDatabase(ocrText, '', file.name || '', 'upload', '');
     } else {
       setStatus('Sem texto detetado', 'error');
     }
-  }catch{
+  }catch(e){
+    console.error(e);
     setStatus('Erro ao processar imagem', 'error');
   }finally{
-    // terminou o processo -> a UI moderna (se existir) para a animação
     if (window.stopProcessing) window.stopProcessing();
   }
 }
+window.processImage = processImage; // usado pela vista moderna
 
 // =========================
 // Save DB
@@ -268,12 +222,13 @@ async function saveToDatabase(text, eurocode, filename, source, marca=''){
     } else {
       setStatus('Falha ao guardar dados', 'error');
     }
-  }catch{
+  }catch(e){
+    console.error(e);
     setStatus('Erro ao guardar na base de dados', 'error');
   }
 }
 
-// usados pela UI moderna
+// usados pela UI moderna (se usado o modal de seleção)
 window.saveEurocode = async (euro, ocrText) => {
   await saveToDatabase(ocrText || '', euro || '', '', 'mobile', '');
 };
@@ -310,7 +265,7 @@ function exportCSV(){
 }
 
 // =========================
-// Listeners
+// Listeners (desktop + clássico)
 // =========================
 if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
 if (fileInput)  fileInput.addEventListener('change', (e)=>{
@@ -318,17 +273,12 @@ if (fileInput)  fileInput.addEventListener('change', (e)=>{
   if (f) processImage(f);
   e.target.value = ''; // permite reusar o mesmo ficheiro
 });
-
-// clássico
-if (btnCamera)  btnCamera.addEventListener('click', openNativeCamera);
+if (btnCamera)  btnCamera.addEventListener('click', ()=> cameraInput?.click());
 if (cameraInput) cameraInput.addEventListener('change', (e)=>{
-  clearTimeout(_pickerTimer);
-  _pickerOpen = false;
   const f = e.target.files?.[0];
   if (f) processImage(f);
-  e.target.value = ''; // permite tirar outra foto logo a seguir
+  e.target.value = '';
 });
-
 if (btnExport) btnExport.addEventListener('click', exportCSV);
 if (btnClear)  btnClear.addEventListener('click', ()=> showToast('Função de limpar tabela não disponível', 'error'));
 
