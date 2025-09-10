@@ -1084,4 +1084,72 @@
         return;
       }
       const ul = document.createElement('ul');
-      ul.style.list
+      ul.style.listStyle = 'none';
+      ul.style.margin = '0';
+      ul.style.padding = '0';
+      codes.forEach(code => {
+        const li = document.createElement('li');
+        li.textContent = code;
+        li.style.textAlign = 'left';
+        li.style.padding = '10px 12px';
+        li.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+        li.style.fontWeight = '700';
+        li.style.letterSpacing = '.3px';
+        ul.appendChild(li);
+      });
+      listEl.innerHTML = '';
+      listEl.appendChild(ul);
+    }
+
+    async function refresh(){
+      const apiRows = await fetchRowsFromAPI();
+      if (apiRows){
+        const codes = apiRows.map(pickEuro).filter(Boolean);
+        renderList([...new Set(codes)].slice(0,50));
+        return;
+      }
+      const codes = scrapeEurocodesFromTable();
+      renderList([...new Set(codes)].slice(0,50));
+    }
+
+    refresh();
+
+    const tbody = document.getElementById('resultsBody');
+    if (tbody){
+      new MutationObserver(refresh)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      const txt = (t?.textContent || '').toLowerCase();
+      const isValidate = txt.includes('valid') || t?.dataset?.action === 'validate';
+      if (isValidate) setTimeout(refresh, 500);
+    });
+
+    setInterval(refresh, 10000);
+  })();
+  </script>
+
+  <script>
+  (function(){
+    const tbody = document.getElementById('resultsBody');
+    function fixCol3(){
+      document.querySelectorAll('#resultsTable tbody tr td:nth-child(3)').forEach(td=>{
+        td.style.setProperty('font-size','14px','important');
+        td.style.setProperty('line-height','1.35','important');
+        td.style.setProperty('white-space','pre-wrap','important');
+        td.style.setProperty('word-break','break-word','important');
+        td.style.setProperty('letter-spacing','0','important');
+      });
+    }
+    fixCol3();
+    if (tbody){
+      new MutationObserver(fixCol3)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+    window.addEventListener('resize', fixCol3);
+  })();
+  </script>
+</body>
+</html>
