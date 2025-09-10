@@ -16,9 +16,17 @@ const btnClear = document.getElementById('btnClear');
 const resultsBody = document.getElementById('resultsBody');
 const desktopStatus = document.getElementById('desktopStatus');
 
+// ---- Modal Edit OCR (já existe no teu index.html)
+const editOcrModal = document.getElementById('editOcrModal');
+const editOcrTextarea = document.getElementById('editOcrTextarea');
+const editOcrClose = document.getElementById('editOcrClose');
+const editOcrCancel = document.getElementById('editOcrCancel');
+const editOcrSave = document.getElementById('editOcrSave');
+
 // ---- Estado ----
 let RESULTS = [];
 let FILTERED_RESULTS = [];
+let CURRENT_EDIT_ID = null;
 
 // =========================
 // Utilitários
@@ -56,7 +64,6 @@ async function loadResults() {
         id: row.id || row._id,
         timestamp: row.timestamp || row.datahora || new Date().toLocaleString('pt-PT'),
         text: row.text || row.ocr_text || '',
-        // 👇 mapeamento da marca caso venha com outro nome
         marca: row.marca || row.brand || row.fabricante || '',
         eurocode: row.eurocode || row.euro_validado || '',
         filename: row.filename || row.file || '',
@@ -99,13 +106,61 @@ function renderTable() {
       <td>${row.timestamp}</td>
       <td class="ocr-text">${row.text}</td>
       <td>${row.marca || ''}</td>
-      <td style="font-weight: 700; color: #007acc;">${row.eurocode || ''}</td>
-      <td>
-        <button onclick="deleteRow('${row.id}')" class="btn danger">🗑️ Eliminar</button>
+      <td style="font-weight:700; color:#007acc;">${row.eurocode || ''}</td>
+      <td class="col-actions" style="white-space:nowrap;">
+        <button class="icon-btn" title="Editar" aria-label="Editar" onclick="openEdit('${row.id}')">✏️</button>
+        <button class="icon-btn danger" title="Eliminar" aria-label="Eliminar" onclick="deleteRow('${row.id}')">🗑️</button>
       </td>
     </tr>
   `).join('');
 }
+
+// =========================
+// Editar registo (OCR text)
+// =========================
+function openEdit(id) {
+  const row = RESULTS.find(r => r.id === id);
+  if (!row) return;
+
+  CURRENT_EDIT_ID = id;
+  if (editOcrTextarea) editOcrTextarea.value = row.text || '';
+
+  if (editOcrModal) editOcrModal.classList.add('show');
+}
+
+function closeEdit() {
+  CURRENT_EDIT_ID = null;
+  if (editOcrModal) editOcrModal.classList.remove('show');
+}
+
+async function saveEdit() {
+  if (!CURRENT_EDIT_ID) return;
+  const newText = (editOcrTextarea?.value || '').trim();
+
+  try {
+    setStatus('A atualizar registo...');
+    const response = await fetch(UPDATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // Enviamos apenas os campos seguros (id + text). Se o teu endpoint aceitar mais,
+      // podes acrescentar eurocode/marca aqui.
+      body: JSON.stringify({ id: CURRENT_EDIT_ID, text: newText })
+    });
+
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+    showToast('Registo atualizado!', 'success');
+    closeEdit();
+    await loadResults();
+  } catch (e) {
+    showToast('Erro ao atualizar registo', 'error');
+  }
+}
+
+// Ligações do modal
+if (editOcrClose) editOcrClose.addEventListener('click', closeEdit);
+if (editOcrCancel) editOcrCancel.addEventListener('click', closeEdit);
+if (editOcrSave) editOcrSave.addEventListener('click', saveEdit);
 
 // =========================
 // Eliminar registo
@@ -132,7 +187,7 @@ async function deleteRow(id) {
 }
 
 // =========================
-/* Processar imagem -> OCR */
+// Processar imagem -> OCR
 // =========================
 async function processImage(file) {
   try {
@@ -155,7 +210,6 @@ async function processImage(file) {
 
     if (ocrText) {
       setStatus('Texto extraído!', 'success');
-      // Neste fluxo não detetamos marca automaticamente – gravamos vazia.
       await saveToDatabase(ocrText, '', file.name, 'upload', '');
     } else {
       setStatus('Sem texto detetado', 'error');
@@ -166,7 +220,7 @@ async function processImage(file) {
 }
 
 // =========================
-// Guardar na Base de Dados
+// Guardar Base de Dados
 // =========================
 async function saveToDatabase(text, eurocode, filename, source, marca = '') {
   try {
@@ -190,9 +244,8 @@ async function saveToDatabase(text, eurocode, filename, source, marca = '') {
   }
 }
 
-// (Opcional) expor helpers globais caso a UI mobile moderna os use
+// Helpers usados pela UI mobile moderna (se existirem)
 window.saveEurocode = async function(euro, ocrText) {
-  // guarda linha simples com o eurocode escolhido manualmente
   await saveToDatabase(ocrText || '', euro || '', '', 'mobile', '');
 };
 window.saveWithoutEurocode = async function(ocrText) {
@@ -233,7 +286,7 @@ function exportCSV() {
 }
 
 // =========================
-// Event Listeners
+/* Event Listeners */
 // =========================
 if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
 if (fileInput) fileInput.addEventListener('change', (e) => {
@@ -251,3 +304,7 @@ if (btnClear) btnClear.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
   loadResults();
 });
+
+// Expor funções no escopo global (necessário para onclick inline)
+window.openEdit = openEdit;
+window.deleteRow = deleteRow;
