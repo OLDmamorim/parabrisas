@@ -447,7 +447,7 @@
 
       .modern-modal-footer {
         padding: 20px 25px 25px;
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid 'none';
         display: flex;
         gap: 12px;
       }
@@ -623,7 +623,7 @@
             <th style="width:220px">Data/Hora</th>
             <th style="width:auto">Texto lido (Eurocode)</th>
             <th style="width:180px">Eurocode</th>
-            <th style="width:150px">Marca</th> <!-- NOVA COLUNA -->
+            <th style="width:150px">Marca</th> <!-- NOVA COLUNA ADICIONADA AQUI -->
             <th style="width:140px">Ações</th>
           </tr>
         </thead>
@@ -1086,7 +1086,7 @@
       const ul = document.createElement('ul');
       ul.style.listStyle = 'none';
       ul.style.margin = '0';
-      ul.style.padding = '0';
+      ul.style.padding: '0';
       codes.forEach(code => {
         const li = document.createElement('li');
         li.textContent = code;
