@@ -623,7 +623,7 @@
             <th style="width:220px">Data/Hora</th>
             <th style="width:auto">Texto lido (Eurocode)</th>
             <th style="width:180px">Eurocode</th>
-            <th style="width:180px">Ações</th>
+            <th style="width:140px">Ações</th>
           </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
@@ -666,10 +666,10 @@
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- App corrigido -->
-  <script src="app_corrigido.js"></script>
+  <!-- App original (mantém-se igual) -->
+  <script src="app.js"></script>
 
-  <!-- Script para a versão mobile moderna - VERSÃO CORRIGIDA -->
+  <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
   <script>
     // DOM Elements for modern mobile
     const modernCameraButton = document.getElementById('modernCameraButton');
@@ -680,10 +680,6 @@
     const modernEurocodeList = document.getElementById('modernEurocodeList');
     const modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
     const modernBtnCancel = document.getElementById('modernBtnCancel');
-
-    // CORREÇÃO: Elementos da versão mobile original
-    const btnCamera = document.getElementById('btnCamera');
-    const cameraInput = document.getElementById('cameraInput');
 
     let isProcessing = false;
     let processingTimeout = null;
@@ -852,29 +848,7 @@
       `).join('');
     }
 
-    // CORREÇÃO PRINCIPAL: Conectar o botão da câmara ao input de arquivo
-    if (btnCamera && cameraInput) {
-      btnCamera.addEventListener('click', () => {
-        console.log('Clique no botão da câmara original - abrindo input');
-        cameraInput.click();
-      });
-    }
-
-    // CORREÇÃO: Processar imagem quando selecionada
-    if (cameraInput) {
-      cameraInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          console.log('Arquivo selecionado:', file.name);
-          // Usar a função processImage do app.js
-          if (window.processImage) {
-            window.processImage(file);
-          }
-        }
-      });
-    }
-
-    // Modern camera button click - CORRIGIDO
+    // Modern camera button click
     if (modernCameraButton) {
       modernCameraButton.addEventListener('click', () => {
         if (isProcessing) {
@@ -883,10 +857,12 @@
         }
         
         console.log('Clique no botão da câmara moderna');
+        startProcessing(); // Iniciar animação
         
-        // CORREÇÃO: Abrir diretamente o input de arquivo
-        if (cameraInput) {
-          cameraInput.click();
+        // Simular clique no botão da versão clássica (que funciona)
+        const classicCameraBtn = document.getElementById('btnCamera');
+        if (classicCameraBtn) {
+          classicCameraBtn.click();
         }
       });
     }
@@ -936,30 +912,91 @@
       });
     }
 
-    // Interceptar erros
-    function interceptErrors() {
-      // Interceptar erros globais
-      window.addEventListener('error', (e) => {
-        console.log('Erro detectado:', e.message);
-        stopProcessing();
-        showModernStatus('Erro no processamento', 'error');
+    // Interceptar o modal da versão clássica e mostrar na versão moderna
+    function interceptClassicModal() {
+      // Observar mudanças no DOM para detectar quando o modal clássico aparece
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            // Procurar por modais de validação de eurocode
+            const modals = document.querySelectorAll('[id*="modal"], [class*="modal"]');
+            modals.forEach((modal) => {
+              if (modal.style.display === 'block' || modal.classList.contains('show')) {
+                const modalText = modal.textContent || modal.innerText || '';
+                if (modalText.includes('Selecionar Eurocode') || modalText.includes('Eurocode')) {
+                  console.log('Modal clássico detectado, interceptando...');
+                  
+                  // Extrair dados do modal clássico
+                  const ocrTextEl = modal.querySelector('[id*="ocr"], [class*="ocr"]');
+                  const eurocodeButtons = modal.querySelectorAll('button[data-eurocode], button[onclick*="eurocode"]');
+                  
+                  if (ocrTextEl || eurocodeButtons.length > 0) {
+                    const ocrText = ocrTextEl ? (ocrTextEl.textContent || ocrTextEl.innerText || '') : '';
+                    const eurocodes = Array.from(eurocodeButtons).map(btn => 
+                      btn.dataset.eurocode || btn.textContent.trim()
+                    ).filter(Boolean);
+                    
+                    // Esconder modal clássico
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    
+                    // Mostrar modal moderno (que já para a animação)
+                    showModernEurocodeModal(ocrText, eurocodes);
+                  }
+                }
+              }
+            });
+          }
+        });
       });
 
-      // Interceptar rejeições de promessas
-      window.addEventListener('unhandledrejection', (e) => {
-        console.log('Promessa rejeitada:', e.reason);
-        stopProcessing();
-        showModernStatus('Erro no processamento', 'error');
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
       });
     }
 
-    // Modal buttons
+    // Interceptar erros para parar a animação
+    function interceptErrors() {
+      // Observar mensagens de erro
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('erro') || text.toLowerCase().includes('error')) {
+                  console.log('Erro detectado:', text);
+                  stopProcessing();
+                  showModernStatus('Erro ao processar imagem', 'error');
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+    }
+
+    // Modal button handlers
     if (modernBtnNoEurocode) {
       modernBtnNoEurocode.addEventListener('click', () => {
         hideModernEurocodeModal();
-        showModernStatus('Sem Eurocode selecionado', 'success');
-        // CORREÇÃO: Para a animação quando seleciona "sem eurocode"
+        showModernStatus('Guardado sem Eurocode', 'success');
+        
+        // CORREÇÃO: Garantir que para a animação
         stopProcessing();
+        
+        // Usar a função original para guardar sem eurocode
+        if (window.saveWithoutEurocode) {
+          const ocrText = modernOcrText ? modernOcrText.textContent : '';
+          window.saveWithoutEurocode(ocrText);
+        }
+        
+        // Atualizar lista de capturas
+        setTimeout(renderModernCaptures, 500);
       });
     }
 
@@ -988,8 +1025,9 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('Interface moderna inicializada');
       renderModernCaptures();
+      interceptClassicModal();
       interceptErrors();
-      interceptSuccessEvents();
+      interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
       
       // Atualizar lista periodicamente
       setInterval(renderModernCaptures, 5000);
@@ -997,8 +1035,9 @@
 
     // Render initial captures
     renderModernCaptures();
+    interceptClassicModal();
     interceptErrors();
-    interceptSuccessEvents();
+    interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
   </script>
 
   <!-- Scripts originais mantidos -->

@@ -1,5 +1,4 @@
-// =========================
-// EXPRESSGLASS - Receção Material
+// APP.JS COMPLETO E FUNCIONAL
 // =========================
 
 // ---- Endpoints ----
@@ -17,17 +16,9 @@ const btnClear = document.getElementById('btnClear');
 const resultsBody = document.getElementById('resultsBody');
 const desktopStatus = document.getElementById('desktopStatus');
 
-// ---- Seletores do Modal de Edição ----
-const editOcrModal = document.getElementById('editOcrModal');
-const editOcrTextarea = document.getElementById('editOcrTextarea');
-const editOcrSave = document.getElementById('editOcrSave');
-const editOcrCancel = document.getElementById('editOcrCancel');
-const editOcrClose = document.getElementById('editOcrClose');
-
 // ---- Estado ----
 let RESULTS = [];
 let FILTERED_RESULTS = [];
-let currentEditingId = null;
 
 // =========================
 // Funções Básicas
@@ -102,7 +93,6 @@ function renderTable() {
       <td class="ocr-text">${row.text}</td>
       <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
       <td>
-        <button onclick="editOcrText('${row.id}')" class="btn" style="margin-right: 5px;">✏️ Editar</button>
         <button onclick="deleteRow('${row.id}')" class="btn danger">🗑️ Eliminar</button>
       </td>
     </tr>
@@ -129,64 +119,6 @@ async function deleteRow(id) {
   } catch (error) {
     showToast('Erro ao eliminar registo', 'error');
   }
-}
-
-// =========================
-// Editar texto OCR
-// =========================
-function editOcrText(id) {
-  const row = RESULTS.find(r => r.id === id);
-  if (!row) {
-    showToast('Registo não encontrado', 'error');
-    return;
-  }
-
-  currentEditingId = id;
-  editOcrTextarea.value = row.text || '';
-  editOcrModal.style.display = 'flex';
-  editOcrTextarea.focus();
-}
-
-// =========================
-// Guardar edição OCR
-// =========================
-async function saveOcrEdit() {
-  if (!currentEditingId) return;
-
-  const newText = editOcrTextarea.value.trim();
-  
-  try {
-    setStatus('A guardar alterações...');
-    
-    const response = await fetch(UPDATE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        id: currentEditingId, 
-        text: newText 
-      })
-    });
-
-    if (response.ok) {
-      showToast('Texto OCR atualizado com sucesso!', 'success');
-      closeEditModal();
-      await loadResults();
-    } else {
-      throw new Error('Erro na resposta do servidor');
-    }
-  } catch (error) {
-    setStatus('Erro ao guardar alterações', 'error');
-    showToast('Erro ao guardar alterações', 'error');
-  }
-}
-
-// =========================
-// Fechar modal de edição
-// =========================
-function closeEditModal() {
-  editOcrModal.style.display = 'none';
-  currentEditingId = null;
-  editOcrTextarea.value = '';
 }
 
 // =========================
@@ -276,7 +208,7 @@ function exportCSV() {
 }
 
 // =========================
-// Event Listeners
+// Event Listeners SIMPLES
 // =========================
 if (btnUpload) {
   btnUpload.addEventListener('click', () => fileInput?.click());
@@ -300,35 +232,6 @@ if (btnClear) {
   });
 }
 
-// Event listeners do modal de edição
-if (editOcrSave) {
-  editOcrSave.addEventListener('click', saveOcrEdit);
-}
-
-if (editOcrCancel) {
-  editOcrCancel.addEventListener('click', closeEditModal);
-}
-
-if (editOcrClose) {
-  editOcrClose.addEventListener('click', closeEditModal);
-}
-
-// Fechar modal ao clicar fora
-if (editOcrModal) {
-  editOcrModal.addEventListener('click', (e) => {
-    if (e.target === editOcrModal) {
-      closeEditModal();
-    }
-  });
-}
-
-// Tecla Escape para fechar modal
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && editOcrModal && editOcrModal.style.display === 'flex') {
-    closeEditModal();
-  }
-});
-
 // =========================
 // Inicialização
 // =========================
@@ -339,6 +242,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Tornar funções globais para o HTML
 window.deleteRow = deleteRow;
-window.editOcrText = editOcrText;
-window.processImage = processImage;
-window.saveEurocode = saveToDatabase;
