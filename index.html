@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>EXPRESSGLASS • Receção material (OCR)</title>
-  <link rel="stylesheet" href="style.css?v=brand-col" />
+  <link rel="stylesheet" href="style.css?v=split-views" />
 </head>
 <body>
   <!-- HEADER -->
@@ -13,42 +13,71 @@
       <h1 class="title">EXPRESSGLASS</h1>
       <p class="subtitle">Receção material • OCR Eurocode + Marca</p>
     </div>
-    <div class="view-badge" id="viewBadge">Mobile/Desktop</div>
+    <div class="view-badge" id="viewBadge">—</div>
   </header>
 
-  <!-- ACTIONS -->
-  <main class="card">
-    <div class="actions">
-      <button id="btnCamera" class="btn primary" type="button">📷 Tirar foto</button>
-      <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
-      <button id="btnUpload" class="btn" type="button">🖼️ Carregar imagem</button>
-      <input id="fileInput" type="file" accept="image/*" class="hidden" />
-      <button id="btnExport" class="btn" type="button" title="Exportar CSV">⬇️ Exportar</button>
-      <button id="btnClear" class="btn danger" type="button" title="Limpar (local)">🧹 Limpar</button>
-    </div>
+  <!-- ======== MOBILE VIEW ======== -->
+  <main id="mobileView" class="mobile-only">
+    <section class="mobile-card">
+      <div class="logo-box">
+        <img src="logo-expressglass.png" alt="ExpressGlass" onerror="this.style.display='none'">
+        <h2>Receção material</h2>
+      </div>
 
-    <div class="status">
-      <span id="mobileStatus"></span>
-      <span id="desktopStatus"></span>
-    </div>
+      <div class="actions mobile">
+        <button id="btnCamera" class="btn primary" type="button">📷 Tirar foto</button>
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" />
+        <button id="btnUpload" class="btn" type="button">🖼️ Carregar imagem</button>
+        <input id="fileInput" type="file" accept="image/*" class="hidden" />
+      </div>
 
-    <!-- TABELA -->
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Eurocode</th>
-            <th>Marca</th>
-            <th>Loja</th>
-            <th class="actions-col">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
+      <!-- Loader redondo -->
+      <div id="mobileProgress" class="progress hidden">
+        <div class="progress-circle"></div>
+        <div class="progress-text" id="mobileStatus">A processar…</div>
+      </div>
+
+      <!-- Últimas capturas -->
+      <section class="history">
+        <h3>📋 Últimas Capturas</h3>
+        <ul id="mobileHistoryList" class="history-list"></ul>
+      </section>
+    </section>
   </main>
 
-  <script src="app.js?v=brand-col"></script>
+  <!-- ======== DESKTOP VIEW ======== -->
+  <main id="desktopView" class="desktop-only">
+    <section class="card">
+      <div class="actions">
+        <button id="btnCamera_d" class="btn primary" type="button">📷 Tirar foto</button>
+        <input id="cameraInput_d" type="file" accept="image/*" capture="environment" class="hidden" />
+        <button id="btnUpload_d" class="btn" type="button">🖼️ Carregar imagem</button>
+        <input id="fileInput_d" type="file" accept="image/*" class="hidden" />
+        <button id="btnExport" class="btn" type="button" title="Exportar CSV">⬇️ Exportar</button>
+        <button id="btnClear" class="btn danger" type="button" title="Limpar (local)">🧹 Limpar</button>
+      </div>
+
+      <div class="status">
+        <span id="desktopStatus"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Eurocode</th>
+              <th>Marca</th>
+              <th>Loja</th>
+              <th class="actions-col">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js?v=split-views"></script>
 </body>
 </html>
