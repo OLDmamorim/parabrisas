@@ -1,62 +1,46 @@
+// /.netlify/functions/update-ocr.js
 import { neon } from '@neondatabase/serverless';
 
-const CONN = process.env.NEON_DATABASE_URL;
-if (!CONN) throw new Error('NEON_DATABASE_URL não definido');
-
-const sql = neon(CONN);
-
-const jsonHeaders = {
-  'content-type': 'application/json',
-  'access-control-allow-origin': '*'
-};
-
 export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: jsonHeaders, body: '"Method Not Allowed"' };
+  if (event.httpMethod !== 'POST' && event.httpMethod !== 'PUT' && event.httpMethod !== 'PATCH') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    const { id, text, eurocode, filename, source } = JSON.parse(event.body || '{}');
-    
+    const { id, eurocode, brand, loja, user_id } = JSON.parse(event.body || "{}");
     if (!id) {
-      return { statusCode: 400, headers: jsonHeaders, body: '"ID é obrigatório"' };
+      return { statusCode: 400, body: JSON.stringify({ ok:false, error: 'Missing id' }) };
     }
 
-    if (!text && !eurocode) {
-      return { statusCode: 400, headers: jsonHeaders, body: '"Texto ou Eurocode é obrigatório"' };
-    }
+    const sql = neon(process.env.DATABASE_URL);
 
-    // Atualizar registo na base de dados
-    const rows = await sql`
-      update ocr_results 
-      set text = ${text || ''}, 
-          euro_validado = ${eurocode || ''}, 
-          filename = ${filename || ''}, 
-          source = ${source || ''}
-      where id = ${id}
-      returning id, ts, text, filename, source, euro_validado
+    await sql`
+      UPDATE ocr_results
+      SET
+        eurocode = COALESCE(${eurocode}, eurocode),
+        brand    = COALESCE(${brand}, brand),
+        loja     = COALESCE(${loja}, loja),
+        user_id  = COALESCE(${user_id}, user_id)
+      WHERE id = ${id}
     `;
 
-    if (rows.length === 0) {
-      return { 
-        statusCode: 404, 
-        headers: jsonHeaders, 
-        body: JSON.stringify({ ok: false, error: 'Registo não encontrado' }) 
-      };
-    }
+    const { rows } = await sql`
+      SELECT id, image_url, eurocode, brand, loja, user_id, raw_text, created_at
+      FROM ocr_results
+      WHERE id = ${id}
+      LIMIT 1
+    `;
 
     return {
       statusCode: 200,
-      headers: jsonHeaders,
-      body: JSON.stringify({ ok: true, row: rows[0] })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true, item: rows[0] || null })
     };
-    
-  } catch (e) {
-    console.error('Erro ao atualizar:', e);
-    return { 
-      statusCode: 500, 
-      headers: jsonHeaders, 
-      body: JSON.stringify({ ok: false, error: e.message }) 
+  } catch (err) {
+    console.error('update-ocr error:', err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok:false, error: String(err?.message || err) })
     };
   }
 };
