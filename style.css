@@ -19,26 +19,52 @@ body {
 .subtitle { margin: 2px 0 0; opacity: 0.9; font-size: 13px; }
 .view-badge { background: rgba(255,255,255,.15); padding: 6px 10px; border-radius: 999px; font-size: 12px; }
 
-/* Card */
-.card {
-  background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.06);
-  padding: 14px;
-}
-
 /* Buttons */
-.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.actions.mobile { justify-content: center; }
 .btn {
-  border: 1px solid #d1d5db; background: #fff; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid #d1d5db; background: #fff; padding: 10px 14px; border-radius: 10px;
   cursor: pointer; font-weight: 600; font-size: 14px;
 }
 .btn.primary { background: #2563eb; color: #fff; border-color: #1d4ed8; }
 .btn.danger { background: #ef4444; color: #fff; border-color: #dc2626; }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 
-/* Status */
+/* ===== MOBILE VIEW ===== */
+.mobile-card {
+  background: #fff; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,.06);
+  padding: 16px;
+}
+.logo-box { text-align: center; margin-bottom: 12px; }
+.logo-box h2 { margin: 8px 0 0; color:#1f2937; }
+
+/* Loader redondo */
+.progress { display:flex; flex-direction:column; align-items:center; gap:10px; margin: 16px 0; }
+.progress-circle {
+  width: 120px; height: 120px; border-radius: 50%;
+  border: 10px solid rgba(37,99,235,.2);
+  border-top-color: #10b981; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress-text { font-weight: 700; color:#10b981; }
+
+/* Histórico */
+.history h3 { margin: 12px 0 8px; }
+.history-list { list-style: none; padding: 0; margin: 0; }
+.history-list li {
+  background: #f9fafb; border:1px solid #e5e7eb; border-radius: 10px;
+  padding: 10px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;
+}
+.history-list .code { font-weight: 800; letter-spacing: .3px; }
+.history-list .brand { color:#374151; font-size: 13px; }
+
+/* ===== DESKTOP VIEW ===== */
+.card {
+  background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.06);
+  padding: 14px;
+}
 .status { min-height: 22px; color: #374151; font-size: 13px; display: flex; gap: 16px; margin-bottom: 10px; }
 
-/* Table */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td {
@@ -52,10 +78,16 @@ body {
   background: transparent; border: none; cursor: pointer; padding: 6px; margin-left: 2px;
   font-size: 16px; line-height: 1;
 }
-.action-btn.edit { }
-.action-btn.delete { }
-
 .col-eurocode { font-weight: 700; letter-spacing: .3px; }
 .col-brand { color: #111827; }
 .col-loja { color: #374151; }
 .col-date { color: #6b7280; font-size: 12px; }
+
+/* ===== RESPONSIVE SPLIT ===== */
+.mobile-only { display: none; }
+.desktop-only { display: block; }
+
+@media (max-width: 768px){
+  .mobile-only { display: block; }
+  .desktop-only { display: none; }
+}
