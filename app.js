@@ -7,21 +7,34 @@ const SAVE_URL     = '/.netlify/functions/save-ocr';
 const UPDATE_URL   = '/.netlify/functions/update-ocr';
 const DELETE_URL   = '/.netlify/functions/delete-ocr';
 
-const fileInput   = document.getElementById('fileInput');
-const btnUpload   = document.getElementById('btnUpload');
-const btnExport   = document.getElementById('btnExport');
-const btnClear    = document.getElementById('btnClear');
-const resultsBody = document.getElementById('resultsBody');
+// Mobile elements
+const btnCamera      = document.getElementById('btnCamera');
+const cameraInput    = document.getElementById('cameraInput');
+const btnUpload      = document.getElementById('btnUpload');
+const fileInput      = document.getElementById('fileInput');
+const mobileProgress = document.getElementById('mobileProgress');
+const mobileStatus   = document.getElementById('mobileStatus');
+const mobileHistory  = document.getElementById('mobileHistoryList');
 
-const cameraInput   = document.getElementById('cameraInput');
-const btnCamera     = document.getElementById('btnCamera');
-const mobileStatus  = document.getElementById('mobileStatus');
-const desktopStatus = document.getElementById('desktopStatus');
+// Desktop elements
+const btnCamera_d    = document.getElementById('btnCamera_d');
+const cameraInput_d  = document.getElementById('cameraInput_d');
+const btnUpload_d    = document.getElementById('btnUpload_d');
+const fileInput_d    = document.getElementById('fileInput_d');
+const resultsBody    = document.getElementById('resultsBody');
+const desktopStatus  = document.getElementById('desktopStatus');
+const btnExport      = document.getElementById('btnExport');
+const btnClear       = document.getElementById('btnClear');
+
+const viewBadge      = document.getElementById('viewBadge');
+
+const isMobile = matchMedia('(max-width: 768px)').matches;
 
 /* =========================
    STARTUP
    ========================= */
 document.addEventListener('DOMContentLoaded', () => {
+  viewBadge.textContent = isMobile ? 'Mobile' : 'Desktop';
   attachEvents();
   fetchList().catch(console.error);
 });
@@ -30,25 +43,38 @@ document.addEventListener('DOMContentLoaded', () => {
    EVENTS
    ========================= */
 function attachEvents(){
+  // MOBILE
+  btnCamera?.addEventListener('click', () => cameraInput.click());
+  cameraInput?.addEventListener('change', async (e) => {
+    if (e.target.files?.[0]) await handleImage(e.target.files[0], { fromCamera:true });
+    e.target.value = '';
+  });
   btnUpload?.addEventListener('click', () => fileInput.click());
   fileInput?.addEventListener('change', async (e) => {
     if (e.target.files?.[0]) await handleImage(e.target.files[0]);
     e.target.value = '';
   });
 
-  btnCamera?.addEventListener('click', () => cameraInput.click());
-  cameraInput?.addEventListener('change', async (e) => {
+  // DESKTOP
+  btnCamera_d?.addEventListener('click', () => cameraInput_d.click());
+  cameraInput_d?.addEventListener('change', async (e) => {
     if (e.target.files?.[0]) await handleImage(e.target.files[0], { fromCamera:true });
+    e.target.value = '';
+  });
+  btnUpload_d?.addEventListener('click', () => fileInput_d.click());
+  fileInput_d?.addEventListener('change', async (e) => {
+    if (e.target.files?.[0]) await handleImage(e.target.files[0]);
     e.target.value = '';
   });
 
   btnExport?.addEventListener('click', exportCSV);
   btnClear?.addEventListener('click', () => {
-    resultsBody.innerHTML = '';
-    info('Lista limpa localmente (não apaga no servidor).');
+    if (resultsBody) resultsBody.innerHTML = '';
+    if (mobileHistory) mobileHistory.innerHTML = '';
+    setStatus('', 'Lista limpa localmente.');
   });
 
-  // Delegação para ações (editar / eliminar)
+  // Actions table
   resultsBody?.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('button.action-btn');
     if (!btn) return;
@@ -69,7 +95,9 @@ function attachEvents(){
    ========================= */
 async function handleImage(file, { fromCamera=false } = {}){
   try {
-    loading(fromCamera ? 'A processar foto...' : 'A processar imagem...');
+    loading(isMobile ? 'A processar…' : 'A processar imagem…');
+    toggleMobileLoader(true);
+
     const { text, uploadedUrl } = await ocrProxy(file);
     if (!text || !text.trim()) throw new Error('OCR sem texto');
 
@@ -77,11 +105,10 @@ async function handleImage(file, { fromCamera=false } = {}){
     const eurocode = detectEurocodeFromText(ocrText) || null;
     const brand    = detectBrandFromText(ocrText) || null;
 
-    if (!eurocode) warn('Não encontrei Eurocode nesta imagem. Podes editar depois.');
-    if (!brand)    warn('Não encontrei Marca. Podes editar depois.');
+    if (!eurocode) warn('Não encontrei Eurocode nesta imagem.');
+    if (!brand)    warn('Não encontrei Marca.');
 
-    // Ajusta conforme tua lógica (ex.: loja atual / user)
-    const loja = null;
+    const loja = null;   // ajusta se tiveres contexto
     const user_id = null;
 
     const payload = {
@@ -94,14 +121,24 @@ async function handleImage(file, { fromCamera=false } = {}){
     };
 
     const saved = await saveRecord(payload);
-    prependRow(saved);
+    if (isMobile) {
+      prependMobileItem(saved);
+    } else {
+      prependRow(saved);
+    }
     ok('Registo guardado.');
   } catch (err) {
     error('Falha a processar a imagem: ' + (err?.message || err));
     console.error(err);
   } finally {
+    toggleMobileLoader(false);
     loading('');
   }
+}
+
+function toggleMobileLoader(show){
+  if (!mobileProgress) return;
+  mobileProgress.classList.toggle('hidden', !show);
 }
 
 async function ocrProxy(file){
@@ -111,11 +148,8 @@ async function ocrProxy(file){
   const res = await fetch(OCR_ENDPOINT, { method: 'POST', body: fd });
   if (!res.ok) throw new Error('OCR endpoint falhou ('+res.status+')');
   const j = await res.json();
-
-  // Suportar chaves diferentes que possas já usar (text/uploadedUrl)
   const text = j.text || j.ocrText || j.data || '';
   const uploadedUrl = j.uploadedUrl || j.url || j.image_url || null;
-
   return { text, uploadedUrl };
 }
 
@@ -136,13 +170,18 @@ async function saveRecord(data){
    ========================= */
 async function fetchList(){
   try{
-    loading('A carregar registos...');
+    loading('A carregar registos…');
     const res = await fetch(LIST_URL);
     if (!res.ok) throw new Error('list-ocr falhou ('+res.status+')');
     const j = await res.json();
-    resultsBody.innerHTML = '';
-    for (const row of (j.items || j.rows || [])){
-      appendRow(row);
+    const rows = j.items || j.rows || [];
+
+    if (isMobile) {
+      mobileHistory.innerHTML = '';
+      for (const row of rows.slice(0,50)) appendMobileItem(row);
+    } else {
+      resultsBody.innerHTML = '';
+      for (const row of rows) appendRow(row);
     }
     ok('Lista carregada.');
   } catch(err){
@@ -153,45 +192,34 @@ async function fetchList(){
   }
 }
 
-function appendRow(row){
-  const tr = buildRow(row);
-  resultsBody.appendChild(tr);
-}
-
-function prependRow(row){
-  const tr = buildRow(row);
-  resultsBody.insertBefore(tr, resultsBody.firstChild);
-}
+/* ===== Desktop table render ===== */
+function appendRow(row){ resultsBody.appendChild(buildRow(row)); }
+function prependRow(row){ resultsBody.insertBefore(buildRow(row), resultsBody.firstChild); }
 
 function buildRow(row){
   const tr = document.createElement('tr');
   tr.dataset.id = row.id;
 
-  // Data
   const tdDate = document.createElement('td');
   tdDate.className = 'col-date';
   tdDate.textContent = formatDate(row.created_at);
   tr.appendChild(tdDate);
 
-  // Eurocode
   const tdEuro = document.createElement('td');
   tdEuro.className = 'col-eurocode';
   tdEuro.textContent = row.eurocode || '—';
   tr.appendChild(tdEuro);
 
-  // Marca
   const tdBrand = document.createElement('td');
   tdBrand.className = 'col-brand';
   tdBrand.textContent = row.brand || '—';
   tr.appendChild(tdBrand);
 
-  // Loja
   const tdLoja = document.createElement('td');
   tdLoja.className = 'col-loja';
   tdLoja.textContent = row.loja || '—';
   tr.appendChild(tdLoja);
 
-  // Ações (apenas ícones)
   const tdActions = document.createElement('td');
   tdActions.className = 'actions-col';
   tdActions.innerHTML = `
@@ -205,21 +233,32 @@ function buildRow(row){
   return tr;
 }
 
-function formatDate(s){
-  if (!s) return '—';
-  try {
-    const d = new Date(s);
-    const dd = String(d.getDate()).padStart(2,'0');
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const yy = d.getFullYear();
-    const hh = String(d.getHours()).padStart(2,'0');
-    const mi = String(d.getMinutes()).padStart(2,'0');
-    return `${dd}/${mm}/${yy} ${hh}:${mi}`;
-  } catch { return '—'; }
+/* ===== Mobile history render ===== */
+function appendMobileItem(row){
+  const li = buildMobileItem(row);
+  mobileHistory.appendChild(li);
+}
+function prependMobileItem(row){
+  const li = buildMobileItem(row);
+  mobileHistory.insertBefore(li, mobileHistory.firstChild);
+}
+function buildMobileItem(row){
+  const li = document.createElement('li');
+  const left = document.createElement('div');
+  const right = document.createElement('div');
+
+  left.innerHTML = `
+    <div class="code">${row.eurocode || '—'}</div>
+    <div class="brand">${row.brand ? `Marca: ${row.brand}` : 'Marca: —'}</div>
+  `;
+  right.textContent = '✔️';
+  li.appendChild(left);
+  li.appendChild(right);
+  return li;
 }
 
 /* =========================
-   EDIT / DELETE
+   EDIT / DELETE (desktop)
    ========================= */
 async function editRow(tr, id){
   try{
@@ -266,7 +305,7 @@ async function deleteRow(tr, id){
 
 /* =========================
    EUROCODE DETECTION
-   Regra pedida: 4 dígitos + 2 a 9 chars
+   (4 dígitos + 2 a 9 chars)
    ========================= */
 function detectEurocodeFromText(raw){
   if (!raw) return null;
@@ -276,13 +315,10 @@ function detectEurocodeFromText(raw){
     .replace(/\s+/g,' ')
     .trim();
 
-  // Tenta apanhar padrões clássicos (5175AGNBL, etc.)
   const rx = /\b(\d{4}[A-Z0-9]{2,9})\b/g;
   let match, best = null;
-
   while ((match = rx.exec(text)) !== null){
     const token = match[1];
-    // Heurística simples: evitar tokens só-numéricos (já garantido pelo {2,9})
     if (/^\d{4}[A-Z0-9]{2,9}$/.test(token)){
       best = token; break;
     }
@@ -334,7 +370,7 @@ function detectBrandFromText(rawText){
   for (const {canon, rx} of BRAND_PATTERNS){
     if (rx.test(text)) return canon;
   }
-  // fallback simples
+  // fallback leve
   const candidates = Array.from(new Set(text.split(' '))).filter(w => w.length>=4 && w.length<=12);
   const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM"];
   let best = {canon:null, dist:3};
@@ -393,14 +429,17 @@ function loading(msg){ setStatus(msg, ''); }
 function ok(msg){ setStatus('', msg); }
 function warn(msg){ setStatus('', '⚠️ ' + msg); }
 function error(msg){ setStatus('', '❌ ' + msg); }
-
 function setStatus(loadingMsg='', infoMsg=''){
-  mobileStatus.textContent  = loadingMsg || infoMsg || '';
-  desktopStatus.textContent = '';
+  if (isMobile) {
+    if (loadingMsg) { mobileStatus.textContent = loadingMsg; }
+    else if (infoMsg) { mobileStatus.textContent = infoMsg; }
+  } else {
+    desktopStatus.textContent = loadingMsg || infoMsg || '';
+  }
 }
 
 /* =========================
-   EXPORT CSV (simples)
+   EXPORT CSV (desktop)
    ========================= */
 function exportCSV(){
   const rows = Array.from(resultsBody.querySelectorAll('tr')).map(tr => {
@@ -419,4 +458,20 @@ function exportCSV(){
   const a = document.createElement('a');
   a.href = url; a.download = 'ocr_results.csv'; a.click();
   URL.revokeObjectURL(url);
+}
+
+/* =========================
+   HELPERS
+   ========================= */
+function formatDate(s){
+  if (!s) return '—';
+  try {
+    const d = new Date(s);
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+  } catch { return '—'; }
 }
