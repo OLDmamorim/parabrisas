@@ -1,4 +1,4 @@
-// APP.JS COMPLETO E FUNCIONAL
+// APP.JS (BD + Validação de Eurocode + CSS Forçado para Texto Pequeno)
 // =========================
 
 // ---- Endpoints ----
@@ -8,82 +8,420 @@ const SAVE_URL     = '/.netlify/functions/save-ocr';
 const UPDATE_URL   = '/.netlify/functions/update-ocr';
 const DELETE_URL   = '/.netlify/functions/delete-ocr';
 
-// ---- Seletores (DESKTOP) ----
-const fileInput     = document.getElementById('fileInput');
-const btnUpload     = document.getElementById('btnUpload');
-const btnExport     = document.getElementById('btnExport');
-const btnClear      = document.getElementById('btnClear');
-const resultsBody   = document.getElementById('resultsBody');
+// ---- Seletores ----
+const fileInput  = document.getElementById('fileInput');
+const btnUpload  = document.getElementById('btnUpload');
+const btnExport  = document.getElementById('btnExport');
+const btnClear   = document.getElementById('btnClear');
+const resultsBody= document.getElementById('resultsBody');
+
+const cameraInput  = document.getElementById('cameraInput');
+const btnCamera    = document.getElementById('btnCamera');
+const mobileStatus = document.getElementById('mobileStatus');
+const mobileHistoryList = document.getElementById('mobileHistoryList');
+
 const desktopStatus = document.getElementById('desktopStatus');
+const toast = document.getElementById('toast');
 
-// ---- Seletores (MODAL EDIT OCR) ----
-const editOcrModal     = document.getElementById('editOcrModal');
-const editOcrTextarea  = document.getElementById('editOcrTextarea');
-const editOcrSave      = document.getElementById('editOcrSave');
-const editOcrCancel    = document.getElementById('editOcrCancel');
-const editOcrClose     = document.getElementById('editOcrClose');
-
-// ---- Seletores (AJUDA DESKTOP – se existirem no HTML) ----
-const helpBtnDesktop = document.getElementById('helpBtnDesktop');
-const helpModal      = document.getElementById('helpModal');
-const helpClose      = document.getElementById('helpClose');
+// ---- Modal de edição OCR ----
+const editOcrModal = document.getElementById('editOcrModal');
+const editOcrTextarea = document.getElementById('editOcrTextarea');
+const editOcrClose = document.getElementById('editOcrClose');
+const editOcrCancel = document.getElementById('editOcrCancel');
+const editOcrSave = document.getElementById('editOcrSave');
 
 // ---- Estado ----
 let RESULTS = [];
 let FILTERED_RESULTS = [];
+let currentEditingRow = null;
+let currentImageData = null;
 
 // =========================
-// Utilitários
+// Adicionar CSS para forçar tamanho pequeno
 // =========================
-function showToast(msg, type = '') {
-  const toast = document.getElementById('toast');
+function addCustomCSS() {
+  const style = document.createElement('style');
+  style.textContent = `
+    /* Forçar tamanho em TODAS as células e seu conteúdo */
+    #resultsBody td,
+    #resultsBody td * {
+      font-size: 12px !important;
+      line-height: 1.35 !important;
+      letter-spacing: normal !important;
+      font-weight: 400 !important;
+    }
+
+    #resultsBody button {
+      font-size: 11px !important;
+    }
+
+    /* Cabeçalhos pequenos */
+    .table th {
+      font-size: 12px !important;
+      line-height: 1.35 !important;
+    }
+
+    /* Regra extra para a coluna OCR (e descendentes) */
+    .ocr-text,
+    .ocr-text * {
+      font-size: 12px !important;
+      line-height: 1.35 !important;
+      letter-spacing: normal !important;
+      font-weight: 400 !important;
+      white-space: pre-wrap !important;
+      word-break: break-word !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// =========================
+// Utils UI
+// =========================
+function showToast(msg, type='') {
   if (!toast) return;
   toast.textContent = msg;
   toast.className = 'toast show ' + type;
   setTimeout(() => { toast.className = 'toast'; }, 2200);
 }
 
-function setStatus(text, mode = '') {
-  if (!desktopStatus) return;
-  desktopStatus.textContent = text || '';
-  desktopStatus.classList.remove('error', 'success');
-  if (mode === 'error') desktopStatus.classList.add('error');
-  if (mode === 'success') desktopStatus.classList.add('success');
-}
-
-function escapeBackticks(str = '') {
-  return String(str).replace(/`/g, '\\`');
+function setStatus(el, text, mode='') {
+  if (!el) return;
+  el.textContent = text || '';
+  el.classList.remove('error','success');
+  if (mode==='error') el.classList.add('error');
+  if (mode==='success') el.classList.add('success');
 }
 
 // =========================
-/* Carregar resultados da API */
+// Procura de Eurocode (Na mesma linha)
+// =========================
+function createSearchField() {
+  const toolbar = document.querySelector('.toolbar');
+  if (!toolbar) return;
+
+  if (document.getElementById('searchField')) return;
+
+  const searchHTML = `
+    <span style="color: rgba(255,255,255,0.8); font-size: 14px; margin-left: 20px;">🔍</span>
+    <input type="text" id="searchField" placeholder="Procurar Eurocode..." 
+           style="margin-left: 8px; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.3); 
+                  border-radius: 4px; font-size: 14px; background: rgba(255,255,255,0.1); color: white; width: 180px;">
+    <button id="clearSearch" style="margin-left: 5px; padding: 6px 8px; background: none; color: rgba(255,255,255,0.7); 
+                                   border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer; font-size: 12px;">
+      ✕
+    </button>
+  `;
+
+  toolbar.innerHTML += searchHTML;
+
+  const searchField = document.getElementById('searchField');
+  const clearSearch = document.getElementById('clearSearch');
+
+  searchField.addEventListener('input', (e) => {
+    filterResults(e.target.value);
+  });
+
+  clearSearch.addEventListener('click', () => {
+    searchField.value = '';
+    filterResults('');
+  });
+
+  clearSearch.addEventListener('mouseover', () => {
+    clearSearch.style.background = 'rgba(255,255,255,0.1)';
+  });
+
+  clearSearch.addEventListener('mouseout', () => {
+    clearSearch.style.background = 'none';
+  });
+}
+
+function filterResults(searchTerm) {
+  if (!searchTerm.trim()) {
+    FILTERED_RESULTS = [...RESULTS];
+  } else {
+    const term = searchTerm.toLowerCase();
+    FILTERED_RESULTS = RESULTS.filter(row => 
+      (row.eurocode || '').toLowerCase().includes(term)
+    );
+  }
+  renderTable();
+}
+
+// =========================
+// Extração de Eurocodes Melhorada
+// =========================
+function extractAllEurocodes(text) {
+  if (!text) return [];
+
+  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
+  const matches = text.match(pattern) || [];
+
+  const unique = [...new Set(matches)];
+  return unique.sort((a, b) => b.length - a.length).slice(0, 4);
+}
+
+// =========================
+// Modal de Validação de Eurocode
+// =========================
+function showEurocodeValidationModal(ocrText, filename, source) {
+  const eurocodes = extractAllEurocodes(ocrText);
+
+  if (eurocodes.length === 0) {
+    if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
+      saveToDatabase(ocrText, '', filename, source);
+    }
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center;
+    z-index: 10000; font-family: Arial, sans-serif;
+  `;
+
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;
+    max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  `;
+
+  content.innerHTML = `
+    <h3 style="margin-top: 0; color: #333; text-align: center;">
+      🔍 Selecionar Eurocode
+    </h3>
+    <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; max-height: 150px; overflow-y: auto;">
+      <strong>Texto lido:</strong><br>
+      <span style="font-size: 12px; line-height: 1.4;">${ocrText.replace(/\n/g, '<br>')}</span>
+    </div>
+    <p style="margin-bottom: 15px; color: #666;">
+      <strong>Eurocodes encontrados:</strong> Clique no correto
+    </p>
+    <div id="eurocodeOptions" style="margin-bottom: 20px;">
+      ${eurocodes.map((code) => `
+        <button onclick="selectEurocode('${code}')" 
+                style="display: block; width: 100%; padding: 12px; margin-bottom: 8px; 
+                       background: #007acc; color: white; border: none; border-radius: 5px; 
+                       cursor: pointer; font-size: 16px; font-weight: bold; letter-spacing: 1px;"
+                onmouseover="this.style.background='#005a9e'" 
+                onmouseout="this.style.background='#007acc'">
+          ${code}
+        </button>
+      `).join('')}
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button onclick="selectEurocode('')" 
+              style="padding: 10px 20px; background: #6c757d; color: white; border: none; 
+                     border-radius: 5px; cursor: pointer;">
+        Sem Eurocode
+      </button>
+      <button onclick="closeEurocodeModal()" 
+              style="padding: 10px 20px; background: #dc3545; color: white; border: none; 
+                     border-radius: 5px; cursor: pointer;">
+        Cancelar
+      </button>
+    </div>
+  `;
+
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+
+  window.currentEurocodeModal = modal;
+  window.currentImageData = { ocrText, filename, source };
+}
+
+window.selectEurocode = function(selectedCode) {
+  const { ocrText, filename, source } = window.currentImageData;
+  closeEurocodeModal();
+  saveToDatabase(ocrText, selectedCode, filename, source);
+};
+
+window.closeEurocodeModal = function() {
+  if (window.currentEurocodeModal) {
+    document.body.removeChild(window.currentEurocodeModal);
+    window.currentEurocodeModal = null;
+    window.currentImageData = null;
+  }
+};
+
+// =========================
+// Guardar na Base de Dados
+// =========================
+async function saveToDatabase(text, eurocode, filename, source) {
+  try {
+    setStatus(desktopStatus, 'A guardar na base de dados...');
+    setStatus(mobileStatus, 'A guardar na base de dados...');
+
+    const response = await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, eurocode, filename, source })
+    });
+
+    if (response.ok) {
+      showToast('Dados guardados com sucesso!', 'success');
+      setStatus(desktopStatus, 'Dados guardados com sucesso!', 'success');
+      setStatus(mobileStatus, 'Dados guardados com sucesso!', 'success');
+      await loadResults();
+    } else {
+      throw new Error('Erro ao guardar na base de dados');
+    }
+  } catch (error) {
+    console.error('Erro ao guardar:', error);
+    showToast('Erro ao guardar na base de dados: ' + error.message, 'error');
+    setStatus(desktopStatus, 'Erro ao guardar na base de dados', 'error');
+    setStatus(mobileStatus, 'Erro ao guardar na base de dados', 'error');
+  }
+}
+
+// =========================
+// Modal de edição OCR (Corrigido)
+// =========================
+function openEditOcrModal(row) {
+  if (!editOcrModal || !editOcrTextarea) {
+    console.error('Modal de edição não encontrado');
+    return;
+  }
+
+  currentEditingRow = row;
+  editOcrTextarea.value = row.text || '';
+  editOcrModal.style.display = 'flex';
+  editOcrTextarea.focus();
+
+  const handleSave = async () => {
+    const newText = editOcrTextarea.value.trim();
+    if (!newText) {
+      showToast('Texto não pode estar vazio', 'error');
+      return;
+    }
+
+    try {
+      const response = await fetch(UPDATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: row.id,
+          text: newText,
+          eurocode: row.eurocode || '',
+          filename: row.filename || '',
+          source: row.source || ''
+        })
+      });
+
+      if (response.ok) {
+        await response.json();
+        showToast('Texto atualizado com sucesso!', 'success');
+        await loadResults();
+        handleCancel();
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Erro ${response.status}: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+      showToast('Erro ao atualizar: ' + error.message, 'error');
+    }
+  };
+
+  const handleCancel = () => {
+    editOcrModal.style.display = 'none';
+    currentEditingRow = null;
+    cleanup();
+  };
+
+  const handleKeydown = (e) => {
+    if (e.key === 'Escape') handleCancel();
+    else if (e.key === 'Enter' && e.ctrlKey) handleSave();
+  };
+
+  const handleBackdropClick = (e) => {
+    if (e.target === editOcrModal) handleCancel();
+  };
+
+  function cleanup() {
+    if (editOcrSave) editOcrSave.removeEventListener('click', handleSave);
+    if (editOcrCancel) editOcrCancel.removeEventListener('click', handleCancel);
+    if (editOcrClose) editOcrClose.removeEventListener('click', handleCancel);
+    document.removeEventListener('keydown', handleKeydown);
+    editOcrModal.removeEventListener('click', handleBackdropClick);
+  }
+
+  if (editOcrSave) editOcrSave.addEventListener('click', handleSave);
+  if (editOcrCancel) editOcrCancel.addEventListener('click', handleCancel);
+  if (editOcrClose) editOcrClose.addEventListener('click', handleCancel);
+  document.addEventListener('keydown', handleKeydown);
+  editOcrModal.addEventListener('click', handleBackdropClick);
+}
+
+window.openEditOcrModal = openEditOcrModal;
+
+// =========================
+// Normalização
+// =========================
+function normalizeRow(r){
+  let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
+                  r.date || r.datetime || r.data || r.hora || r.created || 
+                  r.updated_at || r.updatedAt || r.ts || '';
+
+  if (!timestamp) timestamp = new Date().toLocaleString('pt-PT');
+  if (typeof timestamp === 'number') timestamp = new Date(timestamp).toLocaleString('pt-PT');
+  if (typeof timestamp === 'string' && timestamp.includes('T')) {
+    try { timestamp = new Date(timestamp).toLocaleString('pt-PT'); } catch (e) {}
+  }
+
+  return {
+    id:          r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
+    timestamp:   timestamp,
+    text:        r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
+    eurocode:    r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
+    filename:    r.filename ?? r.file ?? '',
+    source:      r.source ?? r.origem ?? ''
+  };
+}
+
+// =========================
+// OCR
+// =========================
+async function runOCR(imageBase64) {
+  try {
+    const res = await fetch(OCR_ENDPOINT, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ imageBase64 })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.text || data.fullText || data.raw || '';
+  } catch (err) {
+    console.error('Erro no OCR:', err);
+    showToast('Erro no OCR', 'error');
+    return '';
+  }
+}
+
+// =========================
+// Carregar resultados da API
 // =========================
 async function loadResults() {
   try {
-    setStatus('A carregar dados...');
+    setStatus(desktopStatus, 'A carregar dados...');
+
     const response = await fetch(LIST_URL);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
-    if (data.ok && Array.isArray(data.rows)) {
-      RESULTS = data.rows.map(row => ({
-        id:        row.id || row._id,
-        timestamp: row.timestamp || row.datahora || new Date().toLocaleString('pt-PT'),
-        text:      row.text || row.ocr_text || '',
-        eurocode:  row.eurocode || row.euro_validado || '',
-        filename:  row.filename || row.file || '',
-        source:    row.source || row.origem || ''
-      }));
 
-      // Mostramos tudo por omissão
-      FILTERED_RESULTS = [];
+    if (data.ok && Array.isArray(data.rows)) {
+      RESULTS = data.rows.map(normalizeRow);
+      FILTERED_RESULTS = [...RESULTS];
       renderTable();
-      setStatus(`${RESULTS.length} registos carregados`, 'success');
+      setStatus(desktopStatus, `${RESULTS.length} registos carregados`, 'success');
     } else {
-      throw new Error('Resposta inválida');
+      throw new Error('Formato de resposta inválido');
     }
   } catch (error) {
-    setStatus('Erro a carregar dados', 'error');
+    console.error('Erro ao carregar dados:', error);
+    setStatus(desktopStatus, 'Erro a carregar dados', 'error');
     RESULTS = [];
     FILTERED_RESULTS = [];
     renderTable();
@@ -91,7 +429,7 @@ async function loadResults() {
 }
 
 // =========================
-/* Renderizar tabela (DESKTOP) */
+// Renderizar tabela
 // =========================
 function renderTable() {
   if (!resultsBody) return;
@@ -99,37 +437,50 @@ function renderTable() {
   const dataToShow = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
 
   if (dataToShow.length === 0) {
-    resultsBody.innerHTML = `
-      <tr>
-        <td colspan="5" style="text-align:center; padding:20px;">
-          Nenhum registo encontrado
-        </td>
-      </tr>`;
+    const searchField = document.getElementById('searchField');
+    const isSearching = searchField && searchField.value.trim();
+    const message = isSearching ? 'Nenhum registo encontrado para esta procura' : 'Nenhum registo encontrado';
+    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
-  resultsBody.innerHTML = dataToShow.map((row, index) => `
+  resultsBody.innerHTML = dataToShow.map((row, index) => {
+    const originalIndex = RESULTS.findIndex(r => r.id === row.id);
+
+    return `
     <tr>
       <td>${index + 1}</td>
       <td>${row.timestamp}</td>
-      <td class="ocr-text">${row.text}</td>
-      <td style="font-weight:700; color:#007acc;">${row.eurocode || ''}</td>
-      <td class="col-actions" style="white-space:nowrap">
-        <button
-          class="btn btn-mini"
-          title="Editar texto OCR"
-          onclick="openEditModal('${row.id}', \`${escapeBackticks(row.text)}\`)">✏️</button>
-        <button
-          class="btn btn-mini danger"
-          title="Eliminar registo"
-          onclick="deleteRow('${row.id}')">🗑️</button>
+      <td class="ocr-text"
+          style="font-size:12px; line-height:1.35; white-space:pre-wrap; word-break:break-word;">
+        ${row.text}
+      </td>
+      <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
+      <td>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
+                  style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
+                  title="Editar texto OCR"
+                  onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
+                  onmouseout="this.style.background='none'; this.style.color='#666'">
+            ✏️ Editar
+          </button>
+          <button onclick="deleteRow(${row.id})" 
+                  style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
+                  title="Eliminar registo"
+                  onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
+                  onmouseout="this.style.background='none'">
+            🗑️ Apagar
+          </button>
+        </div>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // =========================
-/* Eliminar registo */
+// Eliminar registo
 // =========================
 async function deleteRow(id) {
   if (!confirm('Tem a certeza que quer eliminar este registo?')) return;
@@ -141,114 +492,52 @@ async function deleteRow(id) {
       body: JSON.stringify({ id })
     });
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    showToast('Registo eliminado com sucesso!', 'success');
-    await loadResults();
+    if (response.ok) {
+      showToast('Registo eliminado com sucesso!', 'success');
+      await loadResults();
+    } else {
+      throw new Error('Erro ao eliminar');
+    }
   } catch (error) {
+    console.error('Erro ao eliminar:', error);
     showToast('Erro ao eliminar registo', 'error');
   }
 }
 
+window.deleteRow = deleteRow;
+
 // =========================
-/* Processar imagem (upload desktop) */
+// Processar imagem
 // =========================
 async function processImage(file) {
+  if (!file) return;
+
+  setStatus(desktopStatus, 'A processar imagem...');
+  setStatus(mobileStatus, 'A processar imagem...');
+
   try {
-    setStatus('A processar imagem...');
-    const base64 = await new Promise((resolve) => {
+    const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result || '';
-        // result = "data:<mime>;base64,AAA..."
-        resolve(String(result).split(',')[1] || '');
-      };
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
       reader.readAsDataURL(file);
     });
 
-    const response = await fetch(OCR_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: `data:${file.type};base64,${base64}` })
-    });
+    const ocrText = await runOCR(base64);
+    if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
 
-    const data = await response.json();
-    const ocrText = data.text || '';
+    setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
+    setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
 
-    if (ocrText) {
-      setStatus('Texto extraído!', 'success');
-      await saveToDatabase(ocrText, '', file.name, 'upload');
-    } else {
-      setStatus('Sem texto detetado', 'error');
-    }
+    showEurocodeValidationModal(ocrText, file.name, 'upload');
   } catch (error) {
-    setStatus('Erro ao processar imagem', 'error');
+    console.error('Erro ao processar imagem:', error);
+    showToast('Erro ao processar imagem: ' + error.message, 'error');
+    setStatus(desktopStatus, 'Erro ao processar imagem', 'error');
+    setStatus(mobileStatus, 'Erro ao processar imagem', 'error');
   }
 }
 
-// =========================
-/* Guardar na Base de Dados */
-// =========================
-async function saveToDatabase(text, eurocode, filename, source) {
-  try {
-    setStatus('A guardar na base de dados...');
-    const response = await fetch(SAVE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, eurocode, filename, source })
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    showToast('Dados guardados com sucesso!', 'success');
-    await loadResults();
-  } catch (error) {
-    setStatus('Erro ao guardar na base de dados', 'error');
-  }
-}
-
-// =========================
-/* Atualizar texto (Modal) */
-// =========================
-function openEditModal(id, text) {
-  if (!editOcrModal || !editOcrTextarea) return;
-  editOcrTextarea.value = text || '';
-  editOcrModal.dataset.editingId = id;
-  editOcrModal.classList.add('show');
-}
-
-function closeEditModal() {
-  if (!editOcrModal) return;
-  editOcrModal.classList.remove('show');
-  delete editOcrModal.dataset.editingId;
-}
-
-async function saveEditedText() {
-  if (!editOcrModal || !editOcrTextarea) return;
-  const id   = editOcrModal.dataset.editingId;
-  const text = editOcrTextarea.value;
-
-  if (!id) return;
-
-  try {
-    const response = await fetch(UPDATE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, text })
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    showToast('Texto atualizado com sucesso!', 'success');
-    closeEditModal();
-    await loadResults();
-  } catch (err) {
-    showToast('Erro ao atualizar', 'error');
-  }
-}
-
-// =========================
-/* Export CSV */
 // =========================
 function exportCSV() {
   const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
@@ -280,265 +569,62 @@ function exportCSV() {
 }
 
 // =========================
-/* Event Listeners */
-// =========================
-if (btnUpload) {
-  btnUpload.addEventListener('click', () => fileInput?.click());
-}
+async function clearTable() {
+  if (!confirm('Tem a certeza que quer limpar todos os dados? Esta ação não pode ser desfeita.')) return;
 
-if (fileInput) {
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (file) processImage(file);
-  });
-}
+  try {
+    const response = await fetch('/.netlify/functions/clear-ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
 
-if (btnExport) {
-  btnExport.addEventListener('click', exportCSV);
-}
-
-// Se existir o botão "Limpar", apenas feedback (sem apagar nada no backend)
-if (btnClear) {
-  btnClear.addEventListener('click', () => {
-    showToast('Função de limpar tabela não disponível', 'error');
-  });
-}
-
-// Modal Edit OCR
-if (editOcrSave)   editOcrSave.addEventListener('click', saveEditedText);
-if (editOcrCancel) editOcrCancel.addEventListener('click', closeEditModal);
-if (editOcrClose)  editOcrClose.addEventListener('click', closeEditModal);
-
-// Modal Ajuda (opcional)
-if (helpBtnDesktop && helpModal && helpClose) {
-  helpBtnDesktop.addEventListener('click', () => helpModal.classList.add('show'));
-  helpClose.addEventListener('click', () => helpModal.classList.remove('show'));
-  helpModal.addEventListener('click', (e) => {
-    if (e.target === helpModal) helpModal.classList.remove('show');
-  });
+    if (response.ok) {
+      showToast('Tabela limpa com sucesso!', 'success');
+      await loadResults();
+    } else {
+      throw new Error('Erro ao limpar tabela');
+    }
+  } catch (error) {
+    console.error('Erro ao limpar tabela:', error);
+    showToast('Erro ao limpar tabela', 'error');
+  }
 }
 
 // =========================
-/* Funções usadas pela versão mobile moderna (se existir) */
-// =========================
-async function saveEurocode(code, ocrText) {
-  // Guarda OCR + Eurocode vindo da UI mobile moderna
-  await saveToDatabase(ocrText || '', code || '', '', 'camera');
-}
-async function saveWithoutEurocode(ocrText) {
-  // Guarda apenas OCR
-  await saveToDatabase(ocrText || '', '', '', 'camera');
-}
-
-// Tornar funções globais para outros scripts inline
-window.deleteRow           = deleteRow;
-window.openEditModal       = openEditModal;
-window.saveEurocode        = saveEurocode;
-window.saveWithoutEurocode = saveWithoutEurocode;
-
-// =========================
-/* Inicialização */
+// Inicialização
 // =========================
 document.addEventListener('DOMContentLoaded', () => {
+  addCustomCSS();     // injeta as regras finais
   loadResults();
+  setTimeout(createSearchField, 100);
+
+  // =========================
+  // Event Listeners (movidos para dentro do DOMContentLoaded)
+  // =========================
+  if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
+  if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
+  if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
+  if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
+  if (btnExport)  btnExport.addEventListener('click', exportCSV);
+  if (btnClear)   btnClear.addEventListener('click', clearTable);
+
+  const isMobile = window.innerWidth <= 768;
+  const mobileView = document.getElementById('mobileView');
+  const desktopView = document.getElementById('desktopView');
+  const viewBadge = document.getElementById('viewBadge');
+
+  if (isMobile) {
+    if (mobileView) mobileView.style.display = 'block';
+    if (desktopView) desktopView.style.display = 'none';
+    if (viewBadge) viewBadge.textContent = 'Mobile';
+  } else {
+    if (mobileView) mobileView.style.display = 'none';
+    if (desktopView) desktopView.style.display = 'block';
+    if (viewBadge) viewBadge.textContent = 'Desktop';
+  }
 });
 
-/* =======================
- * PATCH: MOBILE MODERNO
- * (cola no fim do app.js)
- * ======================= */
-(function () {
-  // Evita duplicar listeners se o ficheiro for carregado 2x
-  if (window.__modern_wired__) return;
-  window.__modern_wired__ = true;
-
-  // Endpoints usados no teu projeto (mantém os teus valores se já existem)
-  const OCR_ENDPOINT = typeof window.OCR_ENDPOINT === 'string'
-    ? window.OCR_ENDPOINT
-    : '/.netlify/functions/ocr-proxy';
-  const SAVE_URL = typeof window.SAVE_URL === 'string'
-    ? window.SAVE_URL
-    : '/.netlify/functions/save-ocr';
-
-  // Seletores modernos
-  const cameraInput         = document.getElementById('cameraInput');
-  const modernBtn           = document.getElementById('modernCameraButton');
-  const modernStatus        = document.getElementById('modernStatus');
-  const euroModal           = document.getElementById('modernEurocodeModal');
-  const ocrTextEl           = document.getElementById('modernOcrText');
-  const euroListEl          = document.getElementById('modernEurocodeList');
-  const btnNoEuro           = document.getElementById('modernBtnNoEurocode');
-  const btnCancel           = document.getElementById('modernBtnCancel');
-  const modernCapturesList  = document.getElementById('modernCapturesList');
-
-  // Pequenas helpers de UI
-  function startProcessingUI() {
-    if (!modernBtn) return;
-    modernBtn.classList.add('processing');
-    const lbl = modernBtn.querySelector('.modern-camera-label');
-    if (lbl) lbl.textContent = 'A processar...';
-    if (modernStatus) { modernStatus.textContent = 'A processar...'; modernStatus.classList.add('show'); }
-  }
-  function stopProcessingUI() {
-    if (!modernBtn) return;
-    modernBtn.classList.remove('processing');
-    const lbl = modernBtn.querySelector('.modern-camera-label');
-    if (lbl) lbl.textContent = 'Eurocode';
-    if (modernStatus) modernStatus.classList.remove('show');
-  }
-
-  // Extrair eurocodes do texto OCR (4 dígitos + 2–9 alfanum.)
-  function extractEurocodes(t = '') {
-    const up = String(t).toUpperCase();
-    const set = new Set();
-    const re = /\b\d{4}[A-Z0-9]{2,9}\b/g;
-    let m; while ((m = re.exec(up)) !== null) set.add(m[0]);
-    return [...set];
-  }
-
-  // Ler ficheiro → base64 (sem prefixo data:)
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result).split(',')[1] || '');
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
-
-  // Guardar (usa a tua função se existir; senão faz POST)
-  async function saveRecord(text, eurocode, filename, source) {
-    if (typeof window.saveToDatabase === 'function') {
-      await window.saveToDatabase(text, eurocode, filename, source);
-      return;
-    }
-    await fetch(SAVE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, eurocode, filename, source })
-    });
-  }
-
-  // Modal moderno (usa o do HTML se existir; senão fallback)
-  function openEuroModal(ocrText, eurocodes) {
-    // Se a página já tiver window.showEurocodePicker (de outro script), usa-o:
-    if (typeof window.showEurocodePicker === 'function') {
-      window.showEurocodePicker(ocrText, eurocodes);
-      return;
-    }
-    // Fallback simples com os elementos já no DOM:
-    if (!euroModal || !ocrTextEl || !euroListEl) return;
-    ocrTextEl.textContent = ocrText || '';
-    euroListEl.innerHTML = '';
-    if (Array.isArray(eurocodes) && eurocodes.length) {
-      eurocodes.forEach(code => {
-        const b = document.createElement('button');
-        b.className = 'modern-eurocode-button';
-        b.textContent = code;
-        b.addEventListener('click', async () => {
-          euroModal.classList.remove('show');
-          stopProcessingUI();
-          await saveRecord(ocrText, code, 'camera.jpg', 'camera');
-          if (typeof window.loadResults === 'function') window.loadResults();
-        });
-        euroListEl.appendChild(b);
-      });
-    } else {
-      const d = document.createElement('div');
-      d.style.color = '#718096';
-      d.style.fontWeight = '600';
-      d.textContent = 'Nenhum eurocode identificado';
-      euroListEl.appendChild(d);
-    }
-    euroModal.classList.add('show');
-  }
-
-  // Lidar com evento do modal moderno (se vier de outro script)
-  document.addEventListener('eurocode-selected', async (ev) => {
-    const { code, ocrText } = ev.detail || {};
-    stopProcessingUI();
-    await saveRecord(ocrText || '', code || '', 'camera.jpg', 'camera');
-    if (typeof window.loadResults === 'function') window.loadResults();
-  });
-
-  // Botões do modal (fallback)
-  btnNoEuro && btnNoEuro.addEventListener('click', async () => {
-    euroModal && euroModal.classList.remove('show');
-    stopProcessingUI();
-    const text = ocrTextEl ? ocrTextEl.textContent : '';
-    await saveRecord(text, '', 'camera.jpg', 'camera');
-    if (typeof window.loadResults === 'function') window.loadResults();
-  });
-  btnCancel && btnCancel.addEventListener('click', () => {
-    euroModal && euroModal.classList.remove('show');
-    stopProcessingUI();
-  });
-
-  // Processo OCR da imagem da câmara
-  async function processCameraFile(file) {
-    try {
-      startProcessingUI();
-      const base64 = await fileToBase64(file);
-      const resp = await fetch(OCR_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: `data:${file.type || 'image/jpeg'};base64,${base64}`
-        })
-      });
-      const data = await resp.json();
-      const ocrText = data && data.text ? data.text : '';
-      const eurocodes = extractEurocodes(ocrText);
-      openEuroModal(ocrText, eurocodes);
-    } catch (e) {
-      console.error('OCR error', e);
-      stopProcessingUI();
-      // guarda pelo menos o texto vazio para histórico, se quiseres:
-      // await saveRecord('', '', 'camera.jpg', 'camera');
-    }
-  }
-
-  // Clicar no círculo → abrir input
-  if (modernBtn && cameraInput) {
-    modernBtn.addEventListener('click', () => cameraInput.click());
-  }
-
-  // Selecionar foto da câmara → processar
-  if (cameraInput) {
-    cameraInput.addEventListener('change', (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (f) processCameraFile(f);
-      try { e.target.value = ''; } catch (_) {}
-    });
-  }
-
-  // Render “Últimas Capturas” no mobile (se tiveres RESULTS carregados)
-  function renderModernCapturesFrom(rows) {
-    if (!modernCapturesList || !Array.isArray(rows)) return;
-    const source = rows.filter(r => r.eurocode).slice(0, 5);
-    if (source.length === 0) {
-      modernCapturesList.innerHTML =
-        '<div class="modern-empty">Ainda não há capturas</div>';
-      return;
-    }
-    modernCapturesList.innerHTML = source.map(r => `
-      <div class="modern-capture-item" style="
-        display:flex;justify-content:space-between;align-items:center;
-        padding:12px 16px;background:#f7fafc;border-radius:12px;border-left:4px solid #22d3ee;">
-        <span style="font-weight:800;color:#2d3748">${r.eurocode}</span>
-        <span style="color:#22d3ee;font-weight:900">✓</span>
-      </div>`).join('');
-  }
-
-  // Se o teu app expõe loadResults/RESULTS, atualiza também no boot e após guardar
-  if (typeof window.RESULTS !== 'undefined') renderModernCapturesFrom(window.RESULTS);
-  // Monkey-patch simples para atualizar depois de loadResults()
-  const _oldLoad = window.loadResults;
-  if (typeof _oldLoad === 'function') {
-    window.loadResults = async function () {
-      const r = await _oldLoad.apply(this, arguments);
-      try { renderModernCapturesFrom(window.RESULTS || []); } catch(_) {}
-      return r;
-    };
-  }
-})();
+// =========================
+// Atualização automática
+// =========================
+setInterval(loadResults, 30000);

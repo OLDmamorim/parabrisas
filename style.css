@@ -917,28 +917,3 @@ table#resultsTable > thead > tr > th:nth-child(3) {
   font-size: 14px !important;
   line-height: 1.2 !important;
 }
-
-/* Botões de ação só com ícone */
-.icon-btn{
-  background: linear-gradient(135deg, #1e293b 0%, #111827 100%);
-  border: 1px solid var(--cardBorder);
-  color: var(--text);
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center; justify-content: center;
-  cursor: pointer;
-  margin-right: 6px;
-  font-size: 18px;
-  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
-}
-.icon-btn:hover{
-  transform: translateY(-1px);
-  border-color:#334155;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-.icon-btn.danger{
-  background: linear-gradient(135deg, #1a1111 0%, #0f0808 100%);
-  color: #fecaca;
-  border-color: #432;
-}
