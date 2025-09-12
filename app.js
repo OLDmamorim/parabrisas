@@ -428,7 +428,7 @@ function renderTable() {
       <tr>
         <td>${index + 1}</td>
         <td>${row.timestamp}</td>
-        <td style="font-weight: 600; color: #2563eb;">${glassType}</td>
+        <td style="font-weight: 600; color: #16a34a;">${glassType}</td>
         <td>${row.vehicle || '—'}</td>
         <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
         <td>${row.brand || '—'}</td>
