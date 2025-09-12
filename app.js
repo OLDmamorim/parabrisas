@@ -37,12 +37,9 @@ let currentEditingRow = null;
 let currentImageData = null;
 
 // =========================
-// Adicionar CSS para forçar tamanho pequeno
-// =========================
 function addCustomCSS() {
   const style = document.createElement('style');
   style.textContent = `
-    /* Forçar tamanho em TODAS as células e seu conteúdo */
     #resultsBody td,
     #resultsBody td * {
       font-size: 12px !important;
@@ -50,26 +47,12 @@ function addCustomCSS() {
       letter-spacing: normal !important;
       font-weight: 400 !important;
     }
-
-    #resultsBody button {
-      font-size: 11px !important;
-    }
-
-    /* Cabeçalhos pequenos */
-    .table th {
-      font-size: 12px !important;
-      line-height: 1.35 !important;
-    }
-
-    /* Regra extra para a coluna OCR (e descendentes) */
-    .ocr-text,
-    .ocr-text * {
-      font-size: 12px !important;
-      line-height: 1.35 !important;
-      letter-spacing: normal !important;
-      font-weight: 400 !important;
-      white-space: pre-wrap !important;
-      word-break: break-word !important;
+    #resultsBody button { font-size: 11px !important; }
+    .table th { font-size: 12px !important; line-height: 1.35 !important; }
+    .ocr-text, .ocr-text * {
+      font-size: 12px !important; line-height: 1.35 !important;
+      letter-spacing: normal !important; font-weight: 400 !important;
+      white-space: pre-wrap !important; word-break: break-word !important;
     }
   `;
   document.head.appendChild(style);
@@ -99,7 +82,6 @@ function setStatus(el, text, mode='') {
 function createSearchField() {
   const toolbar = document.querySelector('.toolbar');
   if (!toolbar) return;
-
   if (document.getElementById('searchField')) return;
 
   const searchHTML = `
@@ -112,28 +94,15 @@ function createSearchField() {
       ✕
     </button>
   `;
-
   toolbar.innerHTML += searchHTML;
 
   const searchField = document.getElementById('searchField');
   const clearSearch = document.getElementById('clearSearch');
 
-  searchField.addEventListener('input', (e) => {
-    filterResults(e.target.value);
-  });
-
-  clearSearch.addEventListener('click', () => {
-    searchField.value = '';
-    filterResults('');
-  });
-
-  clearSearch.addEventListener('mouseover', () => {
-    clearSearch.style.background = 'rgba(255,255,255,0.1)';
-  });
-
-  clearSearch.addEventListener('mouseout', () => {
-    clearSearch.style.background = 'none';
-  });
+  searchField.addEventListener('input', (e) => filterResults(e.target.value));
+  clearSearch.addEventListener('click', () => { searchField.value = ''; filterResults(''); });
+  clearSearch.addEventListener('mouseover', () => { clearSearch.style.background = 'rgba(255,255,255,0.1)'; });
+  clearSearch.addEventListener('mouseout', () => { clearSearch.style.background = 'none'; });
 }
 
 function filterResults(searchTerm) {
@@ -141,9 +110,7 @@ function filterResults(searchTerm) {
     FILTERED_RESULTS = [...RESULTS];
   } else {
     const term = searchTerm.toLowerCase();
-    FILTERED_RESULTS = RESULTS.filter(row => 
-      (row.eurocode || '').toLowerCase().includes(term)
-    );
+    FILTERED_RESULTS = RESULTS.filter(row => (row.eurocode || '').toLowerCase().includes(term));
   }
   renderTable();
 }
@@ -153,10 +120,8 @@ function filterResults(searchTerm) {
 // =========================
 function extractAllEurocodes(text) {
   if (!text) return [];
-
   const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
   const matches = text.match(pattern) || [];
-
   const unique = [...new Set(matches)];
   return unique.sort((a, b) => b.length - a.length).slice(0, 4);
 }
@@ -169,7 +134,7 @@ function showEurocodeValidationModal(ocrText, filename, source) {
 
   if (eurocodes.length === 0) {
     if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
-      saveToDatabase(ocrText, '', filename, source);
+      saveToDatabase(ocrText, '', filename, source); // << brand será calculada no save
     }
     return;
   }
@@ -188,9 +153,7 @@ function showEurocodeValidationModal(ocrText, filename, source) {
   `;
 
   content.innerHTML = `
-    <h3 style="margin-top: 0; color: #333; text-align: center;">
-      🔍 Selecionar Eurocode
-    </h3>
+    <h3 style="margin-top: 0; color: #333; text-align: center;">🔍 Selecionar Eurocode</h3>
     <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; max-height: 150px; overflow-y: auto;">
       <strong>Texto lido:</strong><br>
       <span style="font-size: 12px; line-height: 1.4;">${ocrText.replace(/\n/g, '<br>')}</span>
@@ -213,14 +176,10 @@ function showEurocodeValidationModal(ocrText, filename, source) {
     <div style="display: flex; gap: 10px; justify-content: center;">
       <button onclick="selectEurocode('')" 
               style="padding: 10px 20px; background: #6c757d; color: white; border: none; 
-                     border-radius: 5px; cursor: pointer;">
-        Sem Eurocode
-      </button>
+                     border-radius: 5px; cursor: pointer;">Sem Eurocode</button>
       <button onclick="closeEurocodeModal()" 
               style="padding: 10px 20px; background: #dc3545; color: white; border: none; 
-                     border-radius: 5px; cursor: pointer;">
-        Cancelar
-      </button>
+                     border-radius: 5px; cursor: pointer;">Cancelar</button>
     </div>
   `;
 
@@ -234,7 +193,7 @@ function showEurocodeValidationModal(ocrText, filename, source) {
 window.selectEurocode = function(selectedCode) {
   const { ocrText, filename, source } = window.currentImageData;
   closeEurocodeModal();
-  saveToDatabase(ocrText, selectedCode, filename, source);
+  saveToDatabase(ocrText, selectedCode, filename, source); // << brand será calculada no save
 };
 
 window.closeEurocodeModal = function() {
@@ -246,23 +205,27 @@ window.closeEurocodeModal = function() {
 };
 
 // =========================
-// Guardar na Base de Dados
+// Guardar na Base de Dados (AGORA com brand)
 // =========================
 async function saveToDatabase(text, eurocode, filename, source) {
   try {
     setStatus(desktopStatus, 'A guardar na base de dados...');
-    setStatus(mobileStatus, 'A guardar na base de dados...');
+    setStatus(mobileStatus,  'A guardar na base de dados...');
+
+    // >>> NOVO: detetar marca a partir do texto OCR
+    const brand = detectBrandFromText(text) || '';
 
     const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, eurocode, filename, source })
+      // >>> NOVO: incluir brand no payload (resto mantém)
+      body: JSON.stringify({ text, eurocode, filename, source, brand })
     });
 
     if (response.ok) {
       showToast('Dados guardados com sucesso!', 'success');
       setStatus(desktopStatus, 'Dados guardados com sucesso!', 'success');
-      setStatus(mobileStatus, 'Dados guardados com sucesso!', 'success');
+      setStatus(mobileStatus,  'Dados guardados com sucesso!', 'success');
       await loadResults();
     } else {
       throw new Error('Erro ao guardar na base de dados');
@@ -271,7 +234,7 @@ async function saveToDatabase(text, eurocode, filename, source) {
     console.error('Erro ao guardar:', error);
     showToast('Erro ao guardar na base de dados: ' + error.message, 'error');
     setStatus(desktopStatus, 'Erro ao guardar na base de dados', 'error');
-    setStatus(mobileStatus, 'Erro ao guardar na base de dados', 'error');
+    setStatus(mobileStatus,  'Erro ao guardar na base de dados', 'error');
   }
 }
 
@@ -297,15 +260,20 @@ function openEditOcrModal(row) {
     }
 
     try {
+      // >>> NOVO: recalcular brand se o texto foi editado
+      const newBrand = detectBrandFromText(newText) || '';
+
       const response = await fetch(UPDATE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // >>> NOVO: enviar brand no update (será ignorado se o backend não suportar)
         body: JSON.stringify({
           id: row.id,
           text: newText,
           eurocode: row.eurocode || '',
           filename: row.filename || '',
-          source: row.source || ''
+          source: row.source || '',
+          brand: newBrand
         })
       });
 
@@ -377,6 +345,7 @@ function normalizeRow(r){
     eurocode:    r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
     filename:    r.filename ?? r.file ?? '',
     source:      r.source ?? r.origem ?? ''
+    // (brand existe no backend mas não é necessário para render atual)
   };
 }
 
@@ -529,7 +498,7 @@ async function processImage(file) {
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
 
-    showEurocodeValidationModal(ocrText, file.name, 'upload');
+    showEurocodeValidationModal(ocrText, file.name, 'upload'); // brand calculada no save
   } catch (error) {
     console.error('Erro ao processar imagem:', error);
     showToast('Erro ao processar imagem: ' + error.message, 'error');
@@ -594,13 +563,10 @@ async function clearTable() {
 // Inicialização
 // =========================
 document.addEventListener('DOMContentLoaded', () => {
-  addCustomCSS();     // injeta as regras finais
+  addCustomCSS();
   loadResults();
   setTimeout(createSearchField, 100);
 
-  // =========================
-  // Event Listeners (movidos para dentro do DOMContentLoaded)
-  // =========================
   if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
   if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
@@ -671,7 +637,6 @@ function detectBrandFromText(rawText){
   for (const {canon, rx} of BRAND_PATTERNS){
     if (rx.test(text)) return canon;
   }
-  // fallback leve por “semelhanca”
   const candidates = Array.from(new Set(text.split(' '))).filter(w => w.length>=4 && w.length<=12);
   const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM"];
   let best = {canon:null, dist:3};
