@@ -741,3 +741,94 @@ async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
   });
   return base64;
 }
+// ====== VEHICLE (car brand) DETECTION ======
+// Usa o mesmo normalizador (normBrandText) e editDistance já existentes
+
+const VEHICLE_PATTERNS = [
+  { canon: "BMW",         rx: /\bBMW\b/ },
+  { canon: "Mercedes-Benz", rx: /\bMERCEDES(?:[-\s]?BENZ)?\b|\bMERCEDES\b/ },
+  { canon: "Audi",        rx: /\bAUDI\b/ },
+  { canon: "Volkswagen",  rx: /\bVOLKSWAGEN\b|\bVW\b/ },
+  { canon: "Seat",        rx: /\bSEAT\b/ },
+  { canon: "Škoda",       rx: /\bSKODA\b/ },
+  { canon: "Opel",        rx: /\bOPEL\b|\bVAUXHALL\b/ },
+  { canon: "Peugeot",     rx: /\bPEUGEOT\b/ },
+  { canon: "Citroën",     rx: /\bCITRO[ËE]N\b|\bCITROEN\b/ },
+  { canon: "Renault",     rx: /\bRENAULT\b/ },
+  { canon: "Dacia",       rx: /\bDACIA\b/ },
+  { canon: "Fiat",        rx: /\bFIAT\b/ },
+  { canon: "Alfa Romeo",  rx: /\bALFA\s*ROMEO\b/ },
+  { canon: "Lancia",      rx: /\bLANCIA\b/ },
+  { canon: "Ford",        rx: /\bFORD\b/ },
+  { canon: "Toyota",      rx: /\bTOYOTA\b/ },
+  { canon: "Honda",       rx: /\bHONDA\b/ },
+  { canon: "Nissan",      rx: /\bNISSAN\b/ },
+  { canon: "Mazda",       rx: /\bMAZDA\b/ },
+  { canon: "Mitsubishi",  rx: /\bMITSUBISHI\b/ },
+  { canon: "Subaru",      rx: /\bSUBARU\b/ },
+  { canon: "Suzuki",      rx: /\bSUZUKI\b/ },
+  { canon: "Hyundai",     rx: /\bHYUNDAI\b/ },
+  { canon: "Kia",         rx: /\bKIA\b/ },
+  { canon: "Volvo",       rx: /\bVOLVO\b/ },
+  { canon: "Saab",        rx: /\bSAAB\b/ },
+  { canon: "Jaguar",      rx: /\bJAGUAR\b/ },
+  { canon: "Land Rover",  rx: /\bLAND\s*ROVER\b/ },
+  { canon: "Range Rover", rx: /\bRANGE\s*ROVER\b/ },
+  { canon: "Mini",        rx: /\bMINI\b/ },
+  { canon: "Porsche",     rx: /\bPORSCHE\b/ },
+  { canon: "Smart",       rx: /\bSMART\b/ },
+  { canon: "Tesla",       rx: /\bTESLA\b/ }
+];
+
+function detectVehicleFromText(rawText) {
+  const text = normBrandText(rawText);
+
+  // 1) match direto por regex
+  for (const { canon, rx } of VEHICLE_PATTERNS) {
+    if (rx.test(text)) return canon;
+  }
+
+  // 2) fallback: aproximação por distância de edição
+  const tokens = Array.from(new Set(text.split(' ')))
+    .filter(w => w.length >= 3 && w.length <= 12);
+
+  const TARGETS = [
+    "BMW","MERCEDES","MERCEDESBENZ","AUDI","VOLKSWAGEN","VW","SEAT","SKODA",
+    "OPEL","VAUXHALL","PEUGEOT","CITROEN","RENAULT","DACIA","FIAT","ALFAROMEO",
+    "LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU",
+    "SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","LANDROVER","RANGEROOVER",
+    "MINI","PORSCHE","SMART","TESLA"
+  ];
+
+  let best = { canon: null, dist: 2 }; // tolerância curta para evitar falsos positivos
+  for (const w of tokens) {
+    for (const t of TARGETS) {
+      const d = editDistance(w, t);
+      if (d < best.dist) best = { canon: guessVehicleFromToken(t), dist: d };
+    }
+  }
+  return best.canon;
+}
+
+function guessVehicleFromToken(t) {
+  t = String(t).toUpperCase();
+  if (t.includes("MERCEDES")) return "Mercedes-Benz";
+  if (t === "VW" || t.includes("VOLKSWAGEN")) return "Volkswagen";
+  if (t.includes("SKODA")) return "Škoda";
+  if (t.includes("VAUXHALL") || t.includes("OPEL")) return "Opel";
+  if (t.includes("PEUGEOT")) return "Peugeot";
+  if (t.includes("CITROEN")) return "Citroën";
+  if (t.includes("RENAULT")) return "Renault";
+  if (t.includes("DACIA")) return "Dacia";
+  if (t.includes("ALFAROMEO")) return "Alfa Romeo";
+  if (t.includes("LANDROVER")) return "Land Rover";
+  if (t.includes("RANGEROOVER") || t.includes("RANGERO")) return "Range Rover";
+  // casos simples
+  const simple = [
+    "BMW","AUDI","SEAT","FIAT","LANCIA","FORD","TOYOTA","HONDA","NISSAN",
+    "MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB",
+    "JAGUAR","MINI","PORSCHE","SMART","TESLA"
+  ];
+  if (simple.includes(t)) return t[0] + t.slice(1).toLowerCase(); // capitalização
+  return null;
+}
