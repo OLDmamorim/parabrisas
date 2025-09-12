@@ -337,15 +337,24 @@ function normalizeRow(r){
     try { timestamp = new Date(timestamp).toLocaleString('pt-PT'); } catch (e) {}
   }
 
+  const text = r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '';
+  let brand = r.brand ?? '';
+  
+  // Se a marca estiver vazia, tenta detectar novamente a partir do texto
+  if (!brand && text) {
+    brand = detectBrandFromText(text) || '';
+    console.log('Reprocessando marca para registo existente:', brand);
+  }
+
   return {
     id:        r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
     timestamp: timestamp,
-    text:      r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
+    text:      text,
     eurocode:  r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
     filename:  r.filename ?? r.file ?? '',
     source:    r.source ?? r.origem ?? '',
-    brand:     r.brand ?? '',
-    vehicle:   r.vehicle ?? '' // pode ser “Marca” ou “Marca Modelo”
+    brand:     brand,
+    vehicle:   r.vehicle ?? '' // pode ser "Marca" ou "Marca Modelo"
   };
 }
 
@@ -603,46 +612,71 @@ function normBrandText(s){
 }
 
 const BRAND_PATTERNS = [
-  { canon: "AGC",                  rx: /\bA[GC]C\b|\bAG0\b|\bASAHI\b/ },
-  { canon: "Pilkington",           rx: /\bPILK[1I]NGT[0O]N\b|\bPILKINGTON\b/ },
-  { canon: "Saint-Gobain Sekurit", rx: /\bSEKURIT\b|\bSAINT\s*G[0O]BA[1I]N\b/ },
-  { canon: "Guardian",             rx: /\bGUARD[1I]AN\b/ },
-  { canon: "Fuyao (FYG/FUYAO)",    rx: /\bFUYAO\b|\bFYG\b/ },
-  { canon: "XYG",                  rx: /\bXYG\b/ },
-  { canon: "NordGlass",            rx: /\bN[0O]RDGLASS\b|\bNORDGLASS\b/ },
+  { canon: "AGC",                  rx: /\bA[GC]C\b|\bAG[0O]\b|\bASAH[1I]\b|\bASAH1\b/ },
+  { canon: "Pilkington",           rx: /\bP[1I]LK[1I]NGT[0O]N\b|\bPILKINGTON\b|\bPILK\b|\bP1LK1NGT0N\b/ },
+  { canon: "Saint-Gobain Sekurit", rx: /\bSEKUR[1I]T\b|\bSA[1I]NT\s*G[0O]BA[1I]N\b|\bSEKUR1T\b/ },
+  { canon: "Guardian",             rx: /\bGUARD[1I]AN\b|\bGUARDIAN\b/ },
+  { canon: "Fuyao (FYG/FUYAO)",    rx: /\bFUYA[0O]\b|\bFYG\b|\bFUYA0\b/ },
+  { canon: "XYG",                  rx: /\bXYG\b|\bXY[6G]\b/ },
+  { canon: "NordGlass",            rx: /\bN[0O]RDGLASS\b|\bNORDGLASS\b|\bN0RDGLASS\b/ },
   { canon: "Splintex",             rx: /\bSPL[1I]NTEX\b|\bSPLINTEX\b/ },
-  { canon: "Sicursiv",             rx: /\bSICURSIV\b/ },
-  { canon: "Carlite",              rx: /\bCARL[1I]TE\b/ },
-  { canon: "PPG",                  rx: /\bPPG\b/ },
-  { canon: "Mopar",                rx: /\bMOPAR\b/ },
-  { canon: "Shatterprufe",         rx: /\bSHATTERPRUFE\b/ },
-  { canon: "Protec",               rx: /\bPROTEC\b/ },
-  { canon: "Lamilex",              rx: /\bLAMI[1I]LEX\b/ },
-  { canon: "Vitro",                rx: /\bVITR[0O]\b|\bVITRO\b/ },
-  { canon: "Toyota (OEM)",         rx: /\bTOYOTA\b|\bTOY0TA\b/ },
-  { canon: "Ford (Carlite)",       rx: /\bFORD\b/ },
-  { canon: "GM",                   rx: /\bGENERAL\s*MOTORS\b|\bGM\b/ },
-  { canon: "VW (OEM)",             rx: /\bVOLKSWAGEN\b|\bVW\b/ },
-  { canon: "Hyundai (OEM)",        rx: /\bHYUNDAI\b/ },
-  { canon: "Kia (OEM)",            rx: /\bKIA\b/ },
+  { canon: "Sicursiv",             rx: /\bS[1I]CURS[1I]V\b|\bSICURSIV\b|\bS1CURS1V\b/ },
+  { canon: "Carlite",              rx: /\bCARL[1I]TE\b|\bCARLITE\b/ },
+  { canon: "PPG",                  rx: /\bPPG\b|\bPP[6G]\b/ },
+  { canon: "Mopar",                rx: /\bM[0O]PAR\b|\bMOPAR\b/ },
+  { canon: "Shatterprufe",         rx: /\bSHATTERPRUFE\b|\bSHATTERPRUF\b/ },
+  { canon: "Protec",               rx: /\bPR[0O]TEC\b|\bPROTEC\b/ },
+  { canon: "Lamilex",              rx: /\bLAM[1I][1I]LEX\b|\bLAMILEX\b/ },
+  { canon: "Vitro",                rx: /\bV[1I]TR[0O]\b|\bVITRO\b|\bV1TR0\b/ },
+  { canon: "Toyota (OEM)",         rx: /\bT[0O]Y[0O]TA\b|\bTOYOTA\b|\bT0Y0TA\b/ },
+  { canon: "Ford (Carlite)",       rx: /\bF[0O]RD\b|\bFORD\b/ },
+  { canon: "GM",                   rx: /\bGENERAL\s*M[0O]T[0O]RS\b|\bGM\b|\b[6G]M\b/ },
+  { canon: "VW (OEM)",             rx: /\bV[0O]LKSWAGEN\b|\bVW\b|\bV0LKSWAGEN\b/ },
+  { canon: "Hyundai (OEM)",        rx: /\bHYUNDA[1I]\b|\bHYUNDAI\b/ },
+  { canon: "Kia (OEM)",            rx: /\bK[1I]A\b|\bKIA\b/ },
+  { canon: "Xinyi",                rx: /\bX[1I]NY[1I]\b|\bXINYI\b|\bX1NY1\b/ },
+  { canon: "CSG",                  rx: /\bCSG\b|\bC[5S][6G]\b/ },
+  { canon: "Benson",               rx: /\bBENS[0O]N\b|\bBENSON\b/ }
 ];
 
 function detectBrandFromText(rawText){
+  if (!rawText || typeof rawText !== 'string') return null;
+  
   const text = normBrandText(rawText);
+  console.log('Texto normalizado para detecção de marca:', text);
+  
+  // Primeiro, procura por padrões exatos
   for (const {canon, rx} of BRAND_PATTERNS){
-    if (rx.test(text)) return canon;
+    if (rx.test(text)) {
+      console.log('Marca detectada por padrão:', canon);
+      return canon;
+    }
   }
-  const candidates = Array.from(new Set(text.split(' '))).filter(w => w.length>=4 && w.length<=12);
-  const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM"];
+  
+  // Se não encontrou por padrões, tenta por similaridade
+  const candidates = Array.from(new Set(text.split(' '))).filter(w => w.length>=3 && w.length<=15);
+  const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM","XINYI","CSG","BENSON","SHATTERPRUFE"];
+  
   let best = {canon:null, dist:3};
   for (const w of candidates){
     for (const t of targets){
       const d = editDistance(w, t);
       if (d < best.dist){
-        best = {canon:guessCanonFromToken(t), dist:d};
+        const guessed = guessCanonFromToken(t);
+        if (guessed) {
+          best = {canon: guessed, dist:d};
+          console.log(`Marca detectada por similaridade: ${w} -> ${t} -> ${guessed} (distância: ${d})`);
+        }
       }
     }
   }
+  
+  if (best.canon) {
+    console.log('Marca final detectada:', best.canon);
+  } else {
+    console.log('Nenhuma marca detectada no texto:', rawText.substring(0, 100));
+  }
+  
   return best.canon;
 }
 
@@ -674,12 +708,19 @@ function guessCanonFromToken(t){
   if (t.includes('CARLITE')) return "Carlite";
   if (t.includes('MOPAR')) return "Mopar";
   if (t.includes('VITRO')) return "Vitro";
+  if (t.includes('PPG')) return "PPG";
+  if (t.includes('PROTEC')) return "Protec";
+  if (t.includes('LAMILEX')) return "Lamilex";
+  if (t.includes('SHATTERPRUFE') || t.includes('SHATTERPRUF')) return "Shatterprufe";
   if (t === 'VW' || t.includes('VOLKSWAGEN')) return "VW (OEM)";
   if (t === 'GM' || t.includes('GENERAL') || t.includes('MOTORS')) return "GM";
   if (t.includes('TOYOTA')) return "Toyota (OEM)";
   if (t.includes('HYUNDAI')) return "Hyundai (OEM)";
   if (t.includes('KIA')) return "Kia (OEM)";
   if (t.includes('FORD')) return "Ford (Carlite)";
+  if (t.includes('XINYI')) return "Xinyi";
+  if (t.includes('CSG')) return "CSG";
+  if (t.includes('BENSON')) return "Benson";
   return null;
 }
 
