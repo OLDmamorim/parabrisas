@@ -667,7 +667,8 @@ const BRAND_PATTERNS = [
   { canon: "Kia (OEM)",            rx: /\bK[1I]A\b|\bKIA\b/ },
   { canon: "Xinyi",                rx: /\bX[1I]NY[1I]\b|\bXINYI\b|\bX1NY1\b/ },
   { canon: "CSG",                  rx: /\bCSG\b|\bC[5S][6G]\b/ },
-  { canon: "Benson",               rx: /\bBENS[0O]N\b|\bBENSON\b/ }
+  { canon: "Benson",               rx: /\bBENS[0O]N\b|\bBENSON\b/ },
+  { canon: "Lucas",                rx: /\bLUCAS\b|\bLUC4S\b|\bLUCA5\b/ }
 ];
 
 function detectBrandFromText(rawText){
@@ -686,7 +687,7 @@ function detectBrandFromText(rawText){
   
   // Se não encontrou por padrões, tenta por similaridade
   const candidates = Array.from(new Set(text.split(' '))).filter(w => w.length>=3 && w.length<=15);
-  const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM","XINYI","CSG","BENSON","SHATTERPRUFE"];
+  const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM","XINYI","CSG","BENSON","SHATTERPRUFE","LUCAS"];
   
   let best = {canon:null, dist:3};
   for (const w of candidates){
@@ -752,6 +753,7 @@ function guessCanonFromToken(t){
   if (t.includes('XINYI')) return "Xinyi";
   if (t.includes('CSG')) return "CSG";
   if (t.includes('BENSON')) return "Benson";
+  if (t.includes('LUCAS')) return "Lucas";
   return null;
 }
 
