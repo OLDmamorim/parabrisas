@@ -221,18 +221,31 @@ window.closeEurocodeModal = function() {
 };
 
 // =========================
-// Guardar na Base de Dados (inclui brand)
-async function saveToDatabase(text, eurocode, filename, source) {
+// =========================
+// Guardar na Base de Dados (AGORA com brand + vehicle)
+// =========================
+async function saveToDatabase(text, eurocode, filename, source, vehicle) {
   try {
     setStatus(desktopStatus, 'A guardar na base de dados...');
     setStatus(mobileStatus,  'A guardar na base de dados...');
 
+    // detectar marca do vidro
     const brand = detectBrandFromText(text) || '';
+
+    // detectar marca do veículo (se ainda não foi passada)
+    const carBrand = vehicle || detectVehicleFromText(text) || '';
 
     const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, eurocode, filename, source, brand })
+      body: JSON.stringify({ 
+        text, 
+        eurocode, 
+        filename, 
+        source, 
+        brand, 
+        vehicle: carBrand 
+      })
     });
 
     if (response.ok) {
