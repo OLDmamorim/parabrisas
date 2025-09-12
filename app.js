@@ -416,17 +416,19 @@ function renderTable() {
       ? 'Nenhum registo encontrado para esta procura'
       : 'Nenhum registo encontrado';
     resultsBody.innerHTML =
-      `<tr><td colspan="6" style="text-align:center; padding:20px;">${message}</td></tr>`;
+      `<tr><td colspan="7" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
   resultsBody.innerHTML = dataToShow.map((row, index) => {
     const originalIndex = RESULTS.findIndex(r => r.id === row.id);
+    const glassType = detectGlassType(row.eurocode);
 
     return `
       <tr>
         <td>${index + 1}</td>
         <td>${row.timestamp}</td>
+        <td style="font-weight: 600; color: #2563eb;">${glassType}</td>
         <td>${row.vehicle || '—'}</td>
         <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
         <td>${row.brand || '—'}</td>
@@ -598,6 +600,35 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================
 // Atualização automática
 setInterval(loadResults, 30000);
+
+// =========================
+// Detecção de tipologia de vidro baseada na primeira letra do eurocode
+function detectGlassType(eurocode) {
+  if (!eurocode || typeof eurocode !== 'string') return '—';
+  
+  // Remove espaços e converte para maiúsculas
+  const code = eurocode.trim().toUpperCase();
+  
+  // Procura pela primeira letra (não número) no eurocode
+  const match = code.match(/[A-Z]/);
+  if (!match) return '—';
+  
+  const firstLetter = match[0];
+  
+  switch (firstLetter) {
+    case 'A':
+      return 'Parabrisas';
+    case 'B':
+      return 'Óculo';
+    case 'L':
+    case 'R':
+      return 'Lateral';
+    case 'T':
+      return 'Teto';
+    default:
+      return '—';
+  }
+}
 
 // ====== BRAND DETECTION (helpers) ======
 function normBrandText(s){
