@@ -567,16 +567,86 @@ async function clearTable() {
 // =========================
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
+  // ---- Seletores ----
+  const fileInput  = document.getElementById('fileInput');
+  const btnUpload  = document.getElementById('btnUpload');
+  const btnExport  = document.getElementById('btnExport');
+  const btnClear   = document.getElementById('btnClear');
+  const resultsBody= document.getElementById('resultsBody');
+
+  const cameraInput  = document.getElementById('cameraInput');
+  const btnCamera    = document.getElementById('btnCamera');
+  const mobileStatus = document.getElementById('mobileStatus');
+  const mobileHistoryList = document.getElementById('mobileHistoryList');
+
+  const desktopStatus = document.getElementById('desktopStatus');
+  const toast = document.getElementById('toast');
+
+  // ---- Modal de edição OCR ----
+  const editOcrModal = document.getElementById('editOcrModal');
+  const editOcrTextarea = document.getElementById('editOcrTextarea');
+  const editOcrClose = document.getElementById('editOcrClose');
+  const editOcrCancel = document.getElementById('editOcrCancel');
+  const editOcrSave = document.getElementById('editOcrSave');
+
+  console.log('Elementos encontrados:', {
+    btnUpload: !!btnUpload,
+    btnExport: !!btnExport,
+    btnClear: !!btnClear,
+    fileInput: !!fileInput
+  });
+
   addCustomCSS();
   loadResults();
   setTimeout(createSearchField, 100);
 
-  if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
-  if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
-  if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', exportXLSX);
-  if (btnClear)   btnClear.addEventListener('click', clearTable);
+  if (btnUpload) {
+    btnUpload.addEventListener('click', () => {
+      console.log('Botão Upload clicado');
+      fileInput?.click();
+    });
+  } else {
+    console.error('Botão Upload não encontrado');
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => { 
+      const f=e.target.files[0]; 
+      if (f) {
+        console.log('Arquivo selecionado:', f.name);
+        processImage(f); 
+      }
+    });
+  }
+
+  if (btnCamera) {
+    btnCamera.addEventListener('click', () => cameraInput?.click());
+  }
+
+  if (cameraInput) {
+    cameraInput.addEventListener('change', (e) => { 
+      const f=e.target.files[0]; 
+      if (f) processImage(f); 
+    });
+  }
+
+  if (btnExport) {
+    btnExport.addEventListener('click', () => {
+      console.log('Botão Export clicado');
+      exportXLSX();
+    });
+  } else {
+    console.error('Botão Export não encontrado');
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener('click', () => {
+      console.log('Botão Clear clicado');
+      clearTable();
+    });
+  } else {
+    console.error('Botão Clear não encontrado');
+  }
 
   const isMobile = window.innerWidth <= 768;
   const mobileView = document.getElementById('mobileView');
