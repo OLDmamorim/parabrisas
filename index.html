@@ -579,14 +579,6 @@
       </div>
       
       <div class="modern-modal-body">
-        <!-- Texto lido -->
-        <div class="modern-ocr-section">
-          <label class="modern-ocr-label">Texto lido:</label>
-          <div id="modernOcrText" class="modern-ocr-text">
-            <!-- OCR text will be inserted here -->
-          </div>
-        </div>
-
         <!-- Eurocódigos encontrados -->
         <div class="modern-eurocodes-section">
           <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
@@ -611,7 +603,7 @@
     <div class="toolbar">
       <button id="btnUpload" class="btn">📁 Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
-      <button id="btnExport" class="btn">📊 Exportar XLSX</button>
+      <button id="btnExport" class="btn">📊 Exportar CSV</button>
       <button id="btnClear" class="btn danger">🗑️ Limpar Tabela</button>
     </div>
 
@@ -669,8 +661,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- App original (mantém-se igual) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="app.js" defer></script>
+  <script src="app.js"></script>
 
   <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
   <script>
