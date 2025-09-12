@@ -119,7 +119,6 @@ function filterResults(searchTerm) {
 function extractAllEurocodes(text) {
   if (!text) return [];
   const t = String(text).toUpperCase();
-  // 4 dígitos + 2 letras + 0..10 alfanum, aceitando separadores
   const rx = /\b(\d{4})[\s\-_\.]*([A-Z]{2})[\s\-_\.]*([A-Z0-9]{0,10})\b/g;
 
   const found = [];
@@ -139,7 +138,7 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
 
   if (eurocodes.length === 0) {
     if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
-      saveToDatabase(ocrText, '', filename, source, vehicle); // brand calculada no save
+      saveToDatabase(ocrText, '', filename, source, vehicle);
     }
     return;
   }
@@ -194,7 +193,6 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
   window.currentEurocodeModal = modal;
   window.currentImageData = {
     ocrText, filename, source,
-    // deteta marca+modelo
     vehicle: detectVehicleAndModelFromText(ocrText).full || ''
   };
 
@@ -494,7 +492,6 @@ async function processImage(file) {
     const ocrText = await runOCR(base64);
     if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
 
-    // marca + modelo
     const vehicle = detectVehicleAndModelFromText(ocrText).full || '';
 
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
@@ -718,7 +715,18 @@ async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
   return base64;
 }
 
-// ====== VEHICLE (car brand) DETECTION — versão única ======
+// ====== VEHICLE (car brand) DETECTION ======
+
+// normalização específica para VEÍCULO/MODELO (não troca O/I)
+function normVehicleText(s){
+  return String(s || "")
+    .toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^\w\s\-]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
 const VEHICLE_PATTERNS = [
   { canon: "BMW",           rx: /\bBMW\b/ },
   { canon: "Mercedes-Benz", rx: /\bMERCEDES(?:[-\s]?BENZ)?\b|\bMERCEDES\b/ },
@@ -755,9 +763,9 @@ const VEHICLE_PATTERNS = [
   { canon: "Tesla",         rx: /\bTESLA\b/ }
 ];
 
-// compat
+// compat antiga (se for usada noutro lado)
 function detectVehicleFromText(rawText) {
-  const text = normBrandText(rawText);
+  const text = normVehicleText(rawText);
   for (const { canon, rx } of VEHICLE_PATTERNS) {
     if (rx.test(text)) return canon;
   }
@@ -791,47 +799,47 @@ function guessVehicleFromToken(t) {
   return null;
 }
 
-// ====== NOVO: Marca + Modelo (regra permissiva + formatação de modelo)
+// NOVO: Marca + Modelo (usa normVehicleText)
 function detectVehicleAndModelFromText(rawText) {
-  const text = normBrandText(rawText);
+  const text = normVehicleText(rawText);
   const tokens = text.split(/\s+/);
 
   let brand = null;
   let brandIdx = -1;
 
-  // encontra a marca
-  for (let i = 0; i < tokens.length; i++) {
+  for (let i = 0; i < tokens.length && !brand; i++) {
     for (const { canon, rx } of VEHICLE_PATTERNS) {
-      if (rx.test(tokens[i])) {
-        brand = canon;
-        brandIdx = i;
-        break;
-      }
+      if (rx.test(tokens[i])) { brand = canon; brandIdx = i; break; }
     }
-    if (brand) break;
   }
   if (!brand) return { full: '' };
 
-  // palavras a evitar (frequentes nas etiquetas)
-  const BAD = new Set(['LOT','MATERIAL','NO','NR','HU','NORDGLASS','SEKURIT','PILKINGTON','AGC','ASAHI','XYG','FYG','GESTGLASS','BARCODE']);
+  // Palavras a evitar (cabecalhos/fornecedores/comuns nas etiquetas)
+  const BAD = new Set([
+    'LOT','MATERIAL','NO','NR','HU','NORDGLASS','SEKURIT','PILKINGTON','AGC','ASAHI',
+    'XYG','FYG','GESTGLASS','BARCODE','FORNECEDOR','XINYI','PB1-U44','PB1','XUG'
+  ]);
 
-  // aceita quase tudo como candidato a modelo (até 12 chars), excepto BAD
-  const isModel = (s) => !!s && !BAD.has(s) && s.length <= 12;
+  const DOOR_OR_TRIM = /^(?:\dP|\dD|SW|TOURER|VAN|COMBI|ESTATE|COUPE|CABRIO)$/;
 
-  const prettifyModel = (tok) => {
-    // Se for só letras e >=3, Title Case; se tiver dígitos (ex: C4), mantém
-    if (/^[A-Z]{3,}$/.test(tok)) return tok[0] + tok.slice(1).toLowerCase();
-    return tok; // C4, 95, 4P, etc.
-  };
+  const isGoodModel = (s) =>
+    !!s && !BAD.has(s) && !DOOR_OR_TRIM.test(s) && s.length <= 12 && !/^\d{2,4}$/.test(s);
 
-  let model = '';
-  for (let j = brandIdx + 1; j < Math.min(brandIdx + 4, tokens.length); j++) {
+  const titleCase = (w) => /^[A-Z]{3,}$/.test(w) ? w[0] + w.slice(1).toLowerCase() : w;
+
+  let models = [];
+  for (let j = brandIdx + 1; j < Math.min(brandIdx + 5, tokens.length); j++) {
     const tok = tokens[j].replace(/[^\w\-]/g, '');
-    if (isModel(tok)) { 
-      model = prettifyModel(tok);
+    if (isGoodModel(tok)) {
+      models.push(titleCase(tok));
+      // tenta apanhar segunda palavra do modelo se fizer sentido (ex.: "Grand Picasso")
+      if (j + 1 < tokens.length) {
+        const nxt = tokens[j + 1].replace(/[^\w\-]/g, '');
+        if (isGoodModel(nxt) && /^[A-Z\-]+$/.test(nxt)) models.push(titleCase(nxt));
+      }
       break;
     }
   }
 
-  return { full: brand + (model ? ' ' + model : '') };
+  return { full: brand + (models.length ? ' ' + models.join(' ') : '') };
 }
