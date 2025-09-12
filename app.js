@@ -158,10 +158,7 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
 
   content.innerHTML = `
     <h3 style="margin-top: 0; color: #333; text-align: center;">🔍 Selecionar Eurocode</h3>
-    <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; max-height: 150px; overflow-y: auto;">
-      <strong>Texto lido:</strong><br>
-      <span style="font-size: 12px; line-height: 1.4;">${ocrText.replace(/\n/g, '<br>')}</span>
-    </div>
+    
     <p style="margin-bottom: 15px; color: #666;">
       <strong>Eurocodes encontrados:</strong> Clique no correto
     </p>
