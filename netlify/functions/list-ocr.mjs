@@ -1,63 +1,55 @@
+// /.netlify/functions/list-ocr.mjs
 import { neon } from '@neondatabase/serverless';
 
 const CONN = process.env.NEON_DATABASE_URL;
 if (!CONN) throw new Error('NEON_DATABASE_URL não definido');
-
 const sql = neon(CONN);
 
-const jsonHeaders = {
-  'content-type': 'application/json',
-  'access-control-allow-origin': '*'
-};
-
-let inited = false;
-async function init() {
-  if (inited) return;
-  try {
-    await sql`
-      create table if not exists ocr_results (
-        id bigserial primary key,
-        ts timestamptz not null default now(),
-        text text,
-        filename text,
-        source text,
-        ip text,
-        euro_validado text
-      )
-    `;
-    inited = true;
-  } catch (e) {
-    console.error('Erro ao inicializar tabela:', e);
-    throw e;
-  }
-}
+const ok = (data) => ({
+  statusCode: 200,
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  },
+  body: JSON.stringify(data),
+});
+const err = (status, message) => ({
+  statusCode: status,
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  },
+  body: JSON.stringify({ ok: false, error: message }),
+});
 
 export const handler = async (event) => {
-  if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers: jsonHeaders, body: '"Method Not Allowed"' };
-  }
+  if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
+  if (event.httpMethod !== 'GET')    return err(405, 'Method Not Allowed');
 
   try {
-    await init();
+    const qp = event.queryStringParameters || {};
+    const limit  = Math.min(Math.max(parseInt(qp.limit  ?? '200', 10) || 200, 1), 1000);
+    const offset = Math.max(parseInt(qp.offset ?? '0',   10) || 0, 0);
 
     const rows = await sql`
-      select id, ts, text, filename, source, euro_validado
-      from ocr_results
-      order by ts desc
-      limit 200
+      SELECT
+        id,
+        ts            AS created_at,
+        text,
+        euro_validado AS eurocode,
+        brand,
+        filename,
+        source
+      FROM ocr_results
+      ORDER BY ts DESC
+      LIMIT ${limit} OFFSET ${offset};
     `;
 
-    return {
-      statusCode: 200,
-      headers: jsonHeaders,
-      body: JSON.stringify({ ok: true, rows })
-    };
+    return ok({ ok: true, rows });
   } catch (e) {
-    console.error('Erro na listagem:', e);
-    return { 
-      statusCode: 500, 
-      headers: jsonHeaders, 
-      body: JSON.stringify({ ok: false, error: e.message }) 
-    };
+    console.error('LIST OCR ERROR:', e);
+    return err(500, `DB ERROR: ${String(e?.message || e)}`);
   }
 };
