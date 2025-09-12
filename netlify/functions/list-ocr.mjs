@@ -36,10 +36,11 @@ export const handler = async (event) => {
     const rows = await sql`
       SELECT
         id,
-        ts            AS created_at,
+        ts                AS created_at,
         text,
-        euro_validado AS eurocode,
+        euro_validado     AS eurocode,
         brand,
+        marca             AS vehicle,   -- 👈 devolve a marca do carro como 'vehicle'
         filename,
         source
       FROM ocr_results
