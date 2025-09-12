@@ -67,7 +67,8 @@ export const handler = async (event) => {
       },
     });
   } catch (e) {
-    // devolve a mensagem real para vermos o motivo exato
-    return err(500, String(e?.message || e));
+    console.error("ERRO SQL:", e); // log no Netlify
+    // devolve a mensagem real para debug
+    return err(500, `DB ERROR: ${String(e?.message || e)}`);
   }
 };
