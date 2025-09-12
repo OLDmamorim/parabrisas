@@ -514,8 +514,8 @@ async function processImage(file) {
 }
 
 // =========================
-// Export CSV
-function exportCSV() {
+// Export XLSX
+function exportXLSX() {
   const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
 
   if (dataToExport.length === 0) {
@@ -523,25 +523,44 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Ficheiro'];
-  const csvContent = [
-    headers.join(','),
+  // Cabeçalhos atualizados
+  const headers = ['#', 'Data/Hora', 'Tipo', 'Veículo', 'Eurocode', 'Marca'];
+  
+  // Preparar dados
+  const data = [
+    headers,
     ...dataToExport.map((row, index) => [
       index + 1,
-      `"${row.timestamp}"`,
-      `"${(row.text || '').replace(/"/g, '""')}"`,
-      `"${row.eurocode || ''}"`,
-      `"${row.filename || ''}"`
-    ].join(','))
-  ].join('\n');
+      row.timestamp || '',
+      detectGlassType(row.eurocode) || '',
+      row.vehicle || '',
+      row.eurocode || '',
+      row.brand || ''
+    ])
+  ];
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `expressglass_${new Date().toISOString().split('T')[0]}.csv`;
-  link.click();
+  // Criar workbook e worksheet
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  
+  // Definir larguras das colunas
+  ws['!cols'] = [
+    { wch: 5 },   // #
+    { wch: 20 },  // Data/Hora
+    { wch: 12 },  // Tipo
+    { wch: 20 },  // Veículo
+    { wch: 15 },  // Eurocode
+    { wch: 20 }   // Marca
+  ];
 
-  showToast('CSV exportado com sucesso!', 'success');
+  // Adicionar worksheet ao workbook
+  XLSX.utils.book_append_sheet(wb, ws, 'ExpressGlass');
+
+  // Exportar arquivo
+  const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.writeFile(wb, filename);
+
+  showToast('XLSX exportado com sucesso!', 'success');
 }
 
 // =========================
@@ -578,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
   if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', exportCSV);
+  if (btnExport)  btnExport.addEventListener('click', exportXLSX);
   if (btnClear)   btnClear.addEventListener('click', clearTable);
 
   const isMobile = window.innerWidth <= 768;
