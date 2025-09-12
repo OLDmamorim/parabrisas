@@ -570,23 +570,28 @@
     </div>
   </main>
 
-  <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
-  <div id="modernEurocodeModal" class="modern-eurocode-modal">
-    <div class="modern-modal-content">
-      <div class="modern-modal-header">
-        <span class="modern-modal-icon">🔍</span>
-        <h3 class="modern-modal-title">Selecionar Eurocode</h3>
+ <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
+<div id="modernEurocodeModal" class="modern-eurocode-modal">
+  <div class="modern-modal-content">
+    <div class="modern-modal-header">
+      <span class="modern-modal-icon">🔍</span>
+      <h3 class="modern-modal-title">Selecionar Eurocode</h3>
+    </div>
+
+    <div class="modern-modal-body">
+      <!-- Só a lista de eurocodes -->
+      <div class="modern-eurocodes-section">
+        <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
+        <div id="modernEurocodeList" class="modern-eurocode-list"></div>
       </div>
-      
-      <div class="modern-modal-body">
-        <!-- Eurocódigos encontrados -->
-        <div class="modern-eurocodes-section">
-          <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
-          <div id="modernEurocodeList" class="modern-eurocode-list">
-            <!-- Eurocode buttons will be inserted here -->
-          </div>
-        </div>
-      </div>
+    </div>
+
+    <div class="modern-modal-footer">
+      <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
+      <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
+    </div>
+  </div>
+</div>
 
       <div class="modern-modal-footer">
         <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
