@@ -361,15 +361,15 @@ function normalizeRow(r){
   }
 
   return {
-    id:        r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
-    timestamp: timestamp,
-    vehicle:   r.marca ?? r.vehicle ?? '',      // 👈 VEÍCULO (marca do carro)
-    text:      r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
-    eurocode:  r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
-    brand:     r.brand ?? r.marca_vidro ?? '',  // 👈 Marca do vidro (já tens)
-    filename:  r.filename ?? r.file ?? '',
-    source:    r.source ?? r.origem ?? ''
-  };
+  id:        r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
+  timestamp: timestamp,
+  text:      r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
+  eurocode:  r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
+  filename:  r.filename ?? r.file ?? '',
+  source:    r.source ?? r.origem ?? '',
+  brand:     r.brand ?? '',      // 👈 novo
+  vehicle:   r.vehicle ?? ''     // 👈 novo
+};
 }
 // =========================
 // OCR
