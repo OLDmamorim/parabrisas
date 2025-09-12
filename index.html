@@ -1144,5 +1144,27 @@
     window.addEventListener('resize', fixCol3);
   })();
   </script>
+<script>
+window.addEventListener('load', () => {
+  const fileInput = document.getElementById('fileInput');
+  const btnUpload = document.getElementById('btnUpload');
+  const btnExport = document.getElementById('btnExport');
+  const btnClear  = document.getElementById('btnClear');
+
+  btnUpload?.addEventListener('click', () => fileInput?.click());
+  fileInput?.addEventListener('change', (e) => {
+    const f = e.target.files?.[0];
+    if (f && window.processImage) window.processImage(f);
+  });
+
+  btnExport?.addEventListener('click', () => {
+    if (window.exportCSV) window.exportCSV();
+  });
+
+  btnClear?.addEventListener('click', () => {
+    if (window.clearTable) window.clearTable();
+  });
+});
+</script>
 </body>
 </html>
