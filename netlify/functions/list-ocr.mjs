@@ -1,10 +1,6 @@
 // /.netlify/functions/list-ocr.mjs
 import { neon } from '@neondatabase/serverless';
 
-const CONN = process.env.NEON_DATABASE_URL;
-if (!CONN) throw new Error('NEON_DATABASE_URL não definido');
-const sql = neon(CONN);
-
 const ok = (data) => ({
   statusCode: 200,
   headers: {
@@ -14,6 +10,7 @@ const ok = (data) => ({
   },
   body: JSON.stringify(data),
 });
+
 const err = (status, message) => ({
   statusCode: status,
   headers: {
@@ -26,31 +23,52 @@ const err = (status, message) => ({
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
-  if (event.httpMethod !== 'GET')    return err(405, 'Method Not Allowed');
+  if (event.httpMethod !== 'GET')     return err(405, 'Method Not Allowed');
 
   try {
-    const qp = event.queryStringParameters || {};
-    const limit  = Math.min(Math.max(parseInt(qp.limit  ?? '200', 10) || 200, 1), 1000);
-    const offset = Math.max(parseInt(qp.offset ?? '0',   10) || 0, 0);
+    const sql = neon(process.env.DATABASE_URL);
 
-    const rows = await sql`
-      SELECT
-        id,
-        ts                AS created_at,
-        text,
-        euro_validado     AS eurocode,
-        brand,
-        marca             AS vehicle,   -- 👈 devolve a marca do carro como 'vehicle'
-        filename,
-        source
-      FROM ocr_results
-      ORDER BY ts DESC
-      LIMIT ${limit} OFFSET ${offset};
-    `;
-
-    return ok({ ok: true, rows });
+    // Tenta com a coluna vehicle
+    try {
+      const rows = await sql/*sql*/`
+        SELECT
+          id,
+          ts                       AS created_at,
+          text,
+          euro_validado            AS eurocode,
+          brand,
+          vehicle,                      -- 👈 nova coluna (se existir)
+          filename,
+          source
+        FROM ocr_results
+        ORDER BY ts DESC
+        LIMIT 300
+      `;
+      return ok({ ok: true, rows });
+    } catch (e) {
+      // Se a coluna ainda não existir, faz fallback e devolve vehicle: null
+      const msg = String(e?.message || e);
+      if (msg.includes('column "vehicle" does not exist')) {
+        const rowsNoVehicle = await sql/*sql*/`
+          SELECT
+            id,
+            ts                AS created_at,
+            text,
+            euro_validado     AS eurocode,
+            brand,
+            filename,
+            source
+          FROM ocr_results
+          ORDER BY ts DESC
+          LIMIT 300
+        `;
+        const rows = rowsNoVehicle.map(r => ({ ...r, vehicle: null }));
+        return ok({ ok: true, rows, note: 'vehicle column missing, returned as null' });
+      }
+      // outro erro qualquer
+      throw e;
+    }
   } catch (e) {
-    console.error('LIST OCR ERROR:', e);
-    return err(500, `DB ERROR: ${String(e?.message || e)}`);
+    return err(500, String(e?.message || e));
   }
 };
