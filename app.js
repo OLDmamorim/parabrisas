@@ -37,6 +37,7 @@ let currentEditingRow = null;
 let currentImageData = null;
 
 // =========================
+// CSS forçado (tamanho pequeno)
 function addCustomCSS() {
   const style = document.createElement('style');
   style.textContent = `
@@ -60,7 +61,6 @@ function addCustomCSS() {
 
 // =========================
 // Utils UI
-// =========================
 function showToast(msg, type='') {
   if (!toast) return;
   toast.textContent = msg;
@@ -78,7 +78,6 @@ function setStatus(el, text, mode='') {
 
 // =========================
 // Procura de Eurocode (Na mesma linha)
-// =========================
 function createSearchField() {
   const toolbar = document.querySelector('.toolbar');
   if (!toolbar) return;
@@ -116,8 +115,7 @@ function filterResults(searchTerm) {
 }
 
 // =========================
-// Extração de Eurocodes Melhorada
-// =========================
+// Extração de Eurocodes
 function extractAllEurocodes(text) {
   if (!text) return [];
   const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
@@ -128,13 +126,12 @@ function extractAllEurocodes(text) {
 
 // =========================
 // Modal de Validação de Eurocode
-// =========================
 function showEurocodeValidationModal(ocrText, filename, source) {
   const eurocodes = extractAllEurocodes(ocrText);
 
   if (eurocodes.length === 0) {
     if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
-      saveToDatabase(ocrText, '', filename, source); // << brand será calculada no save
+      saveToDatabase(ocrText, '', filename, source); // brand calculada no save
     }
     return;
   }
@@ -193,7 +190,7 @@ function showEurocodeValidationModal(ocrText, filename, source) {
 window.selectEurocode = function(selectedCode) {
   const { ocrText, filename, source } = window.currentImageData;
   closeEurocodeModal();
-  saveToDatabase(ocrText, selectedCode, filename, source); // << brand será calculada no save
+  saveToDatabase(ocrText, selectedCode, filename, source); // brand calculada no save
 };
 
 window.closeEurocodeModal = function() {
@@ -205,20 +202,17 @@ window.closeEurocodeModal = function() {
 };
 
 // =========================
-// Guardar na Base de Dados (AGORA com brand)
-// =========================
+// Guardar na Base de Dados (inclui brand)
 async function saveToDatabase(text, eurocode, filename, source) {
   try {
     setStatus(desktopStatus, 'A guardar na base de dados...');
     setStatus(mobileStatus,  'A guardar na base de dados...');
 
-    // >>> NOVO: detetar marca a partir do texto OCR
     const brand = detectBrandFromText(text) || '';
 
     const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // >>> NOVO: incluir brand no payload (resto mantém)
       body: JSON.stringify({ text, eurocode, filename, source, brand })
     });
 
@@ -239,8 +233,7 @@ async function saveToDatabase(text, eurocode, filename, source) {
 }
 
 // =========================
-// Modal de edição OCR (Corrigido)
-// =========================
+// Modal de edição OCR
 function openEditOcrModal(row) {
   if (!editOcrModal || !editOcrTextarea) {
     console.error('Modal de edição não encontrado');
@@ -260,13 +253,11 @@ function openEditOcrModal(row) {
     }
 
     try {
-      // >>> NOVO: recalcular brand se o texto foi editado
       const newBrand = detectBrandFromText(newText) || '';
 
       const response = await fetch(UPDATE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // >>> NOVO: enviar brand no update (será ignorado se o backend não suportar)
         body: JSON.stringify({
           id: row.id,
           text: newText,
@@ -325,8 +316,7 @@ function openEditOcrModal(row) {
 window.openEditOcrModal = openEditOcrModal;
 
 // =========================
-// Normalização
-// =========================
+// Normalização (AGORA inclui brand)
 function normalizeRow(r){
   let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
                   r.date || r.datetime || r.data || r.hora || r.created || 
@@ -339,19 +329,18 @@ function normalizeRow(r){
   }
 
   return {
-    id:          r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
-    timestamp:   timestamp,
-    text:        r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
-    eurocode:    r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
-    filename:    r.filename ?? r.file ?? '',
-    source:      r.source ?? r.origem ?? ''
-    // (brand existe no backend mas não é necessário para render atual)
+    id:        r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
+    timestamp: timestamp,
+    text:      r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
+    eurocode:  r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
+    brand:     r.brand ?? r.marca ?? '',   // <<< AQUI
+    filename:  r.filename ?? r.file ?? '',
+    source:    r.source ?? r.origem ?? ''
   };
 }
 
 // =========================
 // OCR
-// =========================
 async function runOCR(imageBase64) {
   try {
     const res = await fetch(OCR_ENDPOINT, {
@@ -370,7 +359,6 @@ async function runOCR(imageBase64) {
 
 // =========================
 // Carregar resultados da API
-// =========================
 async function loadResults() {
   try {
     setStatus(desktopStatus, 'A carregar dados...');
@@ -398,8 +386,6 @@ async function loadResults() {
 }
 
 // =========================
-// Renderizar tabela
-// =========================
 function renderTable() {
   if (!resultsBody) return;
 
@@ -409,7 +395,7 @@ function renderTable() {
     const searchField = document.getElementById('searchField');
     const isSearching = searchField && searchField.value.trim();
     const message = isSearching ? 'Nenhum registo encontrado para esta procura' : 'Nenhum registo encontrado';
-    resultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">${message}</td></tr>`;
+    resultsBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
@@ -417,43 +403,40 @@ function renderTable() {
     const originalIndex = RESULTS.findIndex(r => r.id === row.id);
 
     return `
-    <return `
-  <tr>
-    <td>${index + 1}</td>
-    <td>${row.timestamp}</td>
-    <td class="ocr-text"
-        style="font-size:12px; line-height:1.35; white-space:pre-wrap; word-break:break-word;">
-      ${row.text}
-    </td>
-    <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
-    <td>${row.brand || '—'}</td>   <!-- 👈 NOVA COLUNA MARCA -->
-    <td>
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
-                style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
-                title="Editar texto OCR"
-                onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
-                onmouseout="this.style.background='none'; this.style.color='#666'">
-          ✏️ Editar
-        </button>
-        <button onclick="deleteRow(${row.id})" 
-                style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
-                title="Eliminar registo"
-                onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
-                onmouseout="this.style.background='none'">
-          🗑️ Apagar
-        </button>
-      </div>
-    </td>
-  </tr>
-`;
-  `;
+      <tr>
+        <td>${index + 1}</td>
+        <td>${row.timestamp}</td>
+        <td class="ocr-text"
+            style="font-size:12px; line-height:1.35; white-space:pre-wrap; word-break:break-word;">
+          ${row.text}
+        </td>
+        <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
+        <td>${row.brand || '—'}</td>
+        <td>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button onclick="openEditOcrModal(RESULTS[${originalIndex}])" 
+                    style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
+                    title="Editar texto OCR"
+                    onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
+                    onmouseout="this.style.background='none'; this.style.color='#666'">
+              ✏️ Editar
+            </button>
+            <button onclick="deleteRow(${row.id})" 
+                    style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
+                    title="Eliminar registo"
+                    onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
+                    onmouseout="this.style.background='none'">
+              🗑️ Apagar
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
   }).join('');
 }
 
 // =========================
 // Eliminar registo
-// =========================
 async function deleteRow(id) {
   if (!confirm('Tem a certeza que quer eliminar este registo?')) return;
 
@@ -475,12 +458,10 @@ async function deleteRow(id) {
     showToast('Erro ao eliminar registo', 'error');
   }
 }
-
 window.deleteRow = deleteRow;
 
 // =========================
 // Processar imagem
-// =========================
 async function processImage(file) {
   if (!file) return;
 
@@ -511,6 +492,7 @@ async function processImage(file) {
 }
 
 // =========================
+// Export CSV (mantido)
 function exportCSV() {
   const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
 
@@ -541,6 +523,7 @@ function exportCSV() {
 }
 
 // =========================
+// Limpar tabela
 async function clearTable() {
   if (!confirm('Tem a certeza que quer limpar todos os dados? Esta ação não pode ser desfeita.')) return;
 
@@ -564,7 +547,6 @@ async function clearTable() {
 
 // =========================
 // Inicialização
-// =========================
 document.addEventListener('DOMContentLoaded', () => {
   addCustomCSS();
   loadResults();
@@ -595,7 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // =========================
 // Atualização automática
-// =========================
 setInterval(loadResults, 30000);
 
 // ====== BRAND DETECTION (helpers) ======
