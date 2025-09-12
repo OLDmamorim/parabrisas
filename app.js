@@ -8,6 +8,28 @@ const SAVE_URL     = '/.netlify/functions/save-ocr';
 const UPDATE_URL   = '/.netlify/functions/update-ocr';
 const DELETE_URL   = '/.netlify/functions/delete-ocr';
 
+// ---- Seletores ----
+const fileInput  = document.getElementById('fileInput');
+const btnUpload  = document.getElementById('btnUpload');
+const btnExport  = document.getElementById('btnExport');
+const btnClear   = document.getElementById('btnClear');
+const resultsBody= document.getElementById('resultsBody');
+
+const cameraInput  = document.getElementById('cameraInput');
+const btnCamera    = document.getElementById('btnCamera');
+const mobileStatus = document.getElementById('mobileStatus');
+const mobileHistoryList = document.getElementById('mobileHistoryList');
+
+const desktopStatus = document.getElementById('desktopStatus');
+const toast = document.getElementById('toast');
+
+// ---- Modal de edição OCR ----
+const editOcrModal = document.getElementById('editOcrModal');
+const editOcrTextarea = document.getElementById('editOcrTextarea');
+const editOcrClose = document.getElementById('editOcrClose');
+const editOcrCancel = document.getElementById('editOcrCancel');
+const editOcrSave = document.getElementById('editOcrSave');
+
 // ---- Estado ----
 let RESULTS = [];
 let FILTERED_RESULTS = [];
@@ -492,8 +514,8 @@ async function processImage(file) {
 }
 
 // =========================
-// Export XLSX
-function exportXLSX() {
+// Export CSV
+function exportCSV() {
   const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
 
   if (dataToExport.length === 0) {
@@ -501,44 +523,25 @@ function exportXLSX() {
     return;
   }
 
-  // Cabeçalhos atualizados
-  const headers = ['#', 'Data/Hora', 'Tipo', 'Veículo', 'Eurocode', 'Marca'];
-  
-  // Preparar dados
-  const data = [
-    headers,
+  const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Ficheiro'];
+  const csvContent = [
+    headers.join(','),
     ...dataToExport.map((row, index) => [
       index + 1,
-      row.timestamp || '',
-      detectGlassType(row.eurocode) || '',
-      row.vehicle || '',
-      row.eurocode || '',
-      row.brand || ''
-    ])
-  ];
+      `"${row.timestamp}"`,
+      `"${(row.text || '').replace(/"/g, '""')}"`,
+      `"${row.eurocode || ''}"`,
+      `"${row.filename || ''}"`
+    ].join(','))
+  ].join('\n');
 
-  // Criar workbook e worksheet
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  
-  // Definir larguras das colunas
-  ws['!cols'] = [
-    { wch: 5 },   // #
-    { wch: 20 },  // Data/Hora
-    { wch: 12 },  // Tipo
-    { wch: 20 },  // Veículo
-    { wch: 15 },  // Eurocode
-    { wch: 20 }   // Marca
-  ];
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `expressglass_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
 
-  // Adicionar worksheet ao workbook
-  XLSX.utils.book_append_sheet(wb, ws, 'ExpressGlass');
-
-  // Exportar arquivo
-  const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
-  XLSX.writeFile(wb, filename);
-
-  showToast('XLSX exportado com sucesso!', 'success');
+  showToast('CSV exportado com sucesso!', 'success');
 }
 
 // =========================
@@ -567,86 +570,16 @@ async function clearTable() {
 // =========================
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
-  // ---- Seletores ----
-  const fileInput  = document.getElementById('fileInput');
-  const btnUpload  = document.getElementById('btnUpload');
-  const btnExport  = document.getElementById('btnExport');
-  const btnClear   = document.getElementById('btnClear');
-  const resultsBody= document.getElementById('resultsBody');
-
-  const cameraInput  = document.getElementById('cameraInput');
-  const btnCamera    = document.getElementById('btnCamera');
-  const mobileStatus = document.getElementById('mobileStatus');
-  const mobileHistoryList = document.getElementById('mobileHistoryList');
-
-  const desktopStatus = document.getElementById('desktopStatus');
-  const toast = document.getElementById('toast');
-
-  // ---- Modal de edição OCR ----
-  const editOcrModal = document.getElementById('editOcrModal');
-  const editOcrTextarea = document.getElementById('editOcrTextarea');
-  const editOcrClose = document.getElementById('editOcrClose');
-  const editOcrCancel = document.getElementById('editOcrCancel');
-  const editOcrSave = document.getElementById('editOcrSave');
-
-  console.log('Elementos encontrados:', {
-    btnUpload: !!btnUpload,
-    btnExport: !!btnExport,
-    btnClear: !!btnClear,
-    fileInput: !!fileInput
-  });
-
   addCustomCSS();
   loadResults();
   setTimeout(createSearchField, 100);
 
-  if (btnUpload) {
-    btnUpload.addEventListener('click', () => {
-      console.log('Botão Upload clicado');
-      fileInput?.click();
-    });
-  } else {
-    console.error('Botão Upload não encontrado');
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener('change', (e) => { 
-      const f=e.target.files[0]; 
-      if (f) {
-        console.log('Arquivo selecionado:', f.name);
-        processImage(f); 
-      }
-    });
-  }
-
-  if (btnCamera) {
-    btnCamera.addEventListener('click', () => cameraInput?.click());
-  }
-
-  if (cameraInput) {
-    cameraInput.addEventListener('change', (e) => { 
-      const f=e.target.files[0]; 
-      if (f) processImage(f); 
-    });
-  }
-
-  if (btnExport) {
-    btnExport.addEventListener('click', () => {
-      console.log('Botão Export clicado');
-      exportXLSX();
-    });
-  } else {
-    console.error('Botão Export não encontrado');
-  }
-
-  if (btnClear) {
-    btnClear.addEventListener('click', () => {
-      console.log('Botão Clear clicado');
-      clearTable();
-    });
-  } else {
-    console.error('Botão Clear não encontrado');
-  }
+  if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
+  if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
+  if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
+  if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
+  if (btnExport)  btnExport.addEventListener('click', exportCSV);
+  if (btnClear)   btnClear.addEventListener('click', clearTable);
 
   const isMobile = window.innerWidth <= 768;
   const mobileView = document.getElementById('mobileView');
@@ -892,7 +825,8 @@ const VEHICLE_PATTERNS = [
   { canon: "Volvo",         rx: /\bVOLVO\b/ },
   { canon: "Saab",          rx: /\bSAAB\b/ },
   { canon: "Jaguar",        rx: /\bJAGUAR\b/ },
-  { canon: "Land Rover",    rx: /\bLAND\s*ROVER\b|\bRANGE\s*ROVER\b/ },
+  { canon: "Land Rover",    rx: /\bLAND\s*ROVER\b/ },
+  { canon: "Range Rover",   rx: /\bRANGE\s*ROVER\b/ },
   { canon: "Mini",          rx: /\bMINI\b/ },
   { canon: "Porsche",       rx: /\bPORSCHE\b/ },
   { canon: "Smart",         rx: /\bSMART\b/ },
