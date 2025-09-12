@@ -115,12 +115,31 @@ function filterResults(searchTerm) {
 }
 
 // =========================
-// Extração de Eurocodes
+// Extração de Eurocodes (robusta)
+// - aceita espaços/hífens entre blocos
+// - permite cauda até 10 chars (há códigos > 6)
+// - junta os grupos para devolver sem separadores
+// =========================
 function extractAllEurocodes(text) {
   if (!text) return [];
-  const pattern = /\b\d{4}[A-Za-z]{2}[A-Za-z0-9]{0,6}\b/g;
-  const matches = text.match(pattern) || [];
-  const unique = [...new Set(matches)];
+
+  const t = String(text).toUpperCase();
+
+  // 4 dígitos + opcional separador + 2 letras + opcional separador + 0..10 alfanum
+  // (captura grupos para podermos juntar sem separadores)
+  const rx = /\b(\d{4})[\s\-_\.]*([A-Z]{2})[\s\-_\.]*([A-Z0-9]{0,10})\b/g;
+
+  const found = [];
+  let m;
+  while ((m = rx.exec(t)) !== null) {
+    // junta os grupos e remove qualquer separador perdido
+    const code = (m[1] + m[2] + m[3]).replace(/[^A-Z0-9]/g, '');
+    // descarta coisas demasiado curtas (ex: só 4 dígitos)
+    if (code.length >= 6) found.push(code);
+  }
+
+  // únicos, ordenados por tamanho desc (tende a priorizar os completos)
+  const unique = [...new Set(found)];
   return unique.sort((a, b) => b.length - a.length).slice(0, 4);
 }
 
