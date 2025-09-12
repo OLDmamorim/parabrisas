@@ -22,52 +22,31 @@ const err = (status, message) => ({
 });
 
 export const handler = async (event) => {
+  // Preflight CORS
   if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
-  if (event.httpMethod !== 'POST')    return err(405, 'Method Not Allowed');
+
+  if (event.httpMethod !== 'POST') {
+    return err(405, 'Method Not Allowed');
+  }
 
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) return err(500, 'No database connection string was provided (DATABASE_URL not set?)');
 
-    const ip =
-      event.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-      event.headers['client-ip'] ||
-      event.headers['x-real-ip'] ||
-      null;
+    const sql = neon(dbUrl);
 
-    const body = JSON.parse(event.body || '{}');
-    const {
-      text = '',
-      eurocode = '',
-      filename = '',
-      source = '',
-      brand: brandFromClient = '',
-      vehicle: vehicleFromClient = ''
-    } = body;
+    // Body JSON
+    const { text = '', eurocode = '', filename = '', source = '', brand = '', vehicle = '' } =
+      JSON.parse(event.body || '{}');
 
-    const brand = brandFromClient || null;
-    const vehicle = vehicleFromClient || null;
-
-    // agora temos 7 colunas
-    const rows = await sql`
-      INSERT INTO ocr_results (text, euro_validado, filename, source, ip, brand, vehicle)
-      VALUES (${text}, ${eurocode || null}, ${filename || null}, ${source || null}, ${ip}, ${brand}, ${vehicle})
-      RETURNING id, ts, text, euro_validado, brand, vehicle, filename, source
+    // Insert
+    const rows = await sql/*sql*/`
+      INSERT INTO ocr_results (ts, text, euro_validado, brand, vehicle, filename, source)
+      VALUES (NOW(), ${text}, ${eurocode}, ${brand}, ${vehicle}, ${filename}, ${source})
+      RETURNING id, ts AS created_at, text, euro_validado AS eurocode, brand, vehicle, filename, source
     `;
 
-    const r = rows?.[0];
-    return ok({
-      ok: true,
-      item: r && {
-        id: r.id,
-        created_at: r.ts,
-        text: r.text,
-        eurocode: r.euro_validado,
-        brand: r.brand,
-        vehicle: r.vehicle,
-        filename: r.filename,
-        source: r.source,
-      },
-    });
+    return ok({ ok: true, row: rows[0] });
   } catch (e) {
     return err(500, String(e?.message || e));
   }
