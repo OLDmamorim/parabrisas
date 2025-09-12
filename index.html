@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>EXPRESSGLASS • Receção material (OCR)</title>
-  <link rel="stylesheet" href="style.css?v=split-views" />
+  <link rel="stylesheet" href="style.css?v=views-brand-1" />
 </head>
 <body>
   <!-- HEADER -->
@@ -16,13 +16,17 @@
     <div class="view-badge" id="viewBadge">—</div>
   </header>
 
-  <!-- ======== MOBILE VIEW ======== -->
+  <!-- ======== MOBILE VIEW (ORIGINAL) ======== -->
   <main id="mobileView" class="mobile-only">
-    <section class="mobile-card">
-      <div class="logo-box">
-        <img src="logo-expressglass.png" alt="ExpressGlass" onerror="this.style.display='none'">
-        <h2>Receção material</h2>
+    <section class="mobile-card original-mobile">
+      <!-- Banner com logo -->
+      <div class="eg-banner">
+        <img src="logo-expressglass.png" alt="ExpressGlass" class="eg-logo"
+             onerror="this.style.display='none'">
+        <div class="eg-badge" id="mobileProcessingBadge" hidden>A processar...</div>
       </div>
+
+      <h2 class="eg-title">Receção material</h2>
 
       <div class="actions mobile">
         <button id="btnCamera" class="btn primary" type="button">📷 Tirar foto</button>
@@ -31,16 +35,16 @@
         <input id="fileInput" type="file" accept="image/*" class="hidden" />
       </div>
 
-      <!-- Loader redondo -->
-      <div id="mobileProgress" class="progress hidden">
-        <div class="progress-circle"></div>
-        <div class="progress-text" id="mobileStatus">A processar…</div>
+      <!-- Círculo “A processar…” -->
+      <div id="mobileProgress" class="eg-circle-wrap hidden">
+        <div class="eg-circle"></div>
+        <div class="eg-circle-text" id="mobileStatus">A processar...</div>
       </div>
 
       <!-- Últimas capturas -->
       <section class="history">
         <h3>📋 Últimas Capturas</h3>
-        <ul id="mobileHistoryList" class="history-list"></ul>
+        <ul id="mobileHistoryList" class="eg-capturas"></ul>
       </section>
     </section>
   </main>
@@ -78,6 +82,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=split-views"></script>
+  <script src="app.js?v=views-brand-1"></script>
 </body>
 </html>
