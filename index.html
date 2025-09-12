@@ -602,7 +602,8 @@
     
     <div class="toolbar">
       <button id="btnUpload" class="btn" onclick="document.getElementById('fileInput').click()">📁 Carregar imagem</button>
-      <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden
+       onchange="if(this.files&&this.files[0]){ window.processImage && window.processImage(this.files[0]); }" />
       <button id="btnExport" class="btn" onclick="window.exportCSV && window.exportCSV()">📊 Exportar CSV</button>
       <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
     </div>
