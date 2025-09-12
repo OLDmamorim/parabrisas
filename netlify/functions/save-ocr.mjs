@@ -10,7 +10,6 @@ const jsonHeaders = { 'content-type': 'application/json', 'access-control-allow-
 let inited = false;
 async function init() {
   if (inited) return;
-  // tabela base (igual à tua)
   await sql`
     create table if not exists ocr_results (
       id bigserial primary key,
@@ -22,12 +21,12 @@ async function init() {
       euro_validado text
     )
   `;
-  // coluna brand, só se não existir
-  await sql`alter table ocr_results add column if not exists brand text`;
+  await sql`alter table ocr_results add column if not exists brand text`; // marca do vidro
+  await sql`alter table ocr_results add column if not exists marca text`; // marca do veículo
   inited = true;
 }
 
-/* ---------- DETEÇÃO DE MARCA (backend) ---------- */
+/* ---------- DETEÇÃO DE MARCA DO VIDRO (brand) ---------- */
 function normBrandText(s){
   return String(s||'')
     .toUpperCase()
@@ -38,7 +37,6 @@ function normBrandText(s){
     .replace(/I/g,'1')
     .trim();
 }
-
 const BRAND_PATTERNS = [
   { canon:'AGC',                  rx:/\bA[GC]C\b|\bAG0\b|\bASAHI\b/ },
   { canon:'Pilkington',           rx:/\bPILK[1I]NGT[0O]N\b|\bPILKINGTON\b/ },
@@ -63,7 +61,6 @@ const BRAND_PATTERNS = [
   { canon:'Hyundai (OEM)',        rx:/\bHYUNDAI\b/ },
   { canon:'Kia (OEM)',            rx:/\bKIA\b/ },
 ];
-
 function editDistance(a,b){
   a=String(a); b=String(b);
   const dp=Array(a.length+1).fill().map(()=>Array(b.length+1).fill(0));
@@ -99,7 +96,6 @@ function guessCanonFromToken(t){
   if (t.includes('FORD')) return 'Ford (Carlite)';
   return null;
 }
-
 function detectBrandFromText(rawText){
   const text = normBrandText(rawText);
   for (const {canon,rx} of BRAND_PATTERNS) if (rx.test(text)) return canon;
@@ -114,6 +110,76 @@ function detectBrandFromText(rawText){
   }
   return best.canon;
 }
+
+/* ---------- DETEÇÃO DE MARCA DO VEÍCULO ---------- */
+function normVehText(s){
+  return String(s||'')
+    .toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^\w\s]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+const VEH_PATTERNS = [
+  // Europe
+  { canon: "BMW",            rx: /\bBMW\b/ },
+  { canon: "Mercedes-Benz",  rx: /\bMERCEDES\b|\bMERCEDES[-\s]*BENZ\b/ },
+  { canon: "Audi",           rx: /\bAUDI\b/ },
+  { canon: "Volkswagen",     rx: /\bVOLKSWAGEN\b|\bVW\b/ },
+  { canon: "Škoda",          rx: /\bSKODA\b|\bŠKODA\b/ },
+  { canon: "SEAT/Cupra",     rx: /\bSEAT\b|\bCUPRA\b/ },
+  { canon: "Opel/Vauxhall",  rx: /\bOPEL\b|\bVAUXHALL\b/ },
+  { canon: "Peugeot",        rx: /\bPEUGEOT\b/ },
+  { canon: "Citroën",        rx: /\bCITROEN\b|\bCITROËN\b/ },
+  { canon: "Renault",        rx: /\bRENAULT\b/ },
+  { canon: "Dacia",          rx: /\bDACIA\b/ },
+  { canon: "Fiat",           rx: /\bFIAT\b/ },
+  { canon: "Alfa Romeo",     rx: /\bALFA\s*ROMEO\b/ },
+  { canon: "Lancia",         rx: /\bLANCIA\b/ },
+  { canon: "Volvo",          rx: /\bVOLVO\b/ },
+  { canon: "Saab",           rx: /\bSAAB\b/ },
+  { canon: "Mini",           rx: /\bMINI\b/ },
+  { canon: "Smart",          rx: /\bSMART\b/ },
+  { canon: "Jaguar",         rx: /\bJAGUAR\b/ },
+  { canon: "Land Rover",     rx: /\bLAND\s*ROVER\b|\bRANGE\s*ROVER\b/ },
+  { canon: "Porsche",        rx: /\bPORSCH[E]?\b/ },
+
+  // Asia
+  { canon: "Toyota",         rx: /\bTOYOTA\b/ },
+  { canon: "Lexus",          rx: /\bLEXUS\b/ },
+  { canon: "Nissan/Infiniti",rx: /\bNISSAN\b|\bINFINITI\b/ },
+  { canon: "Honda/Acura",    rx: /\bHONDA\b|\bACURA\b/ },
+  { canon: "Mazda",          rx: /\bMAZDA\b/ },
+  { canon: "Mitsubishi",     rx: /\bMITSUBISHI\b/ },
+  { canon: "Subaru",         rx: /\bSUBARU\b/ },
+  { canon: "Suzuki",         rx: /\bSUZUKI\b/ },
+  { canon: "Hyundai",        rx: /\bHYUNDAI\b/ },
+  { canon: "Kia",            rx: /\bKIA\b/ },
+
+  // US
+  { canon: "Ford",           rx: /\bFORD\b/ },
+  { canon: "Chevrolet",      rx: /\bCHEVROLET\b|\bCHEVY\b/ },
+  { canon: "Chrysler",       rx: /\bCHRYSLER\b/ },
+  { canon: "Dodge",          rx: /\bDODGE\b/ },
+  { canon: "Jeep",           rx: /\bJEEP\b/ },
+  { canon: "RAM",            rx: /\bRAM\b/ },
+  { canon: "Cadillac",       rx: /\bCADILLAC\b/ },
+  { canon: "GMC",            rx: /\bGMC\b/ },
+  { canon: "Buick",          rx: /\bBUICK\b/ },
+
+  // EV/China (úteis em PT)
+  { canon: "Tesla",          rx: /\bTESLA\b/ },
+  { canon: "BYD",            rx: /\bBYD\b/ },
+  { canon: "MG",             rx: /\bMG\b/ },
+];
+function detectVehicleFromText(raw){
+  const t = normVehText(raw);
+  for (const {canon, rx} of VEH_PATTERNS){
+    if (rx.test(t)) return canon;
+  }
+  return null;
+}
+
 /* ------------------------------------ */
 
 export const handler = async (event) => {
@@ -125,9 +191,8 @@ export const handler = async (event) => {
     await init();
 
     const body = JSON.parse(event.body || '{}');
-    const { ts, text='', filename='', source='', euro_validado, eurocode, brand: brandFromClient } = body;
+    const { ts, text='', filename='', source='', euro_validado, eurocode, brand: brandFromClient, vehicle: vehicleFromClient } = body;
 
-    // timestamp robusto
     const tsDate = (() => {
       if (typeof ts === 'number') return new Date(ts < 1e12 ? ts * 1000 : ts);
       if (typeof ts === 'string' && ts) { const d=new Date(ts); if(!Number.isNaN(d.getTime())) return d; }
@@ -139,25 +204,35 @@ export const handler = async (event) => {
       event.headers['client-ip'] || null;
 
     const euroFinal = euro_validado || eurocode || '';
-    const brand = brandFromClient || detectBrandFromText(text) || null;
+    const brand   = (brandFromClient   || detectBrandFromText(text)   || null);
+    const vehicle = (vehicleFromClient || detectVehicleFromText(text) || null);
 
-    // 1) tenta com brand
+    // Inserir já com brand + marca (veículo). Se falhar, tenta sem as novas colunas.
     try {
       const rows = await sql`
-        insert into ocr_results (ts, text, filename, source, ip, euro_validado, brand)
-        values (${tsDate}, ${text}, ${filename}, ${source}, ${ip}, ${euroFinal}, ${brand})
-        returning id, ts, text, filename, source, euro_validado, brand
+        insert into ocr_results (ts, text, filename, source, ip, euro_validado, brand, marca)
+        values (${tsDate}, ${text}, ${filename}, ${source}, ${ip}, ${euroFinal}, ${brand}, ${vehicle})
+        returning id, ts, text, filename, source, euro_validado, brand, marca
       `;
-      return { statusCode: 200, headers: jsonHeaders, body: JSON.stringify({ ok:true, row: rows[0] }) };
+      const r = rows?.[0];
+      return {
+        statusCode: 200,
+        headers: jsonHeaders,
+        body: JSON.stringify({ ok:true, row: { ...r, vehicle: r?.marca ?? null } })
+      };
     } catch (e1) {
-      // 2) fallback sem brand (não bloqueia operação)
-      console.warn('INSERT com brand falhou, a tentar sem brand:', e1?.message || e1);
+      console.warn('INSERT com brand/marca falhou, a tentar sem:', e1?.message || e1);
       const rows = await sql`
         insert into ocr_results (ts, text, filename, source, ip, euro_validado)
         values (${tsDate}, ${text}, ${filename}, ${source}, ${ip}, ${euroFinal})
-        returning id, ts, text, filename, source, euro_validado, brand
+        returning id, ts, text, filename, source, euro_validado, brand, marca
       `;
-      return { statusCode: 200, headers: jsonHeaders, body: JSON.stringify({ ok:true, row: rows[0], note:'saved_without_brand' }) };
+      const r = rows?.[0];
+      return {
+        statusCode: 200,
+        headers: jsonHeaders,
+        body: JSON.stringify({ ok:true, row: { ...r, vehicle: r?.marca ?? null }, note:'saved_without_brand_vehicle' })
+      };
     }
   } catch (e) {
     console.error('Erro ao guardar:', e);
