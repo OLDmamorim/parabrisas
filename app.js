@@ -203,8 +203,10 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) { {
   document.body.appendChild(modal);
 
   window.currentEurocodeModal = modal;
-  window.currentImageData = { ocrText, filename, source };
-}
+  window.currentImageData = {
+  ocrText, filename, source,
+  vehicle: detectVehicleFromText(ocrText) || ''
+};
 
 window.selectEurocode = function(selectedCode) {
   const { ocrText, filename, source, vehicle} = window.currentImageData;
