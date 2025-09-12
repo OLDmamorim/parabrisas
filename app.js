@@ -145,12 +145,12 @@ function extractAllEurocodes(text) {
 
 // =========================
 // Modal de Validação de Eurocode
-function showEurocodeValidationModal(ocrText, filename, source) {
+function showEurocodeValidationModal(ocrText, filename, source, vehicle) { {
   const eurocodes = extractAllEurocodes(ocrText);
 
   if (eurocodes.length === 0) {
     if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
-      saveToDatabase(ocrText, '', filename, source); // brand calculada no save
+      saveToDatabase(ocrText, '', filename, source, vehicle);; // brand calculada no save
     }
     return;
   }
