@@ -133,7 +133,7 @@ function extractAllEurocodes(text) {
 }
 
 // =========================
-// Modal de Validação de Eurocode  (CORRIGIDO)
+// Modal de Validação de Eurocode
 function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
   const eurocodes = extractAllEurocodes(ocrText);
 
@@ -194,7 +194,8 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
   window.currentEurocodeModal = modal;
   window.currentImageData = {
     ocrText, filename, source,
-    vehicle: detectVehicleFromText(ocrText) || ''
+    // 👇 agora deteta marca+modelo
+    vehicle: detectVehicleAndModelFromText(ocrText).full || ''
   };
 
   window.selectEurocode = function(selectedCode) {
@@ -220,7 +221,8 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
     setStatus(mobileStatus,  'A guardar na base de dados...');
 
     const brand    = detectBrandFromText(text) || '';
-    const carBrand = vehicle || detectVehicleFromText(text) || '';
+    // 👇 usa marca+modelo sempre que possível
+    const carBrand = vehicle || detectVehicleAndModelFromText(text).full || '';
 
     const response = await fetch(SAVE_URL, {
       method: 'POST',
@@ -326,7 +328,6 @@ function openEditOcrModal(row) {
 window.openEditOcrModal = openEditOcrModal;
 
 // =========================
-// Normalização (inclui brand/vehicle)
 function normalizeRow(r){
   let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
                   r.date || r.datetime || r.data || r.hora || r.created || 
@@ -346,7 +347,7 @@ function normalizeRow(r){
     filename:  r.filename ?? r.file ?? '',
     source:    r.source ?? r.origem ?? '',
     brand:     r.brand ?? '',
-    vehicle:   r.vehicle ?? ''
+    vehicle:   r.vehicle ?? '' // já vem “Marca” ou “Marca Modelo”
   };
 }
 
@@ -493,7 +494,8 @@ async function processImage(file) {
     const ocrText = await runOCR(base64);
     if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
 
-    const vehicle = detectVehicleFromText(ocrText) || '';
+    // 👇 marca + modelo
+    const vehicle = detectVehicleAndModelFromText(ocrText).full || '';
 
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
@@ -753,26 +755,14 @@ const VEHICLE_PATTERNS = [
   { canon: "Tesla",         rx: /\bTESLA\b/ }
 ];
 
+// (mantém a antiga para compatibilidade se precisares noutro lado)
 function detectVehicleFromText(rawText) {
   const text = normBrandText(rawText);
-
-  // 1) match direto por regex
   for (const { canon, rx } of VEHICLE_PATTERNS) {
     if (rx.test(text)) return canon;
   }
-
-  // 2) fallback por distância de edição
-  const tokens = Array.from(new Set(text.split(' ')))
-    .filter(w => w.length >= 3 && w.length <= 12);
-
-  const TARGETS = [
-    "BMW","MERCEDES","MERCEDESBENZ","AUDI","VOLKSWAGEN","VW","SEAT","SKODA",
-    "OPEL","VAUXHALL","PEUGEOT","CITROEN","RENAULT","DACIA","FIAT","ALFAROMEO",
-    "LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU",
-    "SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","LANDROVER","RANGEROOVER",
-    "MINI","PORSCHE","SMART","TESLA"
-  ];
-
+  const tokens = Array.from(new Set(text.split(' '))).filter(w => w.length >= 3 && w.length <= 12);
+  const TARGETS = ["BMW","MERCEDES","MERCEDESBENZ","AUDI","VOLKSWAGEN","VW","SEAT","SKODA","OPEL","VAUXHALL","PEUGEOT","CITROEN","RENAULT","DACIA","FIAT","ALFAROMEO","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","LANDROVER","RANGEROOVER","MINI","PORSCHE","SMART","TESLA"];
   let best = { canon: null, dist: 2 };
   for (const w of tokens) {
     for (const t of TARGETS) {
@@ -796,11 +786,41 @@ function guessVehicleFromToken(t) {
   if (t.includes("ALFAROMEO")) return "Alfa Romeo";
   if (t.includes("LANDROVER")) return "Land Rover";
   if (t.includes("RANGEROOVER") || t.includes("RANGERO")) return "Range Rover";
-  const simple = [
-    "BMW","AUDI","SEAT","FIAT","LANCIA","FORD","TOYOTA","HONDA","NISSAN",
-    "MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB",
-    "JAGUAR","MINI","PORSCHE","SMART","TESLA"
-  ];
+  const simple = ["BMW","AUDI","SEAT","FIAT","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","MINI","PORSCHE","SMART","TESLA"];
   if (simple.includes(t)) return t[0] + t.slice(1).toLowerCase();
   return null;
+}
+
+// ====== NOVO: Marca + Modelo (captura a palavra seguinte válida)
+function detectVehicleAndModelFromText(rawText) {
+  const text = normBrandText(rawText);
+  const tokens = text.split(/\s+/);
+
+  let brand = null;
+  let brandIdx = -1;
+
+  // encontra a marca
+  for (let i = 0; i < tokens.length; i++) {
+    for (const { canon, rx } of VEHICLE_PATTERNS) {
+      if (rx.test(tokens[i])) {
+        brand = canon;
+        brandIdx = i;
+        break;
+      }
+    }
+    if (brand) break;
+  }
+  if (!brand) return { full: '' };
+
+  // tenta apanhar o modelo nas 3 palavras seguintes
+  const BAD = new Set(['LOT','MATERIAL','NO','NR','HU','NORDGLASS','SEKURIT','PILKINGTON','AGC','ASAHI','XYG','FYG']);
+  const isModel = (s) => !!s && /^[A-Z0-9\-]+$/.test(s) && !BAD.has(s) && s.length <= 10;
+
+  let model = '';
+  for (let j = brandIdx + 1; j < Math.min(brandIdx + 4, tokens.length); j++) {
+    const tok = tokens[j].replace(/[^\w\-]/g, '');
+    if (isModel(tok)) { model = tok; break; }
+  }
+
+  return { full: brand + (model ? ' ' + model : '') };
 }
