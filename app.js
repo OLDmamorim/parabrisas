@@ -207,9 +207,9 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) { {
 }
 
 window.selectEurocode = function(selectedCode) {
-  const { ocrText, filename, source } = window.currentImageData;
+  const { ocrText, filename, source, vehicle} = window.currentImageData;
   closeEurocodeModal();
-  saveToDatabase(ocrText, selectedCode, filename, source); // brand calculada no save
+  saveToDatabase(ocrText, selectedCode, filename, source, vehicle); // brand calculada no save
 };
 
 window.closeEurocodeModal = function() {
