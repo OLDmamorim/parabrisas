@@ -407,7 +407,7 @@ function renderTable() {
       ? 'Nenhum registo encontrado para esta procura'
       : 'Nenhum registo encontrado';
     resultsBody.innerHTML =
-      `<tr><td colspan="7" style="text-align:center; padding:20px;">${message}</td></tr>`;
+      `<tr><td colspan="6" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
@@ -419,10 +419,6 @@ function renderTable() {
         <td>${index + 1}</td>
         <td>${row.timestamp}</td>
         <td>${row.vehicle || '—'}</td>
-        <td class="ocr-text"
-            style="font-size:12px; line-height:1.35; white-space:pre-wrap; word-break:break-word;">
-          ${row.text}
-        </td>
         <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
         <td>${row.brand || '—'}</td>
         <td>
@@ -842,4 +838,4 @@ function detectVehicleAndModelFromText(rawText) {
   }
 
   return { full: brand + (models.length ? ' ' + models.join(' ') : '') };
-}
+} 
