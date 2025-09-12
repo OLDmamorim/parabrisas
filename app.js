@@ -116,41 +116,30 @@ function filterResults(searchTerm) {
 
 // =========================
 // Extração de Eurocodes (robusta)
-// - aceita espaços/hífens entre blocos
-// - permite cauda até 10 chars (há códigos > 6)
-// - junta os grupos para devolver sem separadores
-// =========================
 function extractAllEurocodes(text) {
   if (!text) return [];
-
   const t = String(text).toUpperCase();
-
-  // 4 dígitos + opcional separador + 2 letras + opcional separador + 0..10 alfanum
-  // (captura grupos para podermos juntar sem separadores)
+  // 4 dígitos + 2 letras + 0..10 alfanum, aceitando separadores
   const rx = /\b(\d{4})[\s\-_\.]*([A-Z]{2})[\s\-_\.]*([A-Z0-9]{0,10})\b/g;
 
   const found = [];
   let m;
   while ((m = rx.exec(t)) !== null) {
-    // junta os grupos e remove qualquer separador perdido
     const code = (m[1] + m[2] + m[3]).replace(/[^A-Z0-9]/g, '');
-    // descarta coisas demasiado curtas (ex: só 4 dígitos)
     if (code.length >= 6) found.push(code);
   }
-
-  // únicos, ordenados por tamanho desc (tende a priorizar os completos)
   const unique = [...new Set(found)];
   return unique.sort((a, b) => b.length - a.length).slice(0, 4);
 }
 
 // =========================
-// Modal de Validação de Eurocode
-function showEurocodeValidationModal(ocrText, filename, source, vehicle) { {
+// Modal de Validação de Eurocode  (CORRIGIDO)
+function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
   const eurocodes = extractAllEurocodes(ocrText);
 
   if (eurocodes.length === 0) {
     if (confirm('Nenhum Eurocode encontrado no texto. Deseja guardar sem Eurocode?')) {
-      saveToDatabase(ocrText, '', filename, source, vehicle);; // brand calculada no save
+      saveToDatabase(ocrText, '', filename, source, vehicle); // brand calculada no save
     }
     return;
   }
@@ -204,50 +193,39 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) { {
 
   window.currentEurocodeModal = modal;
   window.currentImageData = {
-  ocrText, filename, source,
-  vehicle: detectVehicleFromText(ocrText) || ''
-};
+    ocrText, filename, source,
+    vehicle: detectVehicleFromText(ocrText) || ''
+  };
 
-window.selectEurocode = function(selectedCode) {
-  const { ocrText, filename, source, vehicle} = window.currentImageData;
-  closeEurocodeModal();
-  saveToDatabase(ocrText, selectedCode, filename, source, vehicle); // brand calculada no save
-};
+  window.selectEurocode = function(selectedCode) {
+    const { ocrText, filename, source, vehicle } = window.currentImageData;
+    closeEurocodeModal();
+    saveToDatabase(ocrText, selectedCode, filename, source, vehicle);
+  };
 
-window.closeEurocodeModal = function() {
-  if (window.currentEurocodeModal) {
-    document.body.removeChild(window.currentEurocodeModal);
-    window.currentEurocodeModal = null;
-    window.currentImageData = null;
-  }
-};
+  window.closeEurocodeModal = function() {
+    if (window.currentEurocodeModal) {
+      document.body.removeChild(window.currentEurocodeModal);
+      window.currentEurocodeModal = null;
+      window.currentImageData = null;
+    }
+  };
+} // <-- fecha showEurocodeValidationModal
 
 // =========================
-// =========================
-// Guardar na Base de Dados (AGORA com brand + vehicle)
-// =========================
+// Guardar na Base de Dados (brand + vehicle)
 async function saveToDatabase(text, eurocode, filename, source, vehicle) {
   try {
     setStatus(desktopStatus, 'A guardar na base de dados...');
     setStatus(mobileStatus,  'A guardar na base de dados...');
 
-    // detectar marca do vidro
-    const brand = detectBrandFromText(text) || '';
-
-    // detectar marca do veículo (se ainda não foi passada)
+    const brand    = detectBrandFromText(text) || '';
     const carBrand = vehicle || detectVehicleFromText(text) || '';
 
     const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        text, 
-        eurocode, 
-        filename, 
-        source, 
-        brand, 
-        vehicle: carBrand 
-      })
+      body: JSON.stringify({ text, eurocode, filename, source, brand, vehicle: carBrand })
     });
 
     if (response.ok) {
@@ -288,7 +266,6 @@ function openEditOcrModal(row) {
 
     try {
       const newBrand = detectBrandFromText(newText) || '';
-
       const response = await fetch(UPDATE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -346,11 +323,10 @@ function openEditOcrModal(row) {
   document.addEventListener('keydown', handleKeydown);
   editOcrModal.addEventListener('click', handleBackdropClick);
 }
-
 window.openEditOcrModal = openEditOcrModal;
 
 // =========================
-// Normalização (AGORA inclui brand)
+// Normalização (inclui brand/vehicle)
 function normalizeRow(r){
   let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
                   r.date || r.datetime || r.data || r.hora || r.created || 
@@ -363,16 +339,17 @@ function normalizeRow(r){
   }
 
   return {
-  id:        r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
-  timestamp: timestamp,
-  text:      r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
-  eurocode:  r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
-  filename:  r.filename ?? r.file ?? '',
-  source:    r.source ?? r.origem ?? '',
-  brand:     r.brand ?? '',      // 👈 novo
-  vehicle:   r.vehicle ?? ''     // 👈 novo
-};
+    id:        r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
+    timestamp: timestamp,
+    text:      r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '',
+    eurocode:  r.euro_validado ?? r.euro_user ?? r.euroUser ?? r.eurocode ?? r.euro ?? r.codigo ?? '',
+    filename:  r.filename ?? r.file ?? '',
+    source:    r.source ?? r.origem ?? '',
+    brand:     r.brand ?? '',
+    vehicle:   r.vehicle ?? ''
+  };
 }
+
 // =========================
 // OCR
 async function runOCR(imageBase64) {
@@ -396,10 +373,8 @@ async function runOCR(imageBase64) {
 async function loadResults() {
   try {
     setStatus(desktopStatus, 'A carregar dados...');
-
     const response = await fetch(LIST_URL);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
     const data = await response.json();
 
     if (data.ok && Array.isArray(data.rows)) {
@@ -420,6 +395,7 @@ async function loadResults() {
 }
 
 // =========================
+// Render
 function renderTable() {
   if (!resultsBody) return;
 
@@ -443,7 +419,7 @@ function renderTable() {
       <tr>
         <td>${index + 1}</td>
         <td>${row.timestamp}</td>
-        <td>${row.vehicle || '—'}</td>  <!-- NOVA COLUNA VEÍCULO -->
+        <td>${row.vehicle || '—'}</td>
         <td class="ocr-text"
             style="font-size:12px; line-height:1.35; white-space:pre-wrap; word-break:break-word;">
           ${row.text}
@@ -499,9 +475,7 @@ async function deleteRow(id) {
 window.deleteRow = deleteRow;
 
 // =========================
-// =========================
 // Processar imagem
-// =========================
 async function processImage(file) {
   if (!file) return;
 
@@ -519,13 +493,11 @@ async function processImage(file) {
     const ocrText = await runOCR(base64);
     if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
 
-    // 👉 detectar veículo logo após o OCR
     const vehicle = detectVehicleFromText(ocrText) || '';
 
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
 
-    // 👉 passa também o vehicle para guardar
     showEurocodeValidationModal(ocrText, file.name, 'upload', vehicle);
   } catch (error) {
     console.error('Erro ao processar imagem:', error);
@@ -536,7 +508,7 @@ async function processImage(file) {
 }
 
 // =========================
-// Export CSV (mantido)
+// Export CSV
 function exportCSV() {
   const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
 
@@ -716,7 +688,7 @@ function guessCanonFromToken(t){
   return null;
 }
 
-// === Helper: reduzir imagem para base64 (máx 1800px) ===
+// (opcional) reduzir imagem — não usado diretamente, mas útil
 async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
   const bitmap = await createImageBitmap(file);
   const { width, height } = bitmap;
@@ -743,43 +715,42 @@ async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
   });
   return base64;
 }
-// ====== VEHICLE (car brand) DETECTION ======
-// Usa o mesmo normalizador (normBrandText) e editDistance já existentes
 
+// ====== VEHICLE (car brand) DETECTION — versão única ======
 const VEHICLE_PATTERNS = [
-  { canon: "BMW",         rx: /\bBMW\b/ },
+  { canon: "BMW",           rx: /\bBMW\b/ },
   { canon: "Mercedes-Benz", rx: /\bMERCEDES(?:[-\s]?BENZ)?\b|\bMERCEDES\b/ },
-  { canon: "Audi",        rx: /\bAUDI\b/ },
-  { canon: "Volkswagen",  rx: /\bVOLKSWAGEN\b|\bVW\b/ },
-  { canon: "Seat",        rx: /\bSEAT\b/ },
-  { canon: "Škoda",       rx: /\bSKODA\b/ },
-  { canon: "Opel",        rx: /\bOPEL\b|\bVAUXHALL\b/ },
-  { canon: "Peugeot",     rx: /\bPEUGEOT\b/ },
-  { canon: "Citroën",     rx: /\bCITRO[ËE]N\b|\bCITROEN\b/ },
-  { canon: "Renault",     rx: /\bRENAULT\b/ },
-  { canon: "Dacia",       rx: /\bDACIA\b/ },
-  { canon: "Fiat",        rx: /\bFIAT\b/ },
-  { canon: "Alfa Romeo",  rx: /\bALFA\s*ROMEO\b/ },
-  { canon: "Lancia",      rx: /\bLANCIA\b/ },
-  { canon: "Ford",        rx: /\bFORD\b/ },
-  { canon: "Toyota",      rx: /\bTOYOTA\b/ },
-  { canon: "Honda",       rx: /\bHONDA\b/ },
-  { canon: "Nissan",      rx: /\bNISSAN\b/ },
-  { canon: "Mazda",       rx: /\bMAZDA\b/ },
-  { canon: "Mitsubishi",  rx: /\bMITSUBISHI\b/ },
-  { canon: "Subaru",      rx: /\bSUBARU\b/ },
-  { canon: "Suzuki",      rx: /\bSUZUKI\b/ },
-  { canon: "Hyundai",     rx: /\bHYUNDAI\b/ },
-  { canon: "Kia",         rx: /\bKIA\b/ },
-  { canon: "Volvo",       rx: /\bVOLVO\b/ },
-  { canon: "Saab",        rx: /\bSAAB\b/ },
-  { canon: "Jaguar",      rx: /\bJAGUAR\b/ },
-  { canon: "Land Rover",  rx: /\bLAND\s*ROVER\b/ },
-  { canon: "Range Rover", rx: /\bRANGE\s*ROVER\b/ },
-  { canon: "Mini",        rx: /\bMINI\b/ },
-  { canon: "Porsche",     rx: /\bPORSCHE\b/ },
-  { canon: "Smart",       rx: /\bSMART\b/ },
-  { canon: "Tesla",       rx: /\bTESLA\b/ }
+  { canon: "Audi",          rx: /\bAUDI\b/ },
+  { canon: "Volkswagen",    rx: /\bVOLKSWAGEN\b|\bVW\b/ },
+  { canon: "Seat",          rx: /\bSEAT\b/ },
+  { canon: "Škoda",         rx: /\bSKODA\b/ },
+  { canon: "Opel",          rx: /\bOPEL\b|\bVAUXHALL\b/ },
+  { canon: "Peugeot",       rx: /\bPEUGEOT\b/ },
+  { canon: "Citroën",       rx: /\bCITRO[ËE]N\b|\bCITROEN\b/ },
+  { canon: "Renault",       rx: /\bRENAULT\b/ },
+  { canon: "Dacia",         rx: /\bDACIA\b/ },
+  { canon: "Fiat",          rx: /\bFIAT\b/ },
+  { canon: "Alfa Romeo",    rx: /\bALFA\s*ROMEO\b/ },
+  { canon: "Lancia",        rx: /\bLANCIA\b/ },
+  { canon: "Ford",          rx: /\bFORD\b/ },
+  { canon: "Toyota",        rx: /\bTOYOTA\b/ },
+  { canon: "Honda",         rx: /\bHONDA\b/ },
+  { canon: "Nissan",        rx: /\bNISSAN\b/ },
+  { canon: "Mazda",         rx: /\bMAZDA\b/ },
+  { canon: "Mitsubishi",    rx: /\bMITSUBISHI\b/ },
+  { canon: "Subaru",        rx: /\bSUBARU\b/ },
+  { canon: "Suzuki",        rx: /\bSUZUKI\b/ },
+  { canon: "Hyundai",       rx: /\bHYUNDAI\b/ },
+  { canon: "Kia",           rx: /\bKIA\b/ },
+  { canon: "Volvo",         rx: /\bVOLVO\b/ },
+  { canon: "Saab",          rx: /\bSAAB\b/ },
+  { canon: "Jaguar",        rx: /\bJAGUAR\b/ },
+  { canon: "Land Rover",    rx: /\bLAND\s*ROVER\b/ },
+  { canon: "Range Rover",   rx: /\bRANGE\s*ROVER\b/ },
+  { canon: "Mini",          rx: /\bMINI\b/ },
+  { canon: "Porsche",       rx: /\bPORSCHE\b/ },
+  { canon: "Smart",         rx: /\bSMART\b/ },
+  { canon: "Tesla",         rx: /\bTESLA\b/ }
 ];
 
 function detectVehicleFromText(rawText) {
@@ -790,7 +761,7 @@ function detectVehicleFromText(rawText) {
     if (rx.test(text)) return canon;
   }
 
-  // 2) fallback: aproximação por distância de edição
+  // 2) fallback por distância de edição
   const tokens = Array.from(new Set(text.split(' ')))
     .filter(w => w.length >= 3 && w.length <= 12);
 
@@ -802,7 +773,7 @@ function detectVehicleFromText(rawText) {
     "MINI","PORSCHE","SMART","TESLA"
   ];
 
-  let best = { canon: null, dist: 2 }; // tolerância curta para evitar falsos positivos
+  let best = { canon: null, dist: 2 };
   for (const w of tokens) {
     for (const t of TARGETS) {
       const d = editDistance(w, t);
@@ -825,62 +796,11 @@ function guessVehicleFromToken(t) {
   if (t.includes("ALFAROMEO")) return "Alfa Romeo";
   if (t.includes("LANDROVER")) return "Land Rover";
   if (t.includes("RANGEROOVER") || t.includes("RANGERO")) return "Range Rover";
-  // casos simples
   const simple = [
     "BMW","AUDI","SEAT","FIAT","LANCIA","FORD","TOYOTA","HONDA","NISSAN",
     "MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB",
     "JAGUAR","MINI","PORSCHE","SMART","TESLA"
   ];
-  if (simple.includes(t)) return t[0] + t.slice(1).toLowerCase(); // capitalização
-  return null;
-}
-
-// ====== VEHICLE DETECTION (helpers) ======
-function normVehText(s){
-  return String(s||"")
-    .toUpperCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^\w\s]/g,' ')
-    .replace(/\s+/g,' ')
-    .trim();
-}
-
-const VEHICLE_PATTERNS = [
-  { canon:"CITROËN", rx:/\bCITRO[ËE]N\b|\bCITROEN\b/ },
-  { canon:"RENAULT", rx:/\bRENAULT\b/ },
-  { canon:"PEUGEOT", rx:/\bPEUGEOT\b/ },
-  { canon:"BMW",     rx:/\bBMW\b/ },
-  { canon:"MERCEDES-BENZ", rx:/\bMERCEDES\b|\bMB\b/ },
-  { canon:"VOLKSWAGEN", rx:/\bVOLKSWAGEN\b|\bVW\b/ },
-  { canon:"AUDI",    rx:/\bAUDI\b/ },
-  { canon:"SEAT",    rx:/\bSEAT\b/ },
-  { canon:"SKODA",   rx:/\bSKODA\b/ },
-  { canon:"OPEL",    rx:/\bOPEL\b|\bVAUXHALL\b/ },
-  { canon:"FIAT",    rx:/\bFIAT\b/ },
-  { canon:"FORD",    rx:/\bFORD\b/ },
-  { canon:"TOYOTA",  rx:/\bTOYOTA\b/ },
-  { canon:"NISSAN",  rx:/\bNISSAN\b/ },
-  { canon:"HONDA",   rx:/\bHONDA\b/ },
-  { canon:"HYUNDAI", rx:/\bHYUNDAI\b/ },
-  { canon:"KIA",     rx:/\bKIA\b/ },
-  { canon:"MAZDA",   rx:/\bMAZDA\b/ },
-  { canon:"MITSUBISHI", rx:/\bMITSUBISHI\b/ },
-  { canon:"SUZUKI",  rx:/\bSUZUKI\b/ },
-  { canon:"VOLVO",   rx:/\bVOLVO\b/ },
-  { canon:"DACIA",   rx:/\bDACIA\b/ },
-  { canon:"SMART",   rx:/\bSMART\b/ },
-  { canon:"JEEP",    rx:/\bJEEP\b/ },
-  { canon:"MINI",    rx:/\bMINI\b/ },
-  { canon:"ALFA ROMEO", rx:/\bALFA\s*ROMEO\b/ },
-  { canon:"LAND ROVER", rx:/\bLAND\s*ROVER\b/ },
-  { canon:"JAGUAR",  rx:/\bJAGUAR\b/ },
-  { canon:"TESLA",   rx:/\bTESLA\b/ },
-];
-
-function detectVehicleFromText(rawText){
-  const t = normVehText(rawText);
-  for (const {canon, rx} of VEHICLE_PATTERNS){
-    if (rx.test(t)) return canon;
-  }
+  if (simple.includes(t)) return t[0] + t.slice(1).toLowerCase();
   return null;
 }
