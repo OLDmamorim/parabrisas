@@ -8,28 +8,6 @@ const SAVE_URL     = '/.netlify/functions/save-ocr';
 const UPDATE_URL   = '/.netlify/functions/update-ocr';
 const DELETE_URL   = '/.netlify/functions/delete-ocr';
 
-// ---- Seletores ----
-const fileInput  = document.getElementById('fileInput');
-const btnUpload  = document.getElementById('btnUpload');
-const btnExport  = document.getElementById('btnExport');
-const btnClear   = document.getElementById('btnClear');
-const resultsBody= document.getElementById('resultsBody');
-
-const cameraInput  = document.getElementById('cameraInput');
-const btnCamera    = document.getElementById('btnCamera');
-const mobileStatus = document.getElementById('mobileStatus');
-const mobileHistoryList = document.getElementById('mobileHistoryList');
-
-const desktopStatus = document.getElementById('desktopStatus');
-const toast = document.getElementById('toast');
-
-// ---- Modal de edição OCR ----
-const editOcrModal = document.getElementById('editOcrModal');
-const editOcrTextarea = document.getElementById('editOcrTextarea');
-const editOcrClose = document.getElementById('editOcrClose');
-const editOcrCancel = document.getElementById('editOcrCancel');
-const editOcrSave = document.getElementById('editOcrSave');
-
 // ---- Estado ----
 let RESULTS = [];
 let FILTERED_RESULTS = [];
