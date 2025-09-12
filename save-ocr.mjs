@@ -1,84 +1,78 @@
+// /.netlify/functions/save-ocr.mjs
 import { neon } from '@neondatabase/serverless';
 
-const CONN = process.env.NEON_DATABASE_URL;
-if (!CONN) throw new Error('NEON_DATABASE_URL não definido');
+const ok = (data) => ({
+  statusCode: 200,
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  },
+  body: JSON.stringify(data),
+});
 
-const sql = neon(CONN);
-
-const jsonHeaders = {
-  'content-type': 'application/json',
-  'access-control-allow-origin': '*'
-};
-
-let inited = false;
-async function init() {
-  if (inited) return;
-  try {
-    await sql`
-      create table if not exists ocr_results (
-        id bigserial primary key,
-        ts timestamptz not null default now(),
-        text text,
-        filename text,
-        source text,
-        ip text,
-        euro_validado text
-      )
-    `;
-    inited = true;
-  } catch (e) {
-    console.error('Erro ao inicializar tabela:', e);
-    throw e;
-  }
-}
+const err = (status, message) => ({
+  statusCode: status,
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  },
+  body: JSON.stringify({ ok: false, error: message }),
+});
 
 export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: jsonHeaders, body: '"Method Not Allowed"' };
-  }
+  // CORS preflight
+  if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
+
+  // Só aceita POST
+  if (event.httpMethod !== 'POST') return err(405, 'Method Not Allowed');
 
   try {
-    await init();
-
-    const { ts, text, filename, source, euro_validado, eurocode } = JSON.parse(event.body || '{}');
-    if (!text && !filename) {
-      return { statusCode: 400, headers: jsonHeaders, body: '"Texto ou filename obrigatório"' };
+    const sql = neon(process.env.DATABASE_URL);
+    if (!process.env.DATABASE_URL) {
+      return err(500, 'DATABASE_URL env var not set');
     }
 
-    // Normalizar timestamp
-    const tsDate = (() => {
-      if (typeof ts === "number") return new Date(ts < 1e12 ? ts * 1000 : ts);
-      if (typeof ts === "string" && ts) {
-        const d = new Date(ts);
-        if (!Number.isNaN(d.getTime())) return d;
+    // body JSON
+    let payload = {};
+    try {
+      payload = JSON.parse(event.body || '{}');
+    } catch {
+      return err(400, 'Invalid JSON body');
+    }
+
+    const {
+      text = '',
+      eurocode = '',
+      filename = '',
+      source = '',
+      brand = '',
+      vehicle = ''
+    } = payload;
+
+    // tenta inserir COM a coluna vehicle
+    try {
+      const rows = await sql/*sql*/`
+        INSERT INTO ocr_results (text, euro_validado, brand, vehicle, filename, source)
+        VALUES (${text}, ${eurocode}, ${brand}, ${vehicle}, ${filename}, ${source})
+        RETURNING id, ts AS created_at
+      `;
+      return ok({ ok: true, row: rows[0] });
+    } catch (e) {
+      // se a coluna vehicle ainda não existir, faz fallback sem ela
+      const msg = String(e?.message || e);
+      if (msg.includes('column "vehicle" does not exist')) {
+        const rows = await sql/*sql*/`
+          INSERT INTO ocr_results (text, euro_validado, brand, filename, source)
+          VALUES (${text}, ${eurocode}, ${brand}, ${filename}, ${source})
+          RETURNING id, ts AS created_at
+        `;
+        return ok({ ok: true, row: rows[0], note: 'vehicle column missing (ignored)' });
       }
-      return new Date();
-    })();
-
-    const ip =
-      event.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-      event.headers['client-ip'] || null;
-
-    // Usar eurocode ou euro_validado
-    const euroFinal = euro_validado || eurocode || '';
-
-    const rows = await sql`
-      insert into ocr_results (ts, text, filename, source, ip, euro_validado)
-      values (${tsDate}, ${text || ''}, ${filename || ''}, ${source || ''}, ${ip}, ${euroFinal})
-      returning id, ts, text, filename, source, euro_validado
-    `;
-
-    return {
-      statusCode: 200,
-      headers: jsonHeaders,
-      body: JSON.stringify({ ok: true, row: rows[0] })
-    };
+      throw e;
+    }
   } catch (e) {
-    console.error('Erro ao guardar:', e);
-    return { 
-      statusCode: 500, 
-      headers: jsonHeaders, 
-      body: JSON.stringify({ ok: false, error: e.message }) 
-    };
+    return err(500, String(e?.message || e));
   }
 };
