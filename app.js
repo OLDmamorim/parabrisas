@@ -832,3 +832,53 @@ function guessVehicleFromToken(t) {
   if (simple.includes(t)) return t[0] + t.slice(1).toLowerCase(); // capitalização
   return null;
 }
+
+// ====== VEHICLE DETECTION (helpers) ======
+function normVehText(s){
+  return String(s||"")
+    .toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^\w\s]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+const VEHICLE_PATTERNS = [
+  { canon:"CITROËN", rx:/\bCITRO[ËE]N\b|\bCITROEN\b/ },
+  { canon:"RENAULT", rx:/\bRENAULT\b/ },
+  { canon:"PEUGEOT", rx:/\bPEUGEOT\b/ },
+  { canon:"BMW",     rx:/\bBMW\b/ },
+  { canon:"MERCEDES-BENZ", rx:/\bMERCEDES\b|\bMB\b/ },
+  { canon:"VOLKSWAGEN", rx:/\bVOLKSWAGEN\b|\bVW\b/ },
+  { canon:"AUDI",    rx:/\bAUDI\b/ },
+  { canon:"SEAT",    rx:/\bSEAT\b/ },
+  { canon:"SKODA",   rx:/\bSKODA\b/ },
+  { canon:"OPEL",    rx:/\bOPEL\b|\bVAUXHALL\b/ },
+  { canon:"FIAT",    rx:/\bFIAT\b/ },
+  { canon:"FORD",    rx:/\bFORD\b/ },
+  { canon:"TOYOTA",  rx:/\bTOYOTA\b/ },
+  { canon:"NISSAN",  rx:/\bNISSAN\b/ },
+  { canon:"HONDA",   rx:/\bHONDA\b/ },
+  { canon:"HYUNDAI", rx:/\bHYUNDAI\b/ },
+  { canon:"KIA",     rx:/\bKIA\b/ },
+  { canon:"MAZDA",   rx:/\bMAZDA\b/ },
+  { canon:"MITSUBISHI", rx:/\bMITSUBISHI\b/ },
+  { canon:"SUZUKI",  rx:/\bSUZUKI\b/ },
+  { canon:"VOLVO",   rx:/\bVOLVO\b/ },
+  { canon:"DACIA",   rx:/\bDACIA\b/ },
+  { canon:"SMART",   rx:/\bSMART\b/ },
+  { canon:"JEEP",    rx:/\bJEEP\b/ },
+  { canon:"MINI",    rx:/\bMINI\b/ },
+  { canon:"ALFA ROMEO", rx:/\bALFA\s*ROMEO\b/ },
+  { canon:"LAND ROVER", rx:/\bLAND\s*ROVER\b/ },
+  { canon:"JAGUAR",  rx:/\bJAGUAR\b/ },
+  { canon:"TESLA",   rx:/\bTESLA\b/ },
+];
+
+function detectVehicleFromText(rawText){
+  const t = normVehText(rawText);
+  for (const {canon, rx} of VEHICLE_PATTERNS){
+    if (rx.test(t)) return canon;
+  }
+  return null;
+}
