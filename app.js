@@ -694,3 +694,31 @@ function guessCanonFromToken(t){
   if (t.includes('FORD')) return "Ford (Carlite)";
   return null;
 }
+
+// === Helper: reduzir imagem para base64 (máx 1800px) ===
+async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
+  const bitmap = await createImageBitmap(file);
+  const { width, height } = bitmap;
+
+  let newW = width, newH = height;
+  if (Math.max(width, height) > maxDim) {
+    const scale = maxDim / Math.max(width, height);
+    newW = Math.round(width * scale);
+    newH = Math.round(height * scale);
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = newW;
+  canvas.height = newH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, newW, newH);
+
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+  return base64;
+}
