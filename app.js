@@ -1,5 +1,5 @@
 /* =========================
-   CONFIG & ELEMENTS
+   CONFIG & ENDPOINTS
    ========================= */
 const OCR_ENDPOINT = '/.netlify/functions/ocr-proxy';
 const LIST_URL     = '/.netlify/functions/list-ocr';
@@ -7,7 +7,10 @@ const SAVE_URL     = '/.netlify/functions/save-ocr';
 const UPDATE_URL   = '/.netlify/functions/update-ocr';
 const DELETE_URL   = '/.netlify/functions/delete-ocr';
 
-// Mobile elements
+/* =========================
+   ELEMENTS
+   ========================= */
+// Mobile
 const btnCamera      = document.getElementById('btnCamera');
 const cameraInput    = document.getElementById('cameraInput');
 const btnUpload      = document.getElementById('btnUpload');
@@ -15,8 +18,9 @@ const fileInput      = document.getElementById('fileInput');
 const mobileProgress = document.getElementById('mobileProgress');
 const mobileStatus   = document.getElementById('mobileStatus');
 const mobileHistory  = document.getElementById('mobileHistoryList');
+const mobileProcessingBadge = document.getElementById('mobileProcessingBadge');
 
-// Desktop elements
+// Desktop
 const btnCamera_d    = document.getElementById('btnCamera_d');
 const cameraInput_d  = document.getElementById('cameraInput_d');
 const btnUpload_d    = document.getElementById('btnUpload_d');
@@ -26,9 +30,9 @@ const desktopStatus  = document.getElementById('desktopStatus');
 const btnExport      = document.getElementById('btnExport');
 const btnClear       = document.getElementById('btnClear');
 
+// Common
 const viewBadge      = document.getElementById('viewBadge');
-
-const isMobile = matchMedia('(max-width: 768px)').matches;
+const isMobile       = matchMedia('(max-width: 768px)').matches;
 
 /* =========================
    STARTUP
@@ -67,6 +71,7 @@ function attachEvents(){
     e.target.value = '';
   });
 
+  // Desktop helpers
   btnExport?.addEventListener('click', exportCSV);
   btnClear?.addEventListener('click', () => {
     if (resultsBody) resultsBody.innerHTML = '';
@@ -74,7 +79,7 @@ function attachEvents(){
     setStatus('', 'Lista limpa localmente.');
   });
 
-  // Actions table
+  // Ações da tabela (editar / eliminar)
   resultsBody?.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('button.action-btn');
     if (!btn) return;
@@ -108,7 +113,7 @@ async function handleImage(file, { fromCamera=false } = {}){
     if (!eurocode) warn('Não encontrei Eurocode nesta imagem.');
     if (!brand)    warn('Não encontrei Marca.');
 
-    const loja = null;   // ajusta se tiveres contexto
+    const loja    = null; // coloca a tua loja ativa se tiveres contexto
     const user_id = null;
 
     const payload = {
@@ -137,8 +142,8 @@ async function handleImage(file, { fromCamera=false } = {}){
 }
 
 function toggleMobileLoader(show){
-  if (!mobileProgress) return;
-  mobileProgress.classList.toggle('hidden', !show);
+  if (mobileProgress) mobileProgress.classList.toggle('hidden', !show);
+  if (mobileProcessingBadge) mobileProcessingBadge.hidden = !show;
 }
 
 async function ocrProxy(file){
@@ -148,6 +153,7 @@ async function ocrProxy(file){
   const res = await fetch(OCR_ENDPOINT, { method: 'POST', body: fd });
   if (!res.ok) throw new Error('OCR endpoint falhou ('+res.status+')');
   const j = await res.json();
+
   const text = j.text || j.ocrText || j.data || '';
   const uploadedUrl = j.uploadedUrl || j.url || j.image_url || null;
   return { text, uploadedUrl };
@@ -233,7 +239,7 @@ function buildRow(row){
   return tr;
 }
 
-/* ===== Mobile history render ===== */
+/* ===== Mobile history render (estilo antigo) ===== */
 function appendMobileItem(row){
   const li = buildMobileItem(row);
   mobileHistory.appendChild(li);
@@ -244,14 +250,22 @@ function prependMobileItem(row){
 }
 function buildMobileItem(row){
   const li = document.createElement('li');
-  const left = document.createElement('div');
-  const right = document.createElement('div');
 
-  left.innerHTML = `
-    <div class="code">${row.eurocode || '—'}</div>
-    <div class="brand">${row.brand ? `Marca: ${row.brand}` : 'Marca: —'}</div>
-  `;
-  right.textContent = '✔️';
+  const left = document.createElement('div');
+  left.className = 'eg-cap-left';
+  const code = document.createElement('div');
+  code.className = 'eg-code';
+  code.textContent = row.eurocode || '—';
+  const brand = document.createElement('div');
+  brand.className = 'eg-brand';
+  brand.textContent = 'Marca: ' + (row.brand || '—');
+  left.appendChild(code);
+  left.appendChild(brand);
+
+  const right = document.createElement('div');
+  right.className = 'eg-tick';
+  right.textContent = '✔';
+
   li.appendChild(left);
   li.appendChild(right);
   return li;
@@ -304,8 +318,7 @@ async function deleteRow(tr, id){
 }
 
 /* =========================
-   EUROCODE DETECTION
-   (4 dígitos + 2 a 9 chars)
+   EUROCODE DETECTION (4 dígitos + 2..9 chars)
    ========================= */
 function detectEurocodeFromText(raw){
   if (!raw) return null;
@@ -339,7 +352,6 @@ function normBrandText(s){
     .replace(/I/g,'1')
     .trim();
 }
-
 const BRAND_PATTERNS = [
   { canon: "AGC",                  rx: /\bA[GC]C\b|\bAG0\b|\bASAHI\b/ },
   { canon: "Pilkington",           rx: /\bPILK[1I]NGT[0O]N\b|\bPILKINGTON\b/ },
@@ -364,7 +376,6 @@ const BRAND_PATTERNS = [
   { canon: "Hyundai (OEM)",        rx: /\bHYUNDAI\b/ },
   { canon: "Kia (OEM)",            rx: /\bKIA\b/ },
 ];
-
 function detectBrandFromText(rawText){
   const text = normBrandText(rawText);
   for (const {canon, rx} of BRAND_PATTERNS){
@@ -384,7 +395,6 @@ function detectBrandFromText(rawText){
   }
   return best.canon;
 }
-
 function editDistance(a,b){
   a=String(a); b=String(b);
   const dp = Array(a.length+1).fill(null).map(()=>Array(b.length+1).fill(0));
@@ -398,7 +408,6 @@ function editDistance(a,b){
   }
   return dp[a.length][b.length];
 }
-
 function guessCanonFromToken(t){
   t = String(t).toUpperCase();
   if (t.includes('PILK')) return "Pilkington";
@@ -423,7 +432,7 @@ function guessCanonFromToken(t){
 }
 
 /* =========================
-   FEEDBACK UI
+   FEEDBACK & HELPERS
    ========================= */
 function loading(msg){ setStatus(msg, ''); }
 function ok(msg){ setStatus('', msg); }
@@ -431,16 +440,12 @@ function warn(msg){ setStatus('', '⚠️ ' + msg); }
 function error(msg){ setStatus('', '❌ ' + msg); }
 function setStatus(loadingMsg='', infoMsg=''){
   if (isMobile) {
-    if (loadingMsg) { mobileStatus.textContent = loadingMsg; }
-    else if (infoMsg) { mobileStatus.textContent = infoMsg; }
+    if (loadingMsg)      mobileStatus.textContent = loadingMsg;
+    else if (infoMsg)    mobileStatus.textContent = infoMsg;
   } else {
     desktopStatus.textContent = loadingMsg || infoMsg || '';
   }
 }
-
-/* =========================
-   EXPORT CSV (desktop)
-   ========================= */
 function exportCSV(){
   const rows = Array.from(resultsBody.querySelectorAll('tr')).map(tr => {
     const tds = tr.querySelectorAll('td');
@@ -459,10 +464,6 @@ function exportCSV(){
   a.href = url; a.download = 'ocr_results.csv'; a.click();
   URL.revokeObjectURL(url);
 }
-
-/* =========================
-   HELPERS
-   ========================= */
 function formatDate(s){
   if (!s) return '—';
   try {
