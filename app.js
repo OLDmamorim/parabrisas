@@ -484,7 +484,9 @@ async function deleteRow(id) {
 window.deleteRow = deleteRow;
 
 // =========================
+// =========================
 // Processar imagem
+// =========================
 async function processImage(file) {
   if (!file) return;
 
@@ -502,10 +504,14 @@ async function processImage(file) {
     const ocrText = await runOCR(base64);
     if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
 
+    // 👉 detectar veículo logo após o OCR
+    const vehicle = detectVehicleFromText(ocrText) || '';
+
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
 
-    showEurocodeValidationModal(ocrText, file.name, 'upload'); // brand calculada no save
+    // 👉 passa também o vehicle para guardar
+    showEurocodeValidationModal(ocrText, file.name, 'upload', vehicle);
   } catch (error) {
     console.error('Erro ao processar imagem:', error);
     showToast('Erro ao processar imagem: ' + error.message, 'error');
