@@ -337,7 +337,6 @@ function normalizeRow(r){
   const text = r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '';
   let brand = r.brand ?? '';
   
-  // Se a marca estiver vazia, tenta detectar novamente a partir do texto
   if (!brand && text) {
     brand = detectBrandFromText(text) || '';
     console.log('Reprocessando marca para registo existente:', brand);
@@ -351,7 +350,7 @@ function normalizeRow(r){
     filename:  r.filename ?? r.file ?? '',
     source:    r.source ?? r.origem ?? '',
     brand:     brand,
-    vehicle:   r.vehicle ?? '' // pode ser "Marca" ou "Marca Modelo"
+    vehicle:   r.vehicle ?? ''
   };
 }
 
@@ -603,10 +602,7 @@ setInterval(loadResults, 30000);
 function detectGlassType(eurocode) {
   if (!eurocode || typeof eurocode !== 'string') return '—';
   
-  // Remove espaços e converte para maiúsculas
   const code = eurocode.trim().toUpperCase();
-  
-  // Procura pela primeira letra (não número) no eurocode
   const match = code.match(/[A-Z]/);
   if (!match) return '—';
   
@@ -665,47 +661,36 @@ const BRAND_PATTERNS = [
   { canon: "Xinyi",                rx: /\bX[1I]NY[1I]\b|\bXINYI\b|\bX1NY1\b/ },
   { canon: "CSG",                  rx: /\bCSG\b|\bC[5S][6G]\b/ },
   { canon: "Benson",               rx: /\bBENS[0O]N\b|\bBENSON\b/ },
-  { canon: "Lucas",                rx: /\bLUCAS\b|\bLUC4S\b|\bLUCA5\b/ }
+  { canon: "Lucas",                rx: /\bLUCAS\b|\bLUC4S\b|\bLUCA5\b/ },
+  { canon: "Scania",               rx: /\bSCANIA\b/ },
+  { canon: "MAN",                  rx: /\bMAN\b/ },
+  { canon: "DAF",                  rx: /\bDAF\b/ },
+  { canon: "Volvo",                rx: /\bVOLVO\b/ }
 ];
 
 function detectBrandFromText(rawText){
   if (!rawText || typeof rawText !== 'string') return null;
-  
   const text = normBrandText(rawText);
-  console.log('Texto normalizado para detecção de marca:', text);
-  
-  // Primeiro, procura por padrões exatos
-  for (const {canon, rx} of BRAND_PATTERNS){
-    if (rx.test(text)) {
-      console.log('Marca detectada por padrão:', canon);
-      return canon;
-    }
+  for (const {canon, rx} of BRAND_PATTERNS) {
+    if (rx.test(text)) return canon;
   }
-  
-  // Se não encontrou por padrões, tenta por similaridade
   const candidates = Array.from(new Set(text.split(' '))).filter(w => w.length>=3 && w.length<=15);
-  const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM","XINYI","CSG","BENSON","SHATTERPRUFE","LUCAS"];
-  
+  const targets = [
+    "PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG",
+    "SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI",
+    "KIA","FORD","GENERAL","MOTORS","VW","GM","XINYI","CSG","BENSON","SHATTERPRUFE","LUCAS",
+    "SCANIA","MAN","DAF","VOLVO"
+  ];
   let best = {canon:null, dist:3};
   for (const w of candidates){
     for (const t of targets){
       const d = editDistance(w, t);
       if (d < best.dist){
         const guessed = guessCanonFromToken(t);
-        if (guessed) {
-          best = {canon: guessed, dist:d};
-          console.log(`Marca detectada por similaridade: ${w} -> ${t} -> ${guessed} (distância: ${d})`);
-        }
+        if (guessed) best = {canon: guessed, dist:d};
       }
     }
   }
-  
-  if (best.canon) {
-    console.log('Marca final detectada:', best.canon);
-  } else {
-    console.log('Nenhuma marca detectada no texto:', rawText.substring(0, 100));
-  }
-  
   return best.canon;
 }
 
@@ -751,40 +736,14 @@ function guessCanonFromToken(t){
   if (t.includes('CSG')) return "CSG";
   if (t.includes('BENSON')) return "Benson";
   if (t.includes('LUCAS')) return "Lucas";
+  if (t.includes('SCANIA')) return "Scania";
+  if (t === 'MAN') return "MAN";
+  if (t.includes('DAF')) return "DAF";
+  if (t.includes('VOLVO')) return "Volvo";
   return null;
 }
 
-// (opcional) reduzir imagem
-async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
-  const bitmap = await createImageBitmap(file);
-  const { width, height } = bitmap;
-
-  let newW = width, newH = height;
-  if (Math.max(width, height) > maxDim) {
-    const scale = maxDim / Math.max(width, height);
-    newW = Math.round(width * scale);
-    newH = Math.round(height * scale);
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = newW;
-  canvas.height = newH;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(bitmap, 0, 0, newW, newH);
-
-  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
-  const base64 = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(String(r.result).split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(blob);
-  });
-  return base64;
-}
-
 // ====== VEHICLE (car brand) DETECTION ======
-
-// normalização específica para VEÍCULO/MODELO (não troca O/I)
 function normVehicleText(s){
   return String(s || "")
     .toUpperCase()
@@ -827,17 +786,23 @@ const VEHICLE_PATTERNS = [
   { canon: "Mini",          rx: /\bMINI\b/ },
   { canon: "Porsche",       rx: /\bPORSCHE\b/ },
   { canon: "Smart",         rx: /\bSMART\b/ },
-  { canon: "Tesla",         rx: /\bTESLA\b/ }
+  { canon: "Tesla",         rx: /\bTESLA\b/ },
+  { canon: "Scania",        rx: /\bSCANIA\b/ },
+  { canon: "MAN",           rx: /\bMAN\b/ },
+  { canon: "DAF",           rx: /\bDAF\b/ }
 ];
 
-// compat antiga (se for usada noutro lado)
 function detectVehicleFromText(rawText) {
   const text = normVehicleText(rawText);
-  for (const { canon, rx } of VEHICLE_PATTERNS) {
-    if (rx.test(text)) return canon;
-  }
+  for (const { canon, rx } of VEHICLE_PATTERNS) if (rx.test(text)) return canon;
   const tokens = Array.from(new Set(text.split(' '))).filter(w => w.length >= 3 && w.length <= 12);
-  const TARGETS = ["BMW","MERCEDES","MERCEDESBENZ","AUDI","VOLKSWAGEN","VW","SEAT","SKODA","OPEL","VAUXHALL","PEUGEOT","CITROEN","RENAULT","DACIA","FIAT","ALFAROMEO","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","LANDROVER","RANGEROOVER","MINI","PORSCHE","SMART","TESLA"];
+  const TARGETS = [
+    "BMW","MERCEDES","MERCEDESBENZ","AUDI","VOLKSWAGEN","VW","SEAT","SKODA",
+    "OPEL","VAUXHALL","PEUGEOT","CITROEN","RENAULT","DACIA","FIAT","ALFAROMEO",
+    "LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU",
+    "SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","LANDROVER","RANGEROOVER",
+    "MINI","PORSCHE","SMART","TESLA","SCANIA","MAN","DAF"
+  ];
   let best = { canon: null, dist: 2 };
   for (const w of tokens) {
     for (const t of TARGETS) {
@@ -861,45 +826,42 @@ function guessVehicleFromToken(t) {
   if (t.includes("ALFAROMEO")) return "Alfa Romeo";
   if (t.includes("LANDROVER")) return "Land Rover";
   if (t.includes("RANGEROOVER") || t.includes("RANGERO")) return "Range Rover";
-  const simple = ["BMW","AUDI","SEAT","FIAT","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","MINI","PORSCHE","SMART","TESLA"];
+  if (t.includes("SCANIA")) return "Scania";
+  if (t === "MAN") return "MAN";
+  if (t.includes("DAF")) return "DAF";
+  const simple = [
+    "BMW","AUDI","SEAT","FIAT","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA",
+    "MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","MINI",
+    "PORSCHE","SMART","TESLA"
+  ];
   if (simple.includes(t)) return t[0] + t.slice(1).toLowerCase();
   return null;
 }
 
-// NOVO: Marca + Modelo (usa normVehicleText)
 function detectVehicleAndModelFromText(rawText) {
   const text = normVehicleText(rawText);
   const tokens = text.split(/\s+/);
-
   let brand = null;
   let brandIdx = -1;
-
   for (let i = 0; i < tokens.length && !brand; i++) {
     for (const { canon, rx } of VEHICLE_PATTERNS) {
       if (rx.test(tokens[i])) { brand = canon; brandIdx = i; break; }
     }
   }
   if (!brand) return { full: '' };
-
-  // Palavras a evitar (cabecalhos/fornecedores/comuns nas etiquetas)
   const BAD = new Set([
     'LOT','MATERIAL','NO','NR','HU','NORDGLASS','SEKURIT','PILKINGTON','AGC','ASAHI',
     'XYG','FYG','GESTGLASS','BARCODE','FORNECEDOR','XINYI','PB1-U44','PB1','XUG'
   ]);
-
   const DOOR_OR_TRIM = /^(?:\dP|\dD|SW|TOURER|VAN|COMBI|ESTATE|COUPE|CABRIO)$/;
-
   const isGoodModel = (s) =>
     !!s && !BAD.has(s) && !DOOR_OR_TRIM.test(s) && s.length <= 12 && !/^\d{2,4}$/.test(s);
-
   const titleCase = (w) => /^[A-Z]{3,}$/.test(w) ? w[0] + w.slice(1).toLowerCase() : w;
-
   let models = [];
   for (let j = brandIdx + 1; j < Math.min(brandIdx + 5, tokens.length); j++) {
     const tok = tokens[j].replace(/[^\w\-]/g, '');
     if (isGoodModel(tok)) {
       models.push(titleCase(tok));
-      // tenta apanhar segunda palavra do modelo se fizer sentido (ex.: "Grand Picasso")
       if (j + 1 < tokens.length) {
         const nxt = tokens[j + 1].replace(/[^\w\-]/g, '');
         if (isGoodModel(nxt) && /^[A-Z\-]+$/.test(nxt)) models.push(titleCase(nxt));
@@ -907,6 +869,5 @@ function detectVehicleAndModelFromText(rawText) {
       break;
     }
   }
-
   return { full: brand + (models.length ? ' ' + models.join(' ') : '') };
-} 
+}
