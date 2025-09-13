@@ -83,28 +83,31 @@ function renderMobileHistory() {
 
   mobileHistoryList.innerHTML = '';
 
-  // Mostra as últimas 5 capturas
-  const lastFive = RESULTS.slice(0, 5);
+  // Usa a lista filtrada se existir procura; senão usa todos (até 5)
+  const base = (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS).slice(0, 5);
 
-  lastFive.forEach(row => {
+  base.forEach(row => {
+    // Preferência: vehicle → deduzir do texto → brand
+    const vehicle =
+      (row.vehicle && row.vehicle.trim()) ||
+      (row.text && detectVehicleAndModelFromText(row.text).full) ||
+      (row.brand || '—');
+
+    const euro = row.eurocode || '—';
+
     const li = document.createElement('li');
     li.innerHTML = `
-      <strong>${row.vehicle || '—'}</strong> – 
-      <span style="color:#007acc; font-weight:bold;">
-        ${row.eurocode || '—'}
-      </span>
+      <strong>${vehicle}</strong> – 
+      <span style="color:#007acc; font-weight:bold;">${euro}</span>
     `;
     mobileHistoryList.appendChild(li);
   });
 
-  if (lastFive.length === 0) {
-    // Mantém o estado "Ainda não há capturas" se a lista estiver vazia
-    // (o HTML base já mostra esse placeholder)
-  }
+  // Se não houver registos, o placeholder do HTML mantém-se
 }
 
 // =========================
-/* Procura de Eurocode (Na mesma linha) */
+// Procura de Eurocode (Na mesma linha)
 function createSearchField() {
   const toolbar = document.querySelector('.toolbar');
   if (!toolbar) return;
@@ -143,7 +146,7 @@ function filterResults(searchTerm) {
 }
 
 // =========================
-// Extração de Eurocodes (robusta)
+/* Extração de Eurocodes (robusta) */
 function extractAllEurocodes(text) {
   if (!text) return [];
   const t = String(text).toUpperCase();
@@ -365,10 +368,8 @@ function normalizeRow(r){
   const text = r.text ?? r.ocr_text ?? r.ocr ?? r.texto ?? '';
   let brand = r.brand ?? '';
   
-  // Se a marca estiver vazia, tenta detectar novamente a partir do texto
   if (!brand && text) {
     brand = detectBrandFromText(text) || '';
-    console.log('Reprocessando marca para registo existente:', brand);
   }
 
   return {
@@ -379,7 +380,7 @@ function normalizeRow(r){
     filename:  r.filename ?? r.file ?? '',
     source:    r.source ?? r.origem ?? '',
     brand:     brand,
-    vehicle:   r.vehicle ?? '' // pode ser "Marca" ou "Marca Modelo"
+    vehicle:   r.vehicle ?? '' // "Marca" ou "Marca Modelo"
   };
 }
 
@@ -813,8 +814,6 @@ async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
 }
 
 // ====== VEHICLE (car brand) DETECTION ======
-
-// normalização específica para VEÍCULO/MODELO (não troca O/I)
 function normVehicleText(s){
   return String(s || "")
     .toUpperCase()
@@ -867,7 +866,7 @@ function detectVehicleFromText(rawText) {
     if (rx.test(text)) return canon;
   }
   const tokens = Array.from(new Set(text.split(' '))).filter(w => w.length >= 3 && w.length <= 12);
-  const TARGETS = ["BMW","MERCEDES","MERCEDESBENZ","AUDI","VOLKSWAGEN","VW","SEAT","SKODA","OPEL","VAUXHALL","PEUGEOT","CITROEN","RENAULT","DACIA","FIAT","ALFAROMEO","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","LANDROVER","RANGEROOVER","MINI","PORSCHE","SMART","TESLA"];
+  const TARGETS = ["BMW","MERCEDES","MERCEDESBENZ","AUDI","VOLKSWAGEN","VW","SEAT","SKODA","OPEL","VAUXHALL","PEUGEOT","CITROEN","RENAULT","DACIA","FIAT","ALFAROMEO","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","MINI","PORSCHE","SMART","TESLA"];
   let best = { canon: null, dist: 2 };
   for (const w of tokens) {
     for (const t of TARGETS) {
