@@ -827,6 +827,8 @@ const VEHICLE_PATTERNS = [
   { canon: "Mini",          rx: /\bMINI\b/ },
   { canon: "Porsche",       rx: /\bPORSCHE\b/ },
   { canon: "Smart",         rx: /\bSMART\b/ },
+{ canon: "MAN",             rx: /
+\bMAN\b/ }
   { canon: "Tesla",         rx: /\bTESLA\b/ }
 ];
 
