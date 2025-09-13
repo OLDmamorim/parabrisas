@@ -822,10 +822,19 @@
       const captures = [];
       
       for (const tr of rows) {
-        const td = tr.querySelector('td:nth-child(4)'); // Eurocode column
-        if (td) {
-          const code = (td.innerText || td.textContent || '').trim().split(/\s+/)[0];
-          if (code) captures.push(code);
+        const vehicleTd = tr.querySelector('td:nth-child(4)'); // Vehicle column
+        const eurocodeTd = tr.querySelector('td:nth-child(5)'); // Eurocode column
+        
+        if (vehicleTd && eurocodeTd) {
+          const vehicle = (vehicleTd.innerText || vehicleTd.textContent || '').trim();
+          const eurocode = (eurocodeTd.innerText || eurocodeTd.textContent || '').trim();
+          
+          if (vehicle && eurocode && vehicle !== '—' && eurocode !== '—') {
+            captures.push({
+              vehicle: vehicle,
+              eurocode: eurocode
+            });
+          }
         }
         if (captures.length >= 5) break; // Limit to 5 most recent
       }
@@ -840,9 +849,12 @@
         return;
       }
 
-      modernCapturesList.innerHTML = captures.map(code => `
+      modernCapturesList.innerHTML = captures.map(capture => `
         <div class="modern-capture-item">
-          <span class="modern-capture-code">${code}</span>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="modern-capture-code" style="font-weight: 600; color: #2563eb; font-size: 13px;">${capture.vehicle}</span>
+            <span style="font-weight: 700; color: #007acc; font-size: 12px; letter-spacing: 0.5px;">${capture.eurocode}</span>
+          </div>
           <span class="modern-capture-check">✓</span>
         </div>
       `).join('');
