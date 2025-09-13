@@ -107,6 +107,28 @@ function renderMobileHistory() {
 }
 
 // =========================
+// PATCH: Força atualização dos <li> já existentes (quando HTML antigo injeta a lista)
+function forcePatchMobileHistory() {
+  if (!mobileHistoryList) return;
+
+  const rows = (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS).slice(0, 5);
+  const lis  = mobileHistoryList.querySelectorAll('li');
+
+  lis.forEach((li, i) => {
+    const row = rows[i];
+    if (!row) return;
+
+    const vehicle =
+      (row.vehicle && row.vehicle.trim()) ||
+      (row.text && detectVehicleAndModelFromText(row.text).full) ||
+      (row.brand || '—');
+
+    const euro = row.eurocode || '—';
+    li.innerHTML = `<strong>${vehicle}</strong> – <span style="color:#007acc; font-weight:bold;">${euro}</span>`;
+  });
+}
+
+// =========================
 // Procura de Eurocode (Na mesma linha)
 function createSearchField() {
   const toolbar = document.querySelector('.toolbar');
@@ -143,10 +165,11 @@ function filterResults(searchTerm) {
   }
   renderTable();
   renderMobileHistory();
+  forcePatchMobileHistory(); // garante o formato mesmo com HTML antigo
 }
 
 // =========================
-/* Extração de Eurocodes (robusta) */
+// Extração de Eurocodes (robusta)
 function extractAllEurocodes(text) {
   if (!text) return [];
   const t = String(text).toUpperCase();
@@ -434,7 +457,8 @@ async function loadResults() {
       RESULTS = data.rows.map(normalizeRow);
       FILTERED_RESULTS = [...RESULTS];
       renderTable();
-      renderMobileHistory(); // <<< mostra no mobile
+      renderMobileHistory();
+      forcePatchMobileHistory(); // garante o formato no mobile
       setStatus(desktopStatus, `${RESULTS.length} registos carregados`, 'success');
     } else {
       throw new Error('Formato de resposta inválido');
@@ -446,6 +470,7 @@ async function loadResults() {
     FILTERED_RESULTS = [];
     renderTable();
     renderMobileHistory();
+    forcePatchMobileHistory();
   }
 }
 
@@ -726,7 +751,7 @@ function detectBrandFromText(rawText){
     if (rx.test(text)) return canon;
   }
   const candidates = Array.from(new Set(text.split(' '))).filter(w => w.length>=3 && w.length<=15);
-  const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM","XINYI","CSG","BENSON","SHATTERPRUFE","LUCAS"];
+  const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM","XINYI","CSG","BENSON","SHATTERPRUFE","LUCAS"];
   let best = {canon:null, dist:3};
   for (const w of candidates){
     for (const t of targets){
@@ -814,6 +839,8 @@ async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
 }
 
 // ====== VEHICLE (car brand) DETECTION ======
+
+// normalização específica para VEÍCULO/MODELO
 function normVehicleText(s){
   return String(s || "")
     .toUpperCase()
