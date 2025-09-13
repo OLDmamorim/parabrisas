@@ -909,4 +909,4 @@ function detectVehicleAndModelFromText(rawText) {
   }
 
   return { full: brand + (models.length ? ' ' + models.join(' ') : '') };
-}
+} 
