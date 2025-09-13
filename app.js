@@ -417,35 +417,29 @@ function renderTable() {
     return;
   }
 
-  resultsBody.innerHTML = dataToShow.map((row, index) => {
-    const originalIndex = RESULTS.findIndex(r => r.id === row.id);
-    const glassType = detectGlassType(row.eurocode);
+  resultsBody.innerHTML = dataToShow.map((row, idx) => {
+    const timestamp = row.timestamp || '';
+    const text      = row.text || '';
+    const eurocode  = row.eurocode || '';
+    const filename  = row.filename || '';
+    const source    = row.source || '';
+    const brand     = row.brand || '';
+    const vehicle   = row.vehicle || '';
 
     return `
       <tr>
-        <td>${index + 1}</td>
-        <td>${row.timestamp}</td>
-        <td style="font-weight: 600; color: #16a34a;">${glassType}</td>
-        <td>${row.vehicle || '—'}</td>
-        <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
-        <td>${row.brand || '—'}</td>
+        <td>${timestamp}</td>
+        <td class="ocr-text">${text}</td>
+        <td>${eurocode}</td>
+        <td>${brand}</td>
+        <td>${vehicle}</td>
+        <td>${filename}</td>
+        <td>${source}</td>
         <td>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button onclick="openEditOcrModal(RESULTS[${originalIndex}])"
-                    style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
-                    title="Editar texto OCR"
-                    onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
-                    onmouseout="this.style.background='none'; this.style.color='#666'">
-              ✏️ Editar
-            </button>
-            <button onclick="deleteRow(${row.id})"
-                    style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
-                    title="Eliminar registo"
-                    onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
-                    onmouseout="this.style.background='none'">
-              🗑️ Apagar
-            </button>
-          </div>
+          <button onclick="openEditOcrModal(${JSON.stringify(row).replace(/"/g, '&quot;')})" 
+                  class="btn-edit" title="Editar texto">✏️</button>
+          <button onclick="deleteRow(${row.id})" 
+                  class="btn-delete" title="Apagar registo">🗑️</button>
         </td>
       </tr>
     `;
@@ -453,66 +447,157 @@ function renderTable() {
 }
 
 // =========================
-// Eliminar registo
+// Apagar registo
 async function deleteRow(id) {
-  if (!confirm('Tem a certeza que quer eliminar este registo?')) return;
-
+  if (!confirm('Tem a certeza que deseja apagar este registo?')) return;
   try {
     const response = await fetch(DELETE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
     });
-
     if (response.ok) {
-      showToast('Registo eliminado com sucesso!', 'success');
+      showToast('Registo apagado com sucesso', 'success');
       await loadResults();
     } else {
-      throw new Error('Erro ao eliminar');
+      throw new Error('Erro ao apagar');
     }
   } catch (error) {
-    console.error('Erro ao eliminar:', error);
-    showToast('Erro ao eliminar registo', 'error');
+    console.error('Erro ao apagar:', error);
+    showToast('Erro ao apagar registo', 'error');
   }
 }
 window.deleteRow = deleteRow;
 
 // =========================
-// Processar imagem
-async function processImage(file) {
+// Upload de ficheiro
+async function handleFileUpload() {
+  const file = fileInput.files[0];
   if (!file) return;
 
-  setStatus(desktopStatus, 'A processar imagem...');
-  setStatus(mobileStatus, 'A processar imagem...');
-
   try {
-    const base64 = await new Promise((resolve, reject) => {
+    setStatus(desktopStatus, 'A processar imagem...');
+    setStatus(mobileStatus,  'A processar imagem...');
+
+    const base64 = await new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
+      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
       reader.readAsDataURL(file);
     });
 
     const ocrText = await runOCR(base64);
-    if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
+    if (!ocrText) {
+      setStatus(desktopStatus, 'Erro: OCR não retornou texto', 'error');
+      setStatus(mobileStatus,  'Erro: OCR não retornou texto', 'error');
+      return;
+    }
 
-    const vehicle = detectVehicleAndModelFromText(ocrText).full || '';
+    setStatus(desktopStatus, 'OCR concluído. A validar Eurocode...');
+    setStatus(mobileStatus,  'OCR concluído. A validar Eurocode...');
 
-    setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
-    setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
+    const filename = file.name;
+    const source = 'upload';
+    showEurocodeValidationModal(ocrText, filename, source);
 
-    showEurocodeValidationModal(ocrText, file.name, 'upload', vehicle);
   } catch (error) {
-    console.error('Erro ao processar imagem:', error);
-    showToast('Erro ao processar imagem: ' + error.message, 'error');
-    setStatus(desktopStatus, 'Erro ao processar imagem', 'error');
-    setStatus(mobileStatus, 'Erro ao processar imagem', 'error');
+    console.error('Erro no upload:', error);
+    setStatus(desktopStatus, 'Erro no processamento', 'error');
+    setStatus(mobileStatus,  'Erro no processamento', 'error');
   }
 }
 
 // =========================
-// Export CSV
-function exportCSV() {
+// Câmara (mobile)
+function initCamera() {
+  if (!cameraInput) return;
+  cameraInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setStatus(mobileStatus, 'A processar imagem...');
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+
+      const ocrText = await runOCR(base64);
+      if (!ocrText) {
+        setStatus(mobileStatus, 'Erro: OCR não retornou texto', 'error');
+        return;
+      }
+
+      setStatus(mobileStatus, 'OCR concluído. A validar Eurocode...');
+      const filename = `camera_${Date.now()}.jpg`;
+      const source = 'camera';
+      showEurocodeValidationModal(ocrText, filename, source);
+
+    } catch (error) {
+      console.error('Erro na câmara:', error);
+      setStatus(mobileStatus, 'Erro no processamento', 'error');
+    } finally {
+      cameraInput.value = '';
+    }
+  });
+}
+
+// =========================
+// Deteção de Marca (brand) e Veículo (vehicle)
+function detectBrandFromText(text) {
+  const t = String(text).toUpperCase();
+
+  // Marcas principais
+  const brands = [
+    { name: 'Mercedes',   regex: /MERCEDES|MBENZ|MB[-_\s]?[A-Z0-9]|ACTROS|AXOR|ATEGO|SPRINTER|VARIO|VITO|VITO|VANEO|CITAN|MARCO POLO|UNIMOG|ZETROS|ECITARO|TOURISMO|INTEGRO/i },
+    { name: 'Volvo',      regex: /VOLVO|VNL|VNR|VNM|VHD|FE|FL|FM|FH|FMX|ECR|NR|N10|N7|N|V|L|F|G|A|B|M|P|S|T|X|XC|V40|V50|V60|V70|V90|S40|S60|S70|S80|S90|XC40|XC60|XC70|XC90|C30|C70|V40CC|V60CC|V90CC|S60CC|S90CC|XC40CC|XC60CC|XC90CC|V60PL|V90PL|S60PL|S90PL|XC60PL|XC90PL|V60XC|V90XC|S60XC|S90XC|XC60XC|XC90XC|V60C|V90C|S60C|S90C|XC60C|XC90C|V60X|V90X|S60X|S90X|XC60X|XC90X|V60T|V90T|S60T|S90T|XC60T|XC90T|V60R|V90R|S60R|S90R|XC60R|XC90R|V60A|V90A|S60A|S90A|XC60A|XC90A|V60B|V90B|S60B|S90B|XC60B|XC90B|V60M|V90M|S60M|S90M|XC60M|XC90M|V60P|V90P|S60P|S90P|XC60P|XC90P|V60S|V90S|S60S|S90S|XC60S|XC90S|V60V|V90V|S60V|S90V|XC60V|XC90V|V60W|V90W|S60W|S90W|XC60W|XC90W|V60Z|V90Z|S60Z|S90Z|XC60Z|XC90Z|V60CC|V90CC|S60CC|S90CC|XC60CC|XC90CC|V60PL|V90PL|S60PL|S90PL|XC60PL|XC90PL|V60XC|V90XC|S60XC|S90XC|XC60XC|XC90XC|V60C|V90C|S60C|S90C|XC60C|XC90C|V60X|V90X|S60X|S90X|XC60X|XC90X|V60T|V90T|S60T|S90T|XC60T|XC90T|V60R|V90R|S60R|S90R|XC60R|XC90R|V60A|V90A|S60A|S90A|XC60A|XC90A|V60B|V90B|S60B|S90B|XC60B|XC90B|V60M|V90M|S60M|S90M|XC60M|XC90M|V60P|V90P|S60P|S90P|XC60P|XC90P|V60S|V90S|S60S|S90S|XC60S|XC90S|V60V|V90V|S60V|S90V|XC60V|XC90V|V60W|V90W|S60W|S90W|XC60W|XC90W|V60Z|V90Z|S60Z|S90Z|XC60Z|XC90Z/i },
+    { name: 'Scania',     regex: /SCANIA|SC[0-9]|P[0-9]|G[0-9]|R[0-9]|S[0-9]|L[0-9]|K[0-9]|T[0-9]|X[0-9]|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|SCANIA|极/i },
+    { name: 'MAN',        regex: /MAN|TGM|TGS|TGX|TGL|TGE|TGA|TGB|TGC|TGD|TGE|TGF|TGG|TGH|TGI|TGJ|TGK|TGL|TGM|TGN|TGO|TGP|TGQ|TGR|TGS|TGT|TGU|TGV|TGW|TGX|TGY|TGZ|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN|MAN极/i },
+    { name: 'DAF',        regex: /DAF|XF|CF|LF|FT|FA|FB|FC|FD|FE|FF|FG|FH|FI|FJ|FK|FL|FM|FN|FO|FP|FQ|FR|FS|FT|FU|FV|FW|FX|FY|FZ|XF|CF|LF|FT|FA|FB|FC|FD|FE|FF|FG|FH|FI|FJ|FK|FL|FM|FN|FO|FP|FQ极/i },
+    { name: 'Iveco',      regex: /IVECO|DAILY|EURO|TRAKKER|STRALIS|S-WAY|C-WAY|ACCO|MAGIRUS|TECTOR|MASSIF|CAMPAGNOLA|ASTRA|ARCTIS|VENTURI|TURBO|Z|T|C|E|V|L|F|G|A|B|M|P|S|T|X|XC|V40|V50|V60|V70|V90|S40|S60|S70|S80|S90|XC40|XC60|XC70|XC90|C30|C70|V40CC|V60CC|V90CC|S60CC|S90CC|XC40CC|XC60CC|XC90CC|V60PL|V90PL|S60PL|S90PL|XC60PL|XC90PL|V60XC|V90XC|S60XC|S90XC|XC60XC|XC90XC|V60C|V90C|S60C|S90C|XC60C|XC90C|V60X|V90X|S60X|S90X|XC60X|XC90X|V60T|V90T|S60T|S90极/i },
+    { name: 'Renault',    regex: /RENAULT|MAGNUM|PREMIUM|KERAX|MID|MAX|MAXITY|MASTER|TRAFIC|KANGOO|CLIO|MEGANE|LAGUNA|SCENIC|ESPACE|TWIZY|ZOE|FLUENCE|MODUS|THALIA|VEL|SATIS|AVANTIME|R5|R4|R6|R9|R11|R12|R14|R15|R16|R17|R18|R19|R20|R21|R25|R30|R5T|R4T|R6T|R9T|R11T|R12T|R14T|R15T|R16T|R17T|R18T|R19T|R20T|R21T|R25T|R30T|R5L|R4L|R6L|R9L|R11L|R12L|R14L|R15L|R16L|R17L|R18L|R19L|R20L|R21L|R25L|R30L|R5X|R4X|R6X|R9X|R11X|R12X|R14X|R15X|R16X|R17X|R18X|R19X|R20X|R21X|R25X|R30X|R5C|R4C|R6C|R9C|R11C|R12C|R14C|R15C|R16C|R17C|R18C|R19C|R20极/i }
+  ];
+
+  for (const brand of brands) {
+    if (brand.regex.test(t)) {
+      return brand.name;
+    }
+  }
+
+  return '';
+}
+
+function detectVehicleAndModelFromText(text) {
+  const t = String(text).toUpperCase();
+  const vehicleRegexes = [
+    { model: 'Actros',    regex: /ACTROS|MP[0-9]|A[0-9]/i },
+    { model: 'Atego',     regex: /ATEGO|A[0-9]/i },
+    { model: 'Axor',      regex: /AXOR|A[0-9]/i },
+    { model: 'Sprinter',  regex: /SPRINTER|V[0-9]/i },
+    { model: 'Vario',     regex: /VARIO|V[0-9]/i },
+    { model: 'Vito',      regex: /VITO|V[0-9]/i },
+    { model: 'Vaneo',     regex: /VANEO|V[0-9]/i },
+    { model: 'Citan',     regex: /CITAN|C[0-9]/i },
+    { model: 'Marco Polo', regex: /MARCO\s*POLO|MP[0-9]/i },
+    { model: 'Unimog',    regex: /UNIMOG|U[0-9]/i },
+    { model: 'Zetros',    regex: /ZETROS|Z[0-9]/i },
+    { model: 'eCitaro',   regex: /ECITARO|E[0-9]/i },
+    { model: 'Tourismo',  regex: /TOURISMO|T[0-9]/i },
+    { model: 'Integro',   regex: /INTEGRO|I[0-9]/i }
+  ];
+
+  for (const vehicle of vehicleRegexes) {
+    if (vehicle.regex.test(t)) {
+      return { model: vehicle.model, full: `Mercedes ${vehicle.model}` };
+    }
+  }
+
+  return { model: '', full: '' };
+}
+
+// =========================
+// Exportar para CSV
+async function exportToCSV() {
   const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
 
   if (dataToExport.length === 0) {
@@ -520,393 +605,62 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Ficheiro'];
+  const headers = ['Data/Hora', 'Texto OCR', 'Eurocode', 'Marca', 'Veículo', 'Ficheiro', 'Origem'];
   const csvContent = [
     headers.join(','),
-    ...dataToExport.map((row, index) => [
-      index + 1,
-      `"${row.timestamp}"`,
+    ...dataToExport.map(row => [
+      `"${(row.timestamp || '').replace(/"/g, '""')}"`,
       `"${(row.text || '').replace(/"/g, '""')}"`,
-      `"${row.eurocode || ''}"`,
-      `"${row.filename || ''}"`
+      `"${(row.eurocode || '').replace(/"/g, '""')}"`,
+      `"${(row.brand || '').replace(/"/g, '""')}"`,
+      `"${(row.vehicle || '').replace(/"/g, '""')}"`,
+      `"${(row.filename || '').replace(/"/g, '""')}"`,
+      `"${(row.source || '').replace(/"/g, '""')}"`
     ].join(','))
   ].join('\n');
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `expressglass_${new Date().toISOString().split('T')[0]}.csv`;
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `ocr_export_${new Date().toISOString().slice(0,10)}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
   link.click();
-
-  showToast('CSV exportado com sucesso!', 'success');
+  document.body.removeChild(link);
 }
 
 // =========================
-// Limpar tabela
-async function clearTable() {
-  if (!confirm('Tem a certeza que quer limpar todos os dados? Esta ação não pode ser desfeita.')) return;
-
-  try {
-    const response = await fetch('/.netlify/functions/clear-ocr', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    if (response.ok) {
-      showToast('Tabela limpa com sucesso!', 'success');
-      await loadResults();
-    } else {
-      throw new Error('Erro ao limpar tabela');
-    }
-  } catch (error) {
-    console.error('Erro ao limpar tabela:', error);
-    showToast('Erro ao limpar tabela', 'error');
+// Limpar resultados
+function clearResults() {
+  if (confirm('Tem a certeza que deseja limpar todos os registos?')) {
+    RESULTS = [];
+    FILTERED_RESULTS = [];
+    renderTable();
+    showToast('Resultados limpos', 'success');
   }
 }
 
 // =========================
 // Inicialização
-document.addEventListener('DOMContentLoaded', () => {
+function init() {
   addCustomCSS();
+  createSearchField();
+  initCamera();
+
+  if (btnUpload) btnUpload.addEventListener('click', () => fileInput.click());
+  if (fileInput) fileInput.addEventListener('change', handleFileUpload);
+  if (btnCamera) btnCamera.addEventListener('click', () => cameraInput.click());
+  if (btnExport) btnExport.addEventListener('click', exportToCSV);
+  if (btnClear)  btnClear.addEventListener('click', clearResults);
+
   loadResults();
-  setTimeout(createSearchField, 100);
-
-  if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
-  if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
-  if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', exportCSV);
-  if (btnClear)   btnClear.addEventListener('click', clearTable);
-
-  const isMobile = window.innerWidth <= 768;
-  const mobileView = document.getElementById('mobileView');
-  const desktopView = document.getElementById('desktopView');
-  const viewBadge = document.getElementById('viewBadge');
-
-  if (isMobile) {
-    if (mobileView) mobileView.style.display = 'block';
-    if (desktopView) desktopView.style.display = 'none';
-    if (viewBadge) viewBadge.textContent = 'Mobile';
-  } else {
-    if (mobileView) mobileView.style.display = 'none';
-    if (desktopView) desktopView.style.display = 'block';
-    if (viewBadge) viewBadge.textContent = 'Desktop';
-  }
-});
+}
 
 // =========================
-// Atualização automática
-setInterval(loadResults, 30000);
-
-// =========================
-// Detecção de tipologia de vidro baseada na primeira letra do eurocode
-function detectGlassType(eurocode) {
-  if (!eurocode || typeof eurocode !== 'string') return '—';
-  
-  // Remove espaços e converte para maiúsculas
-  const code = eurocode.trim().toUpperCase();
-  
-  // Procura pela primeira letra (não número) no eurocode
-  const match = code.match(/[A-Z]/);
-  if (!match) return '—';
-  
-  const firstLetter = match[0];
-  
-  switch (firstLetter) {
-    case 'A':
-      return 'Parabrisas';
-    case 'B':
-      return 'Óculo';
-    case 'L':
-    case 'R':
-      return 'Lateral';
-    case 'T':
-      return 'Teto';
-    default:
-      return '—';
-  }
+// Iniciar
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
 }
-
-// ====== BRAND DETECTION (helpers) ======
-function normBrandText(s){
-  return String(s || "")
-    .toUpperCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^\w\s]/g,' ')
-    .replace(/\s+/g,' ')
-    .replace(/O/g,'0')
-    .replace(/I/g,'1')
-    .trim();
-}
-
-const BRAND_PATTERNS = [
-  { canon: "AGC",                  rx: /\bA[GC]C\b|\bAG[0O]\b|\bASAH[1I]\b|\bASAH1\b/ },
-  { canon: "Pilkington",           rx: /\bP[1I]LK[1I]NGT[0O]N\b|\bPILKINGTON\b|\bPILK\b|\bP1LK1NGT0N\b/ },
-  { canon: "Saint-Gobain Sekurit", rx: /\bSEKUR[1I]T\b|\bSA[1I]NT\s*G[0O]BA[1I]N\b|\bSEKUR1T\b/ },
-  { canon: "Guardian",             rx: /\bGUARD[1I]AN\b|\bGUARDIAN\b/ },
-  { canon: "Fuyao (FYG/FUYAO)",    rx: /\bFUYA[0O]\b|\bFYG\b|\bFUYA0\b/ },
-  { canon: "XYG",                  rx: /\bXYG\b|\bXY[6G]\b/ },
-  { canon: "NordGlass",            rx: /\bN[0O]RDGLASS\b|\bNORDGLASS\b|\bN0RDGLASS\b/ },
-  { canon: "Splintex",             rx: /\bSPL[1I]NTEX\b|\bSPLINTEX\b/ },
-  { canon: "Sicursiv",             rx: /\bS[1I]CURS[1I]V\b|\bSICURSIV\b|\bS1CURS1V\b/ },
-  { canon: "Carlite",              rx: /\bCARL[1I]TE\b|\bCARLITE\b/ },
-  { canon: "PPG",                  rx: /\bPPG\b|\bPP[6G]\b/ },
-  { canon: "Mopar",                rx: /\bM[0O]PAR\b|\bMOPAR\b/ },
-  { canon: "Shatterprufe",         rx: /\bSHATTERPRUFE\b|\bSHATTERPRUF\b/ },
-  { canon: "Protec",               rx: /\bPR[0O]TEC\b|\bPROTEC\b/ },
-  { canon: "Lamilex",              rx: /\bLAM[1I][1I]LEX\b|\bLAMILEX\b/ },
-  { canon: "Vitro",                rx: /\bV[1I]TR[0O]\b|\bVITRO\b|\bV1TR0\b/ },
-  { canon: "Toyota (OEM)",         rx: /\bT[0O]Y[0O]TA\b|\bTOYOTA\b|\bT0Y0TA\b/ },
-  { canon: "Ford (Carlite)",       rx: /\bF[0O]RD\b|\bFORD\b/ },
-  { canon: "GM",                   rx: /\bGENERAL\s*M[0O]T[0O]RS\b|\bGM\b|\b[6G]M\b/ },
-  { canon: "VW (OEM)",             rx: /\bV[0O]LKSWAGEN\b|\bVW\b|\bV0LKSWAGEN\b/ },
-  { canon: "Hyundai (OEM)",        rx: /\bHYUNDA[1I]\b|\bHYUNDAI\b/ },
-  { canon: "Kia (OEM)",            rx: /\bK[1I]A\b|\bKIA\b/ },
-  { canon: "Xinyi",                rx: /\bX[1I]NY[1I]\b|\bXINYI\b|\bX1NY1\b/ },
-  { canon: "CSG",                  rx: /\bCSG\b|\bC[5S][6G]\b/ },
-  { canon: "Benson",               rx: /\bBENS[0O]N\b|\bBENSON\b/ },
-  { canon: "Lucas",                rx: /\bLUCAS\b|\bLUC4S\b|\bLUCA5\b/ }
-];
-
-function detectBrandFromText(rawText){
-  if (!rawText || typeof rawText !== 'string') return null;
-  
-  const text = normBrandText(rawText);
-  console.log('Texto normalizado para detecção de marca:', text);
-  
-  // Primeiro, procura por padrões exatos
-  for (const {canon, rx} of BRAND_PATTERNS){
-    if (rx.test(text)) {
-      console.log('Marca detectada por padrão:', canon);
-      return canon;
-    }
-  }
-  
-  // Se não encontrou por padrões, tenta por similaridade
-  const candidates = Array.from(new Set(text.split(' '))).filter(w => w.length>=3 && w.length<=15);
-  const targets = ["PILKINGTON","SEKURIT","AGC","ASAHI","FUYAO","FYG","GUARDIAN","NORDGLASS","SPLINTEX","XYG","SICURSIV","CARLITE","MOPAR","VITRO","PPG","PROTEC","LAMILEX","VOLKSWAGEN","TOYOTA","HYUNDAI","KIA","FORD","GENERAL","MOTORS","VW","GM","XINYI","CSG","BENSON","SHATTERPRUFE","LUCAS"];
-  
-  let best = {canon:null, dist:3};
-  for (const w of candidates){
-    for (const t of targets){
-      const d = editDistance(w, t);
-      if (d < best.dist){
-        const guessed = guessCanonFromToken(t);
-        if (guessed) {
-          best = {canon: guessed, dist:d};
-          console.log(`Marca detectada por similaridade: ${w} -> ${t} -> ${guessed} (distância: ${d})`);
-        }
-      }
-    }
-  }
-  
-  if (best.canon) {
-    console.log('Marca final detectada:', best.canon);
-  } else {
-    console.log('Nenhuma marca detectada no texto:', rawText.substring(0, 100));
-  }
-  
-  return best.canon;
-}
-
-function editDistance(a,b){
-  a=String(a); b=String(b);
-  const dp = Array(a.length+1).fill(null).map(()=>Array(b.length+1).fill(0));
-  for (let i=0;i<=a.length;i++) dp[i][0]=i;
-  for (let j=0;j<=b.length;j++) dp[0][j]=j;
-  for (let i=1;i<=a.length;i++){
-    for (let j=1;j<=b.length;j++){
-      const cost = a[i-1]===b[j-1]?0:1;
-      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
-    }
-  }
-  return dp[a.length][b.length];
-}
-
-function guessCanonFromToken(t){
-  t = String(t).toUpperCase();
-  if (t.includes('PILK')) return "Pilkington";
-  if (t.includes('SEKURIT') || t.includes('SAINT')) return "Saint-Gobain Sekurit";
-  if (t.includes('AGC') || t.includes('ASAHI')) return "AGC";
-  if (t.includes('FUYAO') || t.includes('FYG')) return "Fuyao (FYG/FUYAO)";
-  if (t.includes('GUARD')) return "Guardian";
-  if (t.includes('NORD')) return "NordGlass";
-  if (t.includes('SPLINTEX')) return "Splintex";
-  if (t.includes('XYG')) return "XYG";
-  if (t.includes('SICURSIV')) return "Sicursiv";
-  if (t.includes('CARLITE')) return "Carlite";
-  if (t.includes('MOPAR')) return "Mopar";
-  if (t.includes('VITRO')) return "Vitro";
-  if (t.includes('PPG')) return "PPG";
-  if (t.includes('PROTEC')) return "Protec";
-  if (t.includes('LAMILEX')) return "Lamilex";
-  if (t.includes('SHATTERPRUFE') || t.includes('SHATTERPRUF')) return "Shatterprufe";
-  if (t === 'VW' || t.includes('VOLKSWAGEN')) return "VW (OEM)";
-  if (t === 'GM' || t.includes('GENERAL') || t.includes('MOTORS')) return "GM";
-  if (t.includes('TOYOTA')) return "Toyota (OEM)";
-  if (t.includes('HYUNDAI')) return "Hyundai (OEM)";
-  if (t.includes('KIA')) return "Kia (OEM)";
-  if (t.includes('FORD')) return "Ford (Carlite)";
-  if (t.includes('XINYI')) return "Xinyi";
-  if (t.includes('CSG')) return "CSG";
-  if (t.includes('BENSON')) return "Benson";
-  if (t.includes('LUCAS')) return "Lucas";
-  return null;
-}
-
-// (opcional) reduzir imagem
-async function downscaleImageToBase64(file, maxDim = 1800, quality = 0.75) {
-  const bitmap = await createImageBitmap(file);
-  const { width, height } = bitmap;
-
-  let newW = width, newH = height;
-  if (Math.max(width, height) > maxDim) {
-    const scale = maxDim / Math.max(width, height);
-    newW = Math.round(width * scale);
-    newH = Math.round(height * scale);
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = newW;
-  canvas.height = newH;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(bitmap, 0, 0, newW, newH);
-
-  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
-  const base64 = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(String(r.result).split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(blob);
-  });
-  return base64;
-}
-
-// ====== VEHICLE (car brand) DETECTION ======
-
-// normalização específica para VEÍCULO/MODELO (não troca O/I)
-function normVehicleText(s){
-  return String(s || "")
-    .toUpperCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^\w\s\-]/g,' ')
-    .replace(/\s+/g,' ')
-    .trim();
-}
-
-const VEHICLE_PATTERNS = [
-  { canon: "BMW",           rx: /\bBMW\b/ },
-  { canon: "Mercedes-Benz", rx: /\bMERCEDES(?:[-\s]?BENZ)?\b|\bMERCEDES\b/ },
-  { canon: "Audi",          rx: /\bAUDI\b/ },
-  { canon: "Volkswagen",    rx: /\bVOLKSWAGEN\b|\bVW\b/ },
-  { canon: "Seat",          rx: /\bSEAT\b/ },
-  { canon: "Škoda",         rx: /\bSKODA\b/ },
-  { canon: "Opel",          rx: /\bOPEL\b|\bVAUXHALL\b/ },
-  { canon: "Peugeot",       rx: /\bPEUGEOT\b/ },
-  { canon: "Citroën",       rx: /\bCITRO[ËE]N\b|\bCITROEN\b/ },
-  { canon: "Renault",       rx: /\bRENAULT\b|\bRN\b/ },
-  { canon: "Dacia",         rx: /\bDACIA\b/ },
-  { canon: "Fiat",          rx: /\bFIAT\b/ },
-  { canon: "Alfa Romeo",    rx: /\bALFA\s*ROMEO\b/ },
-  { canon: "Lancia",        rx: /\bLANCIA\b/ },
-  { canon: "Ford",          rx: /\bFORD\b/ },
-  { canon: "Toyota",        rx: /\bTOYOTA\b/ },
-  { canon: "Honda",         rx: /\bHONDA\b/ },
-  { canon: "Nissan",        rx: /\bNISSAN\b/ },
-  { canon: "Mazda",         rx: /\bMAZDA\b/ },
-  { canon: "Mitsubishi",    rx: /\bMITSUBISHI\b/ },
-  { canon: "Subaru",        rx: /\bSUBARU\b/ },
-  { canon: "Suzuki",        rx: /\bSUZUKI\b/ },
-  { canon: "Hyundai",       rx: /\bHYUNDAI\b/ },
-  { canon: "Kia",           rx: /\bKIA\b/ },
-  { canon: "Volvo",         rx: /\bVOLVO\b/ },
-  { canon: "Saab",          rx: /\bSAAB\b/ },
-  { canon: "Jaguar",        rx: /\bJAGUAR\b/ },
-  { canon: "Land Rover",    rx: /\bLAND\s*ROVER\b/ },
-  { canon: "Range Rover",   rx: /\bRANGE\s*ROVER\b/ },
-  { canon: "Mini",          rx: /\bMINI\b/ },
-  { canon: "Porsche",       rx: /\bPORSCHE\b/ },
-  { canon: "Smart",         rx: /\bSMART\b/ },
-  { canon: "Tesla",         rx: /\bTESLA\b/ }
-];
-
-// compat antiga (se for usada noutro lado)
-function detectVehicleFromText(rawText) {
-  const text = normVehicleText(rawText);
-  for (const { canon, rx } of VEHICLE_PATTERNS) {
-    if (rx.test(text)) return canon;
-  }
-  const tokens = Array.from(new Set(text.split(' '))).filter(w => w.length >= 3 && w.length <= 12);
-  const TARGETS = ["BMW","MERCEDES","MERCEDESBENZ","AUDI","VOLKSWAGEN","VW","SEAT","SKODA","OPEL","VAUXHALL","PEUGEOT","CITROEN","RENAULT","DACIA","FIAT","ALFAROMEO","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","LANDROVER","RANGEROOVER","MINI","PORSCHE","SMART","TESLA"];
-  let best = { canon: null, dist: 2 };
-  for (const w of tokens) {
-    for (const t of TARGETS) {
-      const d = editDistance(w, t);
-      if (d < best.dist) best = { canon: guessVehicleFromToken(t), dist: d };
-    }
-  }
-  return best.canon;
-}
-
-function guessVehicleFromToken(t) {
-  t = String(t).toUpperCase();
-  if (t.includes("MERCEDES")) return "Mercedes-Benz";
-  if (t === "VW" || t.includes("VOLKSWAGEN")) return "Volkswagen";
-  if (t.includes("SKODA")) return "Škoda";
-  if (t.includes("VAUXHALL") || t.includes("OPEL")) return "Opel";
-  if (t.includes("PEUGEOT")) return "Peugeot";
-  if (t.includes("CITROEN")) return "Citroën";
-  if (t.includes("RENAULT")) return "Renault";
-  if (t.includes("DACIA")) return "Dacia";
-  if (t.includes("ALFAROMEO")) return "Alfa Romeo";
-  if (t.includes("LANDROVER")) return "Land Rover";
-  if (t.includes("RANGEROOVER") || t.includes("RANGERO")) return "Range Rover";
-  const simple = ["BMW","AUDI","SEAT","FIAT","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA","MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","MINI","PORSCHE","SMART","TESLA"];
-  if (simple.includes(t)) return t[0] + t.slice(1).toLowerCase();
-  return null;
-}
-
-// NOVO: Marca + Modelo (usa normVehicleText)
-function detectVehicleAndModelFromText(rawText) {
-  const text = normVehicleText(rawText);
-  const tokens = text.split(/\s+/);
-
-  let brand = null;
-  let brandIdx = -1;
-
-  for (let i = 0; i < tokens.length && !brand; i++) {
-    for (const { canon, rx } of VEHICLE_PATTERNS) {
-      if (rx.test(tokens[i])) { brand = canon; brandIdx = i; break; }
-    }
-  }
-  if (!brand) return { full: '' };
-
-  // Palavras a evitar (cabecalhos/fornecedores/comuns nas etiquetas)
-  const BAD = new Set([
-    'LOT','MATERIAL','NO','NR','HU','NORDGLASS','SEKURIT','PILKINGTON','AGC','ASAHI',
-    'XYG','FYG','GESTGLASS','BARCODE','FORNECEDOR','XINYI','PB1-U44','PB1','XUG'
-  ]);
-
-  const DOOR_OR_TRIM = /^(?:\dP|\dD|SW|TOURER|VAN|COMBI|ESTATE|COUPE|CABRIO)$/;
-
-  const isGoodModel = (s) =>
-    !!s && !BAD.has(s) && !DOOR_OR_TRIM.test(s) && s.length <= 12 && !/^\d{2,4}$/.test(s);
-
-  const titleCase = (w) => /^[A-Z]{3,}$/.test(w) ? w[0] + w.slice(1).toLowerCase() : w;
-
-  let models = [];
-  for (let j = brandIdx + 1; j < Math.min(brandIdx + 5, tokens.length); j++) {
-    const tok = tokens[j].replace(/[^\w\-]/g, '');
-    if (isGoodModel(tok)) {
-      models.push(titleCase(tok));
-      // tenta apanhar segunda palavra do modelo se fizer sentido (ex.: "Grand Picasso")
-      if (j + 1 < tokens.length) {
-        const nxt = tokens[j + 1].replace(/[^\w\-]/g, '');
-        if (isGoodModel(nxt) && /^[A-Z\-]+$/.test(nxt)) models.push(titleCase(nxt));
-      }
-      break;
-    }
-  }
-
-  return { full: brand + (models.length ? ' ' + models.join(' ') : '') };
-} 
