@@ -26,12 +26,6 @@ button[onclick*="cancel"] {
 }
 
 /* ===== BARRA HORIZONTAL COM INFO DO UTILIZADOR ===== */
-.header {
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 15px !important;
-}
-
 #userInfo {
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(10px) !important;
@@ -65,6 +59,39 @@ button[onclick*="cancel"] {
   font-size: 12px !important;
   margin: 0 !important;
 }
+
+#userInfo button {
+  background: #ef4444 !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+#userInfo button:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Mobile: stack vertical */
+@media (max-width: 768px) {
+  #userInfo {
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 15px 20px !important;
+  }
+  
+  #userInfo > div {
+    flex-direction: column !important;
+    gap: 5px !important;
+    text-align: center !important;
+  }
+}
+
 
 #userInfo button {
   background: #ef4444 !important;
