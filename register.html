@@ -215,46 +215,54 @@
 
     @media (max-width: 480px) {
       body {
-        padding: 10px;
+        padding: 5px;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       
       .register-container {
         margin: 0;
         border-radius: 15px;
         max-width: 100%;
+        width: 100%;
+        max-height: 95vh;
+        overflow-y: auto;
       }
       
       .register-header {
-        padding: 25px 15px;
+        padding: 20px 15px 15px;
       }
       
       .logo-container {
-        padding: 12px;
-        margin-bottom: 15px;
+        padding: 10px;
+        margin-bottom: 10px;
       }
       
       .logo {
-        height: 40px;
+        height: 35px;
         max-width: 100%;
         object-fit: contain;
       }
       
       .register-title {
-        font-size: 20px;
-        margin-bottom: 6px;
+        font-size: 18px;
+        margin-bottom: 5px;
       }
       
       .register-subtitle {
-        font-size: 14px;
+        font-size: 13px;
       }
       
       .register-form {
-        padding: 25px 15px;
+        padding: 20px 15px;
       }
       
       .form-input {
         padding: 12px;
         font-size: 16px; /* Evita zoom no iOS */
+        margin-bottom: 12px;
       }
       
       .register-button {
@@ -262,18 +270,27 @@
         font-size: 16px;
       }
       
-      .password-requirements {
-        font-size: 11px;
-        margin-top: 6px;
+      .register-footer {
+        padding: 15px;
       }
     }
     
     @media (max-width: 360px) {
       .register-header {
-        padding: 20px 10px;
+        padding: 15px 10px 10px;
       }
       
       .register-form {
+        padding: 15px 10px;
+      }
+      
+      .logo {
+        height: 30px;
+      }
+      
+      .register-title {
+        font-size: 16px;
+      }er-form {
         padding: 20px 10px;
       }
       
@@ -512,4 +529,3 @@
   </script>
 </body>
 </html>
-
