@@ -1,6 +1,7 @@
 // Endpoint para login de utilizadores
 import { jsonHeaders, sql, init } from './db.mjs';
-import { requireAuth } from './auth-utils.mjs';
+import { requireAuth, authenticateUser, generateToken } from './auth-utils.mjs';
+
 
 
 export async function handler(event, context) {
