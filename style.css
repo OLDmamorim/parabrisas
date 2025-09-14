@@ -917,3 +917,246 @@ table#resultsTable > thead > tr > th:nth-child(3) {
   font-size: 14px !important;
   line-height: 1.2 !important;
 }
+
+/* =========================
+   MODAL DE IMPRESSÃO
+   ========================= */
+
+.print-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.print-modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+}
+
+.print-modal-content {
+  background: var(--card);
+  border: 1px solid var(--cardBorder);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: var(--shadowLarge);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.print-modal.show .print-modal-content {
+  transform: scale(1);
+}
+
+.print-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--cardBorder);
+}
+
+.print-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.print-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.print-modal-close:hover {
+  background: var(--cardBorder);
+  color: var(--text);
+}
+
+.print-modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.print-date-section {
+  margin-bottom: 24px;
+}
+
+.print-date-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.print-date-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.print-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.print-date-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.print-date-input {
+  background: var(--cardBorder);
+  border: 1px solid var(--cardBorder);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--text);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.print-date-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+}
+
+.print-quick-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.print-quick-btn {
+  background: var(--cardBorder);
+  border: 1px solid var(--cardBorder);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.print-quick-btn:hover,
+.print-quick-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--card);
+}
+
+.print-preview-section {
+  border-top: 1px solid var(--cardBorder);
+  padding-top: 20px;
+}
+
+.print-preview-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.print-preview-count {
+  background: var(--cardBorder);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.print-preview-count.has-data {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: var(--accent);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.print-modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 24px 24px;
+  border-top: 1px solid var(--cardBorder);
+}
+
+.btn.btn-secondary {
+  background: var(--cardBorder);
+  color: var(--muted);
+}
+
+.btn.btn-secondary:hover {
+  background: var(--muted);
+  color: var(--card);
+}
+
+.btn.btn-primary {
+  background: var(--accent);
+  color: var(--card);
+}
+
+.btn.btn-primary:hover {
+  background: #06b6d4;
+}
+
+.btn.btn-primary:disabled {
+  background: var(--cardBorder);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Responsivo para mobile */
+@media (max-width: 600px) {
+  .print-modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .print-modal-header,
+  .print-modal-body,
+  .print-modal-footer {
+    padding: 16px;
+  }
+  
+  .print-date-inputs {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .print-quick-buttons {
+    justify-content: center;
+  }
+  
+  .print-modal-footer {
+    flex-direction: column-reverse;
+  }
+  
+  .print-modal-footer .btn {
+    width: 100%;
+  }
+}
