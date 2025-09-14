@@ -25,10 +25,7 @@ button[onclick*="cancel"] {
   display: none !important;
 }
 
-.view-badge {
-  display: none !important;
-}
-/* ===== REPOSICIONAR INFORMAÇÕES DO UTILIZADOR ===== */
+/* ===== BARRA HORIZONTAL COM INFO DO UTILIZADOR ===== */
 .header {
   flex-direction: column !important;
   align-items: center !important;
@@ -36,33 +33,69 @@ button[onclick*="cancel"] {
 }
 
 #userInfo {
-  position: fixed !important;
-  top: 20px !important;
-  right: 20px !important;
-  z-index: 1000 !important;
-  background: rgba(15, 23, 42, 0.9) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 12px !important;
-  padding: 12px 16px !important;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  padding: 12px 20px !important;
+  margin: 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  position: relative !important;
+  z-index: 100 !important;
 }
 
 #userInfo > div {
   background: none !important;
   padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 15px !important;
 }
 
 #userName {
-  color: #e5e7eb !important;
-  font-size: 13px !important;
+  color: #2d3748 !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 
 #userEmail {
-  color: #a3aed0 !important;
-  font-size: 11px !important;
-  margin-bottom: 8px !important;
+  color: #718096 !important;
+  font-size: 12px !important;
+  margin: 0 !important;
+}
+
+#userInfo button {
+  background: #ef4444 !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+#userInfo button:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Mobile: stack vertical */
+@media (max-width: 768px) {
+  #userInfo {
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 15px 20px !important;
+  }
+  
+  #userInfo > div {
+    flex-direction: column !important;
+    gap: 5px !important;
+    text-align: center !important;
+  }
 }
 
 #userInfo button {
