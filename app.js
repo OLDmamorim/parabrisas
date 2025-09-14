@@ -914,7 +914,7 @@ function closePrintModal() {
 }
 
 // Definir intervalos de datas rápidos
-function setPrintDateRange(range) {
+function setPrintDateRange(range, buttonElement) {
   const today = new Date();
   const fromInput = document.getElementById('printDateFrom');
   const toInput = document.getElementById('printDateTo');
@@ -945,7 +945,7 @@ function setPrintDateRange(range) {
       // Todos os registos (desde o primeiro registo)
       if (RESULTS.length > 0) {
         const oldestRecord = RESULTS[RESULTS.length - 1];
-        fromDate = new Date(oldestRecord.created_at);
+        fromDate = new Date(oldestRecord.created_at || oldestRecord.timestamp);
       } else {
         fromDate = today;
       }
@@ -963,7 +963,12 @@ function setPrintDateRange(range) {
   document.querySelectorAll('.print-quick-btn').forEach(btn => {
     btn.classList.remove('active');
   });
-  event.target.classList.add('active');
+  
+  // Se buttonElement foi passado, usar ele, senão tentar event.target
+  const targetButton = buttonElement || (typeof event !== 'undefined' ? event.target : null);
+  if (targetButton) {
+    targetButton.classList.add('active');
+  }
   
   // Atualizar preview
   updatePrintPreview();
@@ -1366,62 +1371,6 @@ function closePrintModal() {
   }
 }
 
-// Definir intervalos de datas rápidos
-function setPrintDateRange(range) {
-  const today = new Date();
-  const fromInput = document.getElementById('printDateFrom');
-  const toInput = document.getElementById('printDateTo');
-  
-  let fromDate, toDate;
-  
-  switch (range) {
-    case 'today':
-      fromDate = toDate = today;
-      break;
-      
-    case 'week':
-      // Início da semana (segunda-feira)
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay() + 1);
-      fromDate = startOfWeek;
-      toDate = today;
-      break;
-      
-    case 'month':
-      // Início do mês
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      fromDate = startOfMonth;
-      toDate = today;
-      break;
-      
-    case 'all':
-      // Todos os registos (desde o primeiro registo)
-      if (RESULTS.length > 0) {
-        const oldestRecord = RESULTS[RESULTS.length - 1];
-        fromDate = new Date(oldestRecord.created_at || oldestRecord.timestamp);
-      } else {
-        fromDate = today;
-      }
-      toDate = today;
-      break;
-      
-    default:
-      fromDate = toDate = today;
-  }
-  
-  fromInput.value = fromDate.toISOString().split('T')[0];
-  toInput.value = toDate.toISOString().split('T')[0];
-  
-  // Atualizar botões ativos
-  document.querySelectorAll('.print-quick-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  event.target.classList.add('active');
-  
-  // Atualizar preview
-  updatePrintPreview();
-}
-
 // Atualizar preview de impressão
 function updatePrintPreview() {
   const fromDate = document.getElementById('printDateFrom').value;
@@ -1560,9 +1509,23 @@ function generatePrintContent(records, fromDate, toDate) {
     : `Período de ${formatDate(fromDate)} a ${formatDate(toDate)}`;
   
   // Obter email do utilizador
-  const userEmail = (window.authManager && window.authManager.user && window.authManager.user.email) 
-    ? window.authManager.user.email 
-    : 'utilizador@expressglass.pt';
+  let userEmail = 'utilizador@expressglass.pt'; // fallback
+  
+  // Tentar obter email de várias fontes
+  if (window.authManager && window.authManager.user && window.authManager.user.email) {
+    userEmail = window.authManager.user.email;
+  } else if (localStorage.getItem('user')) {
+    try {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      if (userData && userData.email) {
+        userEmail = userData.email;
+      }
+    } catch (e) {
+      console.log('Erro ao obter email do localStorage:', e);
+    }
+  }
+  
+  console.log('Email do utilizador para impressão:', userEmail);
   
   return `
     <!DOCTYPE html>
