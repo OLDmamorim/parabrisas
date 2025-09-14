@@ -195,65 +195,81 @@
 
     @media (max-width: 480px) {
       body {
-        padding: 10px;
+        padding: 5px;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       
       .login-container {
         margin: 0;
         border-radius: 15px;
         max-width: 100%;
+        width: 100%;
+        max-height: 95vh;
+        overflow-y: auto;
       }
       
       .login-header {
-        padding: 25px 15px;
+        padding: 20px 15px 15px;
       }
       
       .logo-container {
-        padding: 12px;
-        margin-bottom: 15px;
+        padding: 10px;
+        margin-bottom: 10px;
       }
       
       .logo {
-        height: 40px;
+        height: 35px;
         max-width: 100%;
         object-fit: contain;
       }
       
       .login-title {
-        font-size: 20px;
-        margin-bottom: 6px;
+        font-size: 18px;
+        margin-bottom: 5px;
       }
       
       .login-subtitle {
-        font-size: 14px;
+        font-size: 13px;
       }
       
       .login-form {
-        padding: 25px 15px;
+        padding: 20px 15px;
       }
       
       .form-input {
         padding: 12px;
         font-size: 16px; /* Evita zoom no iOS */
+        margin-bottom: 12px;
       }
       
       .login-button {
         padding: 12px;
         font-size: 16px;
       }
+      
+      .login-footer {
+        padding: 15px;
+      }
     }
     
     @media (max-width: 360px) {
       .login-header {
-        padding: 20px 10px;
+        padding: 15px 10px 10px;
       }
       
       .login-form {
-        padding: 20px 10px;
+        padding: 15px 10px;
       }
       
       .logo {
-        height: 35px;
+        height: 30px;
+      }
+      
+      .login-title {
+        font-size: 16px;
       }
       
       .login-title {
@@ -408,4 +424,3 @@
   </script>
 </body>
 </html>
-
