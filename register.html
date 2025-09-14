@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Criar Conta</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .register-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+      width: 100%;
+      max-width: 450px;
+      animation: slideUp 0.6s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .register-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 30px;
+      text-align: center;
+      color: white;
+    }
+
+    .logo-container {
+      background: white;
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+
+    .logo {
+      height: 50px;
+      width: auto;
+    }
+
+    .register-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .register-subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .register-form {
+      padding: 40px 30px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e1e5e9;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-input:hover {
+      border-color: #c1c7cd;
+    }
+
+    .password-requirements {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .requirement {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .requirement.valid {
+      color: #38a169;
+    }
+
+    .requirement.invalid {
+      color: #e53e3e;
+    }
+
+    .register-button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+
+    .register-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .register-button:active {
+      transform: translateY(0);
+    }
+
+    .register-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .login-link a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+
+    .login-link a:hover {
+      color: #764ba2;
+    }
+
+    .error-message {
+      background: #fee;
+      color: #c53030;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      border-left: 4px solid #c53030;
+      display: none;
+    }
+
+    .success-message {
+      background: #f0fff4;
+      color: #38a169;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      border-left: 4px solid #38a169;
+      display: none;
+    }
+
+    .loading-spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid transparent;
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 480px) {
+      .register-container {
+        margin: 10px;
+        border-radius: 15px;
+      }
+      
+      .register-header {
+        padding: 30px 20px;
+      }
+      
+      .register-form {
+        padding: 30px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="register-container">
+    <div class="register-header">
+      <div class="logo-container">
+        <img src="expressglass-logo.png" alt="ExpressGlass" class="logo">
+      </div>
+      <h1 class="register-title">Criar Conta</h1>
+      <p class="register-subtitle">Junte-se à ExpressGlass</p>
+    </div>
+    
+    <form class="register-form" id="registerForm">
+      <div id="errorMessage" class="error-message"></div>
+      <div id="successMessage" class="success-message"></div>
+      
+      <div class="form-group">
+        <label for="name" class="form-label">Nome Completo</label>
+        <input 
+          type="text" 
+          id="name" 
+          name="name" 
+          class="form-input" 
+          placeholder="Seu nome completo"
+          required
+          minlength="2"
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="email" class="form-label">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          class="form-input" 
+          placeholder="seu@email.com"
+          required
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          class="form-input" 
+          placeholder="••••••••"
+          required
+        >
+        <div class="password-requirements">
+          <span class="requirement" id="req-length">• Mínimo 8 caracteres</span>
+          <span class="requirement" id="req-upper">• Pelo menos 1 letra maiúscula</span>
+          <span class="requirement" id="req-lower">• Pelo menos 1 letra minúscula</span>
+          <span class="requirement" id="req-number">• Pelo menos 1 número</span>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="confirmPassword" class="form-label">Confirmar Password</label>
+        <input 
+          type="password" 
+          id="confirmPassword" 
+          name="confirmPassword" 
+          class="form-input" 
+          placeholder="••••••••"
+          required
+        >
+      </div>
+      
+      <button type="submit" class="register-button" id="registerButton">
+        <span class="loading-spinner" id="loadingSpinner"></span>
+        <span id="buttonText">Criar Conta</span>
+      </button>
+      
+      <div class="login-link">
+        <p>Já tem conta? <a href="login.html">Fazer login</a></p>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const API_BASE = '/.netlify/functions';
+    
+    const registerForm = document.getElementById('registerForm');
+    const registerButton = document.getElementById('registerButton');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const buttonText = document.getElementById('buttonText');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+
+    // Elementos dos requisitos da password
+    const reqLength = document.getElementById('req-length');
+    const reqUpper = document.getElementById('req-upper');
+    const reqLower = document.getElementById('req-lower');
+    const reqNumber = document.getElementById('req-number');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+      successMessage.style.display = 'none';
+    }
+
+    function showSuccess(message) {
+      successMessage.textContent = message;
+      successMessage.style.display = 'block';
+      errorMessage.style.display = 'none';
+    }
+
+    function hideMessages() {
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+    }
+
+    function setLoading(loading) {
+      registerButton.disabled = loading;
+      loadingSpinner.style.display = loading ? 'inline-block' : 'none';
+      buttonText.textContent = loading ? 'A criar conta...' : 'Criar Conta';
+    }
+
+    function validatePassword(password) {
+      const requirements = {
+        length: password.length >= 8,
+        upper: /[A-Z]/.test(password),
+        lower: /[a-z]/.test(password),
+        number: /\d/.test(password)
+      };
+
+      // Atualizar visual dos requisitos
+      reqLength.className = `requirement ${requirements.length ? 'valid' : 'invalid'}`;
+      reqUpper.className = `requirement ${requirements.upper ? 'valid' : 'invalid'}`;
+      reqLower.className = `requirement ${requirements.lower ? 'valid' : 'invalid'}`;
+      reqNumber.className = `requirement ${requirements.number ? 'valid' : 'invalid'}`;
+
+      return Object.values(requirements).every(req => req);
+    }
+
+    passwordInput.addEventListener('input', (e) => {
+      validatePassword(e.target.value);
+    });
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideMessages();
+
+      const formData = new FormData(registerForm);
+      const name = formData.get('name').trim();
+      const email = formData.get('email').trim();
+      const password = formData.get('password');
+      const confirmPassword = formData.get('confirmPassword');
+
+      // Validações do frontend
+      if (name.length < 2) {
+        showError('Nome deve ter pelo menos 2 caracteres');
+        return;
+      }
+
+      if (!validatePassword(password)) {
+        showError('Password não cumpre os requisitos');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showError('As passwords não coincidem');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const response = await fetch(`${API_BASE}/auth-register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          showSuccess('Conta criada com sucesso! A redirecionar para o login...');
+          
+          // Redirecionar após 2 segundos
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 2000);
+        } else {
+          showError(data.error || 'Erro ao criar conta');
+        }
+      } catch (error) {
+        console.error('Erro no registo:', error);
+        showError('Erro de conexão. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // Verificar se já está logado
+    window.addEventListener('load', () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        // Verificar se token é válido
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.exp > Date.now() / 1000) {
+            // Token válido, redirecionar
+            window.location.href = 'index.html';
+            return;
+          }
+        } catch (e) {
+          // Token inválido, remover
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
