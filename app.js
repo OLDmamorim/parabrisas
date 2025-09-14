@@ -1002,7 +1002,19 @@ function getRecordsInDateRange(fromDate, toDate) {
   const to = new Date(toDate + 'T23:59:59');
   
   return RESULTS.filter(record => {
-    const recordDate = new Date(record.created_at);
+    // Tentar usar created_at primeiro, depois timestamp como fallback
+    let recordDate;
+    if (record.created_at) {
+      recordDate = new Date(record.created_at);
+    } else if (record.timestamp) {
+      // Se timestamp está no formato "DD/MM/YYYY, HH:MM:SS"
+      const [datePart, timePart] = record.timestamp.split(', ');
+      const [day, month, year] = datePart.split('/');
+      recordDate = new Date(`${year}-${month}-${day}T${timePart || '00:00:00'}`);
+    } else {
+      return false; // Sem data válida
+    }
+    
     return recordDate >= from && recordDate <= to;
   });
 }
