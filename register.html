@@ -214,17 +214,79 @@
     }
 
     @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      
       .register-container {
-        margin: 10px;
+        margin: 0;
         border-radius: 15px;
+        max-width: 100%;
       }
       
       .register-header {
-        padding: 30px 20px;
+        padding: 25px 15px;
+      }
+      
+      .logo-container {
+        padding: 12px;
+        margin-bottom: 15px;
+      }
+      
+      .logo {
+        height: 40px;
+        max-width: 100%;
+        object-fit: contain;
+      }
+      
+      .register-title {
+        font-size: 20px;
+        margin-bottom: 6px;
+      }
+      
+      .register-subtitle {
+        font-size: 14px;
       }
       
       .register-form {
-        padding: 30px 20px;
+        padding: 25px 15px;
+      }
+      
+      .form-input {
+        padding: 12px;
+        font-size: 16px; /* Evita zoom no iOS */
+      }
+      
+      .register-button {
+        padding: 12px;
+        font-size: 16px;
+      }
+      
+      .password-requirements {
+        font-size: 11px;
+        margin-top: 6px;
+      }
+    }
+    
+    @media (max-width: 360px) {
+      .register-header {
+        padding: 20px 10px;
+      }
+      
+      .register-form {
+        padding: 20px 10px;
+      }
+      
+      .logo {
+        height: 35px;
+      }
+      
+      .register-title {
+        font-size: 18px;
+      }
+      
+      .password-requirements {
+        font-size: 10px;
       }
     }
   </style>
@@ -450,3 +512,4 @@
   </script>
 </body>
 </html>
+
