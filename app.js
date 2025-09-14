@@ -948,3 +948,339 @@ async function updateMatricula(id, matricula) {
     showToast('Erro ao atualizar matrícula: ' + error.message, 'error');
   }
 }
+
+
+// =========================
+// FUNÇÕES DE IMPRESSÃO
+// =========================
+
+// Abrir modal de impressão
+function openPrintModal() {
+  const modal = document.getElementById('printModal');
+  if (!modal) return;
+  
+  // Definir data padrão como hoje
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('printDateFrom').value = today;
+  document.getElementById('printDateTo').value = today;
+  
+  // Atualizar preview
+  updatePrintPreview();
+  
+  // Mostrar modal
+  modal.classList.add('show');
+}
+
+// Fechar modal de impressão
+function closePrintModal() {
+  const modal = document.getElementById('printModal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+// Definir intervalos de datas rápidos
+function setPrintDateRange(range) {
+  const today = new Date();
+  const fromInput = document.getElementById('printDateFrom');
+  const toInput = document.getElementById('printDateTo');
+  
+  let fromDate, toDate;
+  
+  switch (range) {
+    case 'today':
+      fromDate = toDate = today;
+      break;
+      
+    case 'week':
+      // Início da semana (segunda-feira)
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+      fromDate = startOfWeek;
+      toDate = today;
+      break;
+      
+    case 'month':
+      // Início do mês
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      fromDate = startOfMonth;
+      toDate = today;
+      break;
+      
+    case 'all':
+      // Todos os registos (desde o primeiro registo)
+      if (RESULTS.length > 0) {
+        const oldestRecord = RESULTS[RESULTS.length - 1];
+        fromDate = new Date(oldestRecord.created_at);
+      } else {
+        fromDate = today;
+      }
+      toDate = today;
+      break;
+      
+    default:
+      fromDate = toDate = today;
+  }
+  
+  fromInput.value = fromDate.toISOString().split('T')[0];
+  toInput.value = toDate.toISOString().split('T')[0];
+  
+  // Atualizar botões ativos
+  document.querySelectorAll('.print-quick-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  // Atualizar preview
+  updatePrintPreview();
+}
+
+// Atualizar preview de impressão
+function updatePrintPreview() {
+  const fromDate = document.getElementById('printDateFrom').value;
+  const toDate = document.getElementById('printDateTo').value;
+  const previewElement = document.getElementById('printPreviewCount');
+  const printButton = document.getElementById('printConfirm');
+  
+  if (!fromDate || !toDate) {
+    previewElement.textContent = 'Selecione as datas inicial e final';
+    previewElement.className = 'print-preview-count';
+    printButton.disabled = true;
+    return;
+  }
+  
+  // Filtrar registos por data
+  const filteredRecords = getRecordsInDateRange(fromDate, toDate);
+  
+  if (filteredRecords.length === 0) {
+    previewElement.textContent = 'Nenhum registo encontrado no período selecionado';
+    previewElement.className = 'print-preview-count';
+    printButton.disabled = true;
+  } else {
+    previewElement.textContent = `${filteredRecords.length} registo${filteredRecords.length !== 1 ? 's' : ''} encontrado${filteredRecords.length !== 1 ? 's' : ''} para impressão`;
+    previewElement.className = 'print-preview-count has-data';
+    printButton.disabled = false;
+  }
+}
+
+// Obter registos num intervalo de datas
+function getRecordsInDateRange(fromDate, toDate) {
+  const from = new Date(fromDate + 'T00:00:00');
+  const to = new Date(toDate + 'T23:59:59');
+  
+  return RESULTS.filter(record => {
+    const recordDate = new Date(record.created_at);
+    return recordDate >= from && recordDate <= to;
+  });
+}
+
+// Executar impressão
+function executePrint() {
+  const fromDate = document.getElementById('printDateFrom').value;
+  const toDate = document.getElementById('printDateTo').value;
+  
+  if (!fromDate || !toDate) {
+    showToast('Selecione as datas para impressão', 'error');
+    return;
+  }
+  
+  const recordsToPrint = getRecordsInDateRange(fromDate, toDate);
+  
+  if (recordsToPrint.length === 0) {
+    showToast('Nenhum registo encontrado no período selecionado', 'error');
+    return;
+  }
+  
+  // Gerar conteúdo de impressão
+  const printContent = generatePrintContent(recordsToPrint, fromDate, toDate);
+  
+  // Criar janela de impressão
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  
+  // Aguardar carregamento e imprimir
+  printWindow.onload = function() {
+    printWindow.print();
+    printWindow.close();
+  };
+  
+  // Fechar modal
+  closePrintModal();
+  
+  showToast(`${recordsToPrint.length} registo${recordsToPrint.length !== 1 ? 's' : ''} enviado${recordsToPrint.length !== 1 ? 's' : ''} para impressão`, 'success');
+}
+
+// Gerar conteúdo HTML para impressão
+function generatePrintContent(records, fromDate, toDate) {
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('pt-PT');
+  };
+  
+  const formatDateTime = (dateStr) => {
+    return new Date(dateStr).toLocaleString('pt-PT');
+  };
+  
+  const periodText = fromDate === toDate 
+    ? `Dia ${formatDate(fromDate)}`
+    : `Período de ${formatDate(fromDate)} a ${formatDate(toDate)}`;
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="pt">
+    <head>
+      <meta charset="UTF-8">
+      <title>ExpressGlass - Relatório de Receção</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+          color: #333;
+        }
+        .print-header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #333;
+          padding-bottom: 20px;
+        }
+        .print-header h1 {
+          margin: 0;
+          font-size: 24px;
+          color: #333;
+        }
+        .print-header .print-period {
+          margin: 10px 0 0 0;
+          font-size: 14px;
+          color: #666;
+        }
+        .print-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+        .print-table th,
+        .print-table td {
+          border: 1px solid #333;
+          padding: 6px 4px;
+          text-align: left;
+          vertical-align: top;
+        }
+        .print-table th {
+          background: #f0f0f0;
+          font-weight: bold;
+          font-size: 10px;
+        }
+        .print-table tr:nth-child(even) {
+          background: #f9f9f9;
+        }
+        .print-footer {
+          margin-top: 30px;
+          text-align: center;
+          font-size: 10px;
+          color: #666;
+          border-top: 1px solid #ccc;
+          padding-top: 10px;
+        }
+        .eurocode {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+          color: #007acc;
+        }
+        .matricula {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+        }
+        .glass-type {
+          font-weight: bold;
+          color: #16a34a;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>EXPRESSGLASS - Receção de Material</h1>
+        <div class="print-period">${periodText}</div>
+      </div>
+      
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 30px;">#</th>
+            <th style="width: 120px;">Data/Hora</th>
+            <th style="width: 80px;">Tipo</th>
+            <th style="width: 100px;">Veículo</th>
+            <th style="width: 120px;">Eurocode</th>
+            <th style="width: 80px;">Marca</th>
+            <th style="width: 70px;">Matrícula</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${records.map((record, index) => {
+            const glassType = detectGlassType(record.eurocode);
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${formatDateTime(record.created_at)}</td>
+                <td class="glass-type">${glassType}</td>
+                <td>${record.vehicle || '—'}</td>
+                <td class="eurocode">${record.eurocode || '—'}</td>
+                <td>${record.brand || '—'}</td>
+                <td class="matricula">${record.matricula || '—'}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+      
+      <div class="print-footer">
+        <div>Total de registos: ${records.length}</div>
+        <div>Relatório gerado em ${formatDateTime(new Date().toISOString())}</div>
+        <div>ExpressGlass - Sistema de Receção de Material</div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Event listeners para o modal de impressão
+document.addEventListener('DOMContentLoaded', function() {
+  // Fechar modal
+  const printModalClose = document.getElementById('printModalClose');
+  const printCancel = document.getElementById('printCancel');
+  const printConfirm = document.getElementById('printConfirm');
+  const printModal = document.getElementById('printModal');
+  
+  if (printModalClose) {
+    printModalClose.addEventListener('click', closePrintModal);
+  }
+  
+  if (printCancel) {
+    printCancel.addEventListener('click', closePrintModal);
+  }
+  
+  if (printConfirm) {
+    printConfirm.addEventListener('click', executePrint);
+  }
+  
+  // Fechar modal ao clicar fora
+  if (printModal) {
+    printModal.addEventListener('click', (e) => {
+      if (e.target === printModal) {
+        closePrintModal();
+      }
+    });
+  }
+  
+  // Atualizar preview quando as datas mudarem
+  const printDateFrom = document.getElementById('printDateFrom');
+  const printDateTo = document.getElementById('printDateTo');
+  
+  if (printDateFrom) {
+    printDateFrom.addEventListener('change', updatePrintPreview);
+  }
+  
+  if (printDateTo) {
+    printDateTo.addEventListener('change', updatePrintPreview);
+  }
+});
