@@ -6,6 +6,126 @@
   <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
   <style>
+<style>
+/* ===== EXPANDIR TABELA PARA LARGURA COMPLETA ===== */
+.card {
+  width: 98vw !important;
+  max-width: none !important;
+  margin: 16px 1vw !important;
+}
+
+table {
+  width: 100% !important;
+}
+
+/* ===== ESCONDER BOTÕES DESNECESSÁRIOS ===== */
+#modernBtnNoEurocode,
+#modernBtnCancel,
+button[onclick*="noEurocode"],
+button[onclick*="cancel"] {
+  display: none !important;
+}
+
+.view-badge {
+  display: none !important;
+}
+
+/* ===== FORÇAR TABELA LARGURA COMPLETA ===== */
+.card {
+  width: 98vw !important;
+  max-width: none !important;
+  margin: 16px 1vw !important;
+}
+
+.table-container {
+  width: 100% !important;
+}
+
+table {
+  width: 100% !important;
+}
+
+/* ===== BOTÃO SAIR DISCRETO ===== */
+.header {
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 15px !important;
+}
+
+#userInfo {
+  position: fixed !important;
+  top: 150px !important;
+  right: 30px !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  z-index: 9999 !important;
+  width: auto !important;
+  height: auto !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+#userInfo > div {
+  background: none !important;
+  padding: 0 !important;
+  display: none !important;
+}
+
+#userName, #userEmail {
+  display: none !important;
+}
+
+#userInfo button {
+  background: none !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: none !important;
+  padding: 8px 15px !important;
+  border-radius: 4px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 9999 !important;
+}
+
+#userInfo button:hover {
+  color: rgba(255, 255, 255, 1) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+#userInfo button::before {
+  content: none !important;
+}
+
+/* Mobile: mesmo estilo, só ajustar posição */
+@media (max-width: 768px) {
+  .card {
+    width: 96vw !important;
+    margin: 16px 2vw !important;
+  }
+  
+  #userInfo {
+    top: 140px !important;
+    right: 20px !important;
+  }
+  
+  #userInfo button {
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+  }
+}
+</style>
+
+  <style>
     /* ===== MODIFICAÇÃO DO LOGÓTIPO ===== */
     .brand .title {
       display: none; /* Esconder o texto original */
@@ -51,64 +171,42 @@
     .view-badge {
       display: none !important;
     }
-
-    /* Responsividade mobile para a nova versão */
+    
     @media (max-width: 768px) {
-      .modern-mobile {
-        display: block !important;
+      .logo-container {
+        margin: 0; /* Ponta a ponta em mobile também */
+        padding: 12px 15px;
+        border-radius: 12px;
       }
       
-      .desktop-only {
-        display: none !important;
+      .brand .logo {
+        max-height: 50px;
       }
       
-      .mobile-only {
-        display: none !important;
-      }
-
-      /* Estilos para a nova versão mobile */
-      .modern-mobile {
-        min-height: 100vh;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        position: relative;
-      }
-
-      .modern-status {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255,255,255,0.95);
-        color: #333;
-        padding: 12px 20px;
-        border-radius: 25px;
+      .brand .subtitle-new {
         font-size: 14px;
-        font-weight: 500;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        z-index: 1000;
-        opacity: 0;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-        max-width: 90%;
-        text-align: center;
+        margin: 12px 15px 0;
+      }
+    }
+
+    /* ===== APENAS MODIFICAÇÕES PARA MOBILE ===== */
+    @media (max-width: 768px) {
+      /* Esconder a versão mobile original */
+      #mobileView.card.mobile-only {
+        display: none !important;
       }
 
-      .modern-status.show {
-        opacity: 1;
-        transform: translateX(-50%) translateY(10px);
-      }
-
-      .modern-status.error {
-        background: #ef4444;
-        color: white;
-      }
-
-      .modern-status.success {
-        background: #10b981;
-        color: white;
+      /* Nova versão mobile moderna */
+      .modern-mobile {
+        display: flex !important;
+        flex-direction: column;
+        min-height: calc(100vh - 120px);
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        margin: 0;
+        width: 100%;
       }
 
       .modern-main {
@@ -116,8 +214,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 40px 0;
+        padding: 40px 20px 20px;
       }
 
       .modern-circle {
@@ -221,136 +318,137 @@
       }
 
       .modern-bottom-card {
-        background: rgba(255,255,255,0.95);
-        border-radius: 20px 20px 0 0;
-        padding: 25px 20px;
-        margin: 0 -20px -20px;
-        backdrop-filter: blur(10px);
+        background: white;
+        border-radius: 25px 25px 0 0;
+        width: 100%;
+        min-height: 280px;
         box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
-        max-height: 40vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+        padding: 25px 20px;
+        margin-top: auto;
       }
 
       .modern-captures-header {
         display: flex;
         align-items: center;
         margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #f1f5f9;
-      }
-
-      .modern-captures-icon {
-        font-size: 24px;
-        margin-right: 12px;
+        gap: 10px;
       }
 
       .modern-captures-title {
         font-size: 18px;
         font-weight: 700;
         color: #2d3748;
-        margin: 0;
+      }
+
+      .modern-captures-icon {
+        font-size: 20px;
       }
 
       .modern-capture-list {
-        flex: 1;
-        overflow-y: auto;
-        margin: 0 -5px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
       }
 
       .modern-capture-item {
-        background: white;
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        border-left: 4px solid #667eea;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 15px;
+        background: #f7fafc;
+        border-radius: 10px;
+        border-left: 4px solid #22d3ee;
         transition: all 0.2s ease;
       }
 
       .modern-capture-item:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        background: #edf2f7;
+        transform: translateX(3px);
       }
 
-      .modern-capture-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 8px;
+      .modern-capture-code {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 13px;
+        letter-spacing: 0.3px;
       }
 
-      .modern-capture-time {
-        font-size: 12px;
-        color: #64748b;
+      .modern-capture-check {
+        color: #22d3ee;
+        font-size: 16px;
+      }
+
+      .modern-empty-state {
+        text-align: center;
+        padding: 30px 20px;
+        color: #a0aec0;
+      }
+
+      .modern-empty-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+        opacity: 0.5;
+      }
+
+      .modern-empty-text {
+        font-size: 14px;
         font-weight: 500;
       }
 
-      .modern-capture-type {
-        background: #22c55e;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 10px;
+      .modern-status {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.95);
+        padding: 10px 18px;
+        border-radius: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .modern-capture-content {
-        margin-bottom: 8px;
-      }
-
-      .modern-capture-eurocode {
-        font-size: 16px;
-        font-weight: 700;
-        color: #1e40af;
-        margin-bottom: 4px;
-        font-family: 'Courier New', monospace;
-        letter-spacing: 0.5px;
-      }
-
-      .modern-capture-details {
-        font-size: 12px;
-        color: #64748b;
-        line-height: 1.4;
-      }
-
-      .modern-capture-vehicle {
-        font-weight: 600;
-        color: #374151;
-      }
-
-      .modern-capture-brand {
-        color: #6b7280;
-      }
-
-      .modern-capture-empty {
-        text-align: center;
-        color: #9ca3af;
-        font-style: italic;
-        padding: 40px 20px;
+        color: #2d3748;
         font-size: 14px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 1000;
       }
 
-      /* Modal de seleção de eurocode */
+      .modern-status.show {
+        opacity: 1;
+      }
+
+      .modern-status.success {
+        background: rgba(72, 187, 120, 0.95);
+        color: white;
+      }
+
+      .modern-status.error {
+        background: rgba(245, 101, 101, 0.95);
+        color: white;
+      }
+
+      .modern-status.processing {
+        background: rgba(34, 197, 94, 0.95);
+        color: white;
+      }
+
+      /* Modal de Seleção de Eurocode */
       .modern-eurocode-modal {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0,0,0,0.8);
-        z-index: 9999;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
         display: none;
         align-items: center;
         justify-content: center;
+        z-index: 2000;
         padding: 20px;
       }
 
       .modern-eurocode-modal.show {
-        display: flex !important;
+        display: flex;
       }
 
       .modern-modal-content {
@@ -361,17 +459,17 @@
         max-height: 80vh;
         overflow: hidden;
         box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        animation: modalSlideUp 0.3s ease-out;
+        animation: modalSlideUp 0.3s ease;
       }
 
       @keyframes modalSlideUp {
         from {
-          opacity: 0;
           transform: translateY(50px);
+          opacity: 0;
         }
         to {
-          opacity: 1;
           transform: translateY(0);
+          opacity: 1;
         }
       }
 
@@ -380,18 +478,18 @@
         border-bottom: 1px solid #e2e8f0;
         display: flex;
         align-items: center;
+        gap: 12px;
+      }
+
+      .modern-modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
       }
 
       .modern-modal-icon {
         font-size: 24px;
-        margin-right: 12px;
-      }
-
-      .modern-modal-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #2d3748;
-        margin: 0;
       }
 
       .modern-modal-body {
@@ -401,24 +499,24 @@
       }
 
       .modern-ocr-section {
-        margin-bottom: 20px;
+        margin-bottom: 25px;
       }
 
       .modern-ocr-label {
         font-size: 14px;
         font-weight: 600;
         color: #4a5568;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         display: block;
       }
 
       .modern-ocr-text {
-        background: #f8f9fa;
+        background: #f7fafc;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 12px;
-        font-size: 13px;
-        line-height: 1.5;
+        font-size: 12px;
+        line-height: 1.4;
         color: #2d3748;
         max-height: 100px;
         overflow-y: auto;
@@ -615,6 +713,13 @@
   </div>
 </div>
 
+      <div class="modern-modal-footer">
+        <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
+        <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- DESKTOP VIEW (mantém-se 100% igual ao original) -->
   <section id="desktopView" class="card desktop-only">
     <!-- Botão de ajuda -->
@@ -638,7 +743,6 @@
     <th style="width:160px">Veículo</th>
     <th style="width:180px">Eurocode</th>
     <th style="width:160px">Marca</th>
-    <th style="width:120px">Matrícula</th>
     <th style="width:140px">Ações</th>
   </tr>
 </thead>
@@ -715,224 +819,405 @@
       if (isProcessing) return;
       isProcessing = true;
       
+      console.log('Iniciando processamento...');
+      
       if (modernCameraButton) {
         modernCameraButton.classList.add('processing');
         const label = modernCameraButton.querySelector('.modern-camera-label');
-        if (label) label.textContent = 'A processar...';
+        if (label) {
+          label.textContent = 'A processar...';
+        }
       }
       
-      // Auto-stop after 30 seconds
+      showModernStatus('A processar imagem...', 'processing');
+      
+      // Timeout aumentado para 45 segundos
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+      
       processingTimeout = setTimeout(() => {
-        stopProcessing();
-        showModernStatus('Tempo limite excedido. Tente novamente.', 'error');
-      }, 30000);
+        if (isProcessing) {
+          console.log('Timeout de processamento atingido');
+          stopProcessing();
+          showModernStatus('Timeout - tente novamente', 'error');
+        }
+      }, 45000); // 45 segundos
     }
 
     // Stop processing animation
     function stopProcessing() {
+      if (!isProcessing) return;
       isProcessing = false;
       
-      if (processingTimeout) {
-        clearTimeout(processingTimeout);
-        processingTimeout = null;
-      }
+      console.log('Parando processamento...');
       
       if (modernCameraButton) {
         modernCameraButton.classList.remove('processing');
         const label = modernCameraButton.querySelector('.modern-camera-label');
-        if (label) label.textContent = 'Eurocode';
+        if (label) {
+          label.textContent = 'Eurocode';
+        }
+      }
+      
+      // Limpar timeout
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+        processingTimeout = null;
       }
     }
 
-    // Handle camera button click
-    if (modernCameraButton) {
-      modernCameraButton.addEventListener('click', () => {
-        if (isProcessing) return;
-        
-        // Create hidden file input
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.capture = 'environment';
-        input.style.display = 'none';
-        
-        input.addEventListener('change', (e) => {
-          const file = e.target.files?.[0];
-          if (file && window.processImage) {
-            startProcessing();
-            showModernStatus('A processar imagem...', '');
-            window.processImage(file);
-          }
-          document.body.removeChild(input);
+    // Show modern eurocode modal
+    function showModernEurocodeModal(ocrText, eurocodes) {
+      console.log('Mostrando modal de eurocode...');
+      
+      // CORREÇÃO: Para a animação imediatamente quando o modal aparece
+      stopProcessing();
+      
+      if (!modernEurocodeModal) return;
+      
+      // Set OCR text
+      if (modernOcrText) {
+        modernOcrText.textContent = ocrText;
+      }
+
+      // Set eurocode buttons
+      if (modernEurocodeList) {
+        modernEurocodeList.innerHTML = eurocodes.map(code => `
+          <button class="modern-eurocode-button" data-eurocode="${code}">
+            ${code}
+          </button>
+        `).join('');
+
+        // Add click handlers to eurocode buttons
+        modernEurocodeList.querySelectorAll('.modern-eurocode-button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const selectedCode = btn.dataset.eurocode;
+            hideModernEurocodeModal();
+            showModernStatus(`Eurocode ${selectedCode} selecionado!`, 'success');
+            
+            // CORREÇÃO: Garantir que a animação para após seleção
+            stopProcessing();
+            
+            // Usar a função original para guardar o eurocode
+            if (window.saveEurocode) {
+              window.saveEurocode(selectedCode, ocrText);
+            }
+            
+            // Atualizar lista de capturas
+            setTimeout(renderModernCaptures, 500);
+          });
         });
-        
-        document.body.appendChild(input);
-        input.click();
-      });
-    }
-
-    // Update modern captures list
-    function updateModernCapturesList() {
-      if (!modernCapturesList) return;
-      
-      const recentCaptures = RESULTS.slice(0, 5);
-      
-      if (recentCaptures.length === 0) {
-        modernCapturesList.innerHTML = '<div class="modern-capture-empty">Ainda não há capturas realizadas.</div>';
-        return;
       }
-      
-      modernCapturesList.innerHTML = recentCaptures.map(capture => {
-        const glassType = detectGlassType(capture.eurocode);
-        return `
-          <div class="modern-capture-item">
-            <div class="modern-capture-header">
-              <span class="modern-capture-time">${capture.timestamp}</span>
-              <span class="modern-capture-type">${glassType}</span>
-            </div>
-            <div class="modern-capture-content">
-              <div class="modern-capture-eurocode">${capture.eurocode || 'Sem código'}</div>
-              <div class="modern-capture-details">
-                <span class="modern-capture-vehicle">${capture.vehicle || 'Veículo não identificado'}</span>
-                ${capture.brand ? ` • <span class="modern-capture-brand">${capture.brand}</span>` : ''}
-                ${capture.matricula ? ` • <span class="modern-capture-matricula">${capture.matricula}</span>` : ''}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
+
+      modernEurocodeModal.classList.add('show');
     }
 
-    // Handle eurocode selection in modal
-    function handleModernEurocodeSelection(selectedEurocode) {
+    // Hide modern eurocode modal
+    function hideModernEurocodeModal() {
       if (modernEurocodeModal) {
         modernEurocodeModal.classList.remove('show');
       }
-      
-      if (currentImageData) {
-        // Continue with the selected eurocode
-        continueProcessingWithEurocode(selectedEurocode);
-      }
+      // CORREÇÃO: Garantir que para a animação quando esconde o modal
+      stopProcessing();
     }
 
-    // Continue processing with selected eurocode
-    function continueProcessingWithEurocode(eurocode) {
-      if (!currentImageData) return;
+    // Render modern captures list from real data
+    function renderModernCaptures() {
+      if (!modernCapturesList) return;
       
-      const { text, filename, vehicle, brand } = currentImageData;
+      // Get real data from the original system
+      const tbody = document.getElementById('resultsBody');
+      if (!tbody) {
+        modernCapturesList.innerHTML = `
+          <div class="modern-empty-state">
+            <div class="modern-empty-icon">📷</div>
+            <div class="modern-empty-text">Ainda não há capturas</div>
+          </div>
+        `;
+        return;
+      }
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const captures = [];
       
-      // Save to database
-      saveOcrResult({
-        text: text,
-        eurocode: eurocode,
-        filename: filename,
-        source: 'mobile_camera',
-        vehicle: vehicle,
-        brand: brand
-      }).then(() => {
-        showModernStatus('Eurocode guardado com sucesso!', 'success');
-        stopProcessing();
-        updateModernCapturesList();
-        currentImageData = null;
-      }).catch(error => {
-        console.error('Erro ao guardar:', error);
-        showModernStatus('Erro ao guardar: ' + error.message, 'error');
-        stopProcessing();
+      for (const tr of rows) {
+        const vehicleTd = tr.querySelector('td:nth-child(4)'); // Vehicle column
+        const eurocodeTd = tr.querySelector('td:nth-child(5)'); // Eurocode column
+        
+        if (vehicleTd && eurocodeTd) {
+          const vehicle = (vehicleTd.innerText || vehicleTd.textContent || '').trim();
+          const eurocode = (eurocodeTd.innerText || eurocodeTd.textContent || '').trim();
+          
+          if (vehicle && eurocode && vehicle !== '—' && eurocode !== '—') {
+            captures.push({
+              vehicle: vehicle,
+              eurocode: eurocode
+            });
+          }
+        }
+        if (captures.length >= 5) break; // Limit to 5 most recent
+      }
+
+      if (captures.length === 0) {
+        modernCapturesList.innerHTML = `
+          <div class="modern-empty-state">
+            <div class="modern-empty-icon">📷</div>
+            <div class="modern-empty-text">Ainda não há capturas</div>
+          </div>
+        `;
+        return;
+      }
+
+      modernCapturesList.innerHTML = captures.map(capture => `
+        <div class="modern-capture-item">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="modern-capture-code" style="font-weight: 600; color: #2563eb; font-size: 13px;">${capture.vehicle}</span>
+            <span style="font-weight: 700; color: #007acc; font-size: 12px; letter-spacing: 0.5px;">${capture.eurocode}</span>
+          </div>
+          <span class="modern-capture-check">✓</span>
+        </div>
+      `).join('');
+    }
+
+    // Modern camera button click
+    if (modernCameraButton) {
+      modernCameraButton.addEventListener('click', () => {
+        if (isProcessing) {
+          console.log('Clique ignorado - já está a processar');
+          return; // Prevenir cliques durante processamento
+        }
+        
+        console.log('Clique no botão da câmara moderna');
+        startProcessing(); // Iniciar animação
+        
+        // Simular clique no botão da versão clássica (que funciona)
+        const classicCameraBtn = document.getElementById('btnCamera');
+        if (classicCameraBtn) {
+          classicCameraBtn.click();
+        }
       });
     }
 
-    // Handle "No Eurocode" button
+    // CORREÇÃO PRINCIPAL: Interceptar TODOS os eventos de sucesso
+    function interceptSuccessEvents() {
+      // Observar mudanças na tabela de resultados (indica sucesso)
+      const tbody = document.getElementById('resultsBody');
+      if (tbody) {
+        let lastRowCount = tbody.children.length;
+        
+        new MutationObserver((mutations) => {
+          const currentRowCount = tbody.children.length;
+          if (currentRowCount > lastRowCount) {
+            // Nova linha adicionada = sucesso
+            console.log('Nova captura detectada, parando animação...');
+            setTimeout(() => {
+              stopProcessing();
+              renderModernCaptures();
+            }, 500);
+          }
+          lastRowCount = currentRowCount;
+        }).observe(tbody, { childList: true });
+      }
+
+      // Observar mensagens de sucesso
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('sucesso') || 
+                    text.toLowerCase().includes('guardado') ||
+                    text.toLowerCase().includes('adicionado')) {
+                  console.log('Sucesso detectado:', text);
+                  setTimeout(() => {
+                    stopProcessing();
+                    renderModernCaptures();
+                  }, 500);
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+    }
+
+    // Interceptar o modal da versão clássica e mostrar na versão moderna
+    function interceptClassicModal() {
+      // Observar mudanças no DOM para detectar quando o modal clássico aparece
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            // Procurar por modais de validação de eurocode
+            const modals = document.querySelectorAll('[id*="modal"], [class*="modal"]');
+            modals.forEach((modal) => {
+              if (modal.style.display === 'block' || modal.classList.contains('show')) {
+                const modalText = modal.textContent || modal.innerText || '';
+                if (modalText.includes('Selecionar Eurocode') || modalText.includes('Eurocode')) {
+                  console.log('Modal clássico detectado, interceptando...');
+                  
+                  // Extrair dados do modal clássico
+                  const ocrTextEl = modal.querySelector('[id*="ocr"], [class*="ocr"]');
+                  const eurocodeButtons = modal.querySelectorAll('button[data-eurocode], button[onclick*="eurocode"]');
+                  
+                  if (ocrTextEl || eurocodeButtons.length > 0) {
+                    const ocrText = ocrTextEl ? (ocrTextEl.textContent || ocrTextEl.innerText || '') : '';
+                    const eurocodes = Array.from(eurocodeButtons).map(btn => 
+                      btn.dataset.eurocode || btn.textContent.trim()
+                    ).filter(Boolean);
+                    
+                    // Esconder modal clássico
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    
+                    // Mostrar modal moderno (que já para a animação)
+                    showModernEurocodeModal(ocrText, eurocodes);
+                  }
+                }
+              }
+            });
+          }
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      });
+    }
+
+    // Interceptar erros para parar a animação
+    function interceptErrors() {
+      // Observar mensagens de erro
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('erro') || text.toLowerCase().includes('error')) {
+                  console.log('Erro detectado:', text);
+                  stopProcessing();
+                  showModernStatus('Erro ao processar imagem', 'error');
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+    }
+
+    // Modal button handlers
     if (modernBtnNoEurocode) {
       modernBtnNoEurocode.addEventListener('click', () => {
-        handleModernEurocodeSelection('');
+        hideModernEurocodeModal();
+        showModernStatus('Guardado sem Eurocode', 'success');
+        
+        // CORREÇÃO: Garantir que para a animação
+        stopProcessing();
+        
+        // Usar a função original para guardar sem eurocode
+        if (window.saveWithoutEurocode) {
+          const ocrText = modernOcrText ? modernOcrText.textContent : '';
+          window.saveWithoutEurocode(ocrText);
+        }
+        
+        // Atualizar lista de capturas
+        setTimeout(renderModernCaptures, 500);
       });
     }
 
-    // Handle "Cancel" button
     if (modernBtnCancel) {
       modernBtnCancel.addEventListener('click', () => {
-        if (modernEurocodeModal) {
-          modernEurocodeModal.classList.remove('show');
-        }
+        hideModernEurocodeModal();
+        showModernStatus('Operação cancelada', 'error');
+        // CORREÇÃO: Para a animação quando cancela
         stopProcessing();
-        currentImageData = null;
-        showModernStatus('Operação cancelada', '');
       });
     }
 
-    // Override the original showEurocodeModal for mobile
-    const originalShowEurocodeModal = window.showEurocodeModal;
-    window.showEurocodeModal = function(eurocodes, ocrText, filename, vehicle, brand) {
-      // Check if we're on mobile
-      if (window.innerWidth <= 768) {
-        currentImageData = { text: ocrText, filename, vehicle, brand };
-        
-        if (!modernEurocodeModal || !modernEurocodeList) return;
-        
-        // Populate eurocode list
-        modernEurocodeList.innerHTML = eurocodes.map(code => 
-          `<button class="modern-eurocode-button" onclick="handleModernEurocodeSelection('${code}')">${code}</button>`
-        ).join('');
-        
-        // Show modal
-        modernEurocodeModal.classList.add('show');
-      } else {
-        // Use original modal for desktop
-        if (originalShowEurocodeModal) {
-          originalShowEurocodeModal(eurocodes, ocrText, filename, vehicle, brand);
+    // Close modal when clicking outside
+    if (modernEurocodeModal) {
+      modernEurocodeModal.addEventListener('click', (e) => {
+        if (e.target === modernEurocodeModal) {
+          hideModernEurocodeModal();
+          showModernStatus('Operação cancelada', 'error');
+          // CORREÇÃO: Para a animação quando fecha
+          stopProcessing();
         }
-      }
-    };
-
-    // Update captures list when RESULTS changes
-    const originalRenderTable = window.renderTable;
-    window.renderTable = function() {
-      if (originalRenderTable) {
-        originalRenderTable();
-      }
-      updateModernCapturesList();
-    };
-
-    // Initial update
-    updateModernCapturesList();
-  </script>
-
-  <!-- Script para lista de eurocodes -->
-  <script>
-  (function(){
-    const listEl = document.getElementById('eurocodesList');
-    if (!listEl) return;
-
-    function pickEuro(row) {
-      return row?.eurocode || row?.euro_validado || '';
+      });
     }
 
-    async function fetchRowsFromAPI() {
+    // Initialize modern interface
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('Interface moderna inicializada');
+      renderModernCaptures();
+      interceptClassicModal();
+      interceptErrors();
+      interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
+      
+      // Atualizar lista periodicamente
+      setInterval(renderModernCaptures, 5000);
+    });
+
+    // Render initial captures
+    renderModernCaptures();
+    interceptClassicModal();
+    interceptErrors();
+    interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
+  </script>
+
+  <!-- Scripts originais mantidos -->
+  <script>
+  (function(){
+    const listEl = document.getElementById('mobileHistoryList');
+    if (!listEl) return;
+
+    async function fetchRowsFromAPI(){
       try {
-        const response = await fetch('/.netlify/functions/list-ocr');
-        if (!response.ok) return null;
-        const data = await response.json();
-        return data?.rows || null;
+        const resp = await fetch('/.netlify/functions/get-rows');
+        if (!resp.ok) return null;
+        return await resp.json();
       } catch {
         return null;
       }
     }
 
-    function scrapeEurocodesFromTable() {
-      const rows = Array.from(document.querySelectorAll('#resultsTable tbody tr'));
-      return rows.map(tr => {
-        const cells = tr.querySelectorAll('td');
-        return cells[4]?.textContent?.trim() || '';
-      }).filter(Boolean);
+    function pickEuro(row){
+      const c = (row?.eurocode || '').trim();
+      return c || null;
     }
 
-    function renderList(codes) {
-      if (!codes || codes.length === 0) {
-        listEl.innerHTML = '<p style="color:#999; font-style:italic; text-align:center; padding:20px;">Nenhum eurocode encontrado</p>';
+    function scrapeEurocodesFromTable(limit=50){
+      const tbody = document.getElementById('resultsBody');
+      if(!tbody) return [];
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const out = [];
+      for (const tr of rows){
+        const td = tr.querySelector('td:nth-child(4)');
+        const raw = (td?.innerText || td?.textContent || '').trim();
+        const code = raw.split(/\s+/)[0];
+        if (code) out.push(code);
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+
+    function renderList(codes){
+      if (!listEl) return;
+      if (!codes || !codes.length){
+        listEl.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
         return;
       }
       const ul = document.createElement('ul');
-      ul.style.cssText = 'list-style:none; padding:0; margin:0; max-height:200px; overflow-y:auto; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid rgba(255,255,255,0.1);';
+      ul.style.listStyle = 'none';
+      ul.style.margin = '0';
+      ul.style.padding = '0';
       codes.forEach(code => {
         const li = document.createElement('li');
         li.textContent = code;
