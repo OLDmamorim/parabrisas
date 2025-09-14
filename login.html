@@ -1,279 +1,202 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>EXPRESSGLASS • Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ExpressGlass - Login</title>
   <style>
+    /* CSS MOBILE FORÇADO */
     * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-
+    
+    html, body {
+      height: 100% !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 10px !important;
+      min-height: 100vh !important;
     }
-
+    
     .login-container {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      overflow: hidden;
-      width: 100%;
-      max-width: 400px;
-      animation: slideUp 0.6s ease-out;
+      background: white !important;
+      border-radius: 20px !important;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+      width: 100% !important;
+      max-width: 400px !important;
+      overflow: hidden !important;
     }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
+    
     .login-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 40px 30px;
-      text-align: center;
-      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      color: white !important;
+      text-align: center !important;
+      padding: 30px 20px !important;
     }
-
+    
     .logo-container {
-      background: white;
-      border-radius: 15px;
-      padding: 15px;
-      margin-bottom: 20px;
-      display: inline-block;
+      background: white !important;
+      border-radius: 15px !important;
+      padding: 15px !important;
+      margin: 0 auto 20px !important;
+      display: inline-block !important;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
     }
-
+    
     .logo {
-      height: 50px;
-      width: auto;
+      height: 50px !important;
+      width: auto !important;
+      display: block !important;
     }
-
+    
     .login-title {
-      font-size: 24px;
-      font-weight: 600;
-      margin-bottom: 8px;
+      font-size: 24px !important;
+      font-weight: 700 !important;
+      margin-bottom: 8px !important;
     }
-
+    
     .login-subtitle {
-      font-size: 16px;
-      opacity: 0.9;
+      font-size: 16px !important;
+      opacity: 0.9 !important;
     }
-
+    
     .login-form {
-      padding: 40px 30px;
+      padding: 30px 25px !important;
     }
-
+    
     .form-group {
-      margin-bottom: 25px;
+      margin-bottom: 20px !important;
     }
-
+    
     .form-label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #333;
-      font-size: 14px;
+      display: block !important;
+      margin-bottom: 8px !important;
+      font-weight: 600 !important;
+      color: #374151 !important;
+      font-size: 14px !important;
     }
-
+    
     .form-input {
-      width: 100%;
-      padding: 15px;
-      border: 2px solid #e1e5e9;
-      border-radius: 10px;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      background: #f8f9fa;
+      width: 100% !important;
+      padding: 15px !important;
+      border: 2px solid #e5e7eb !important;
+      border-radius: 10px !important;
+      font-size: 16px !important;
+      transition: all 0.3s ease !important;
+      background: #f9fafb !important;
     }
-
+    
     .form-input:focus {
-      outline: none;
-      border-color: #667eea;
-      background: white;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      outline: none !important;
+      border-color: #667eea !important;
+      background: white !important;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
     }
-
-    .form-input:hover {
-      border-color: #c1c7cd;
-    }
-
+    
     .login-button {
-      width: 100%;
-      padding: 15px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-bottom: 20px;
+      width: 100% !important;
+      padding: 15px !important;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 10px !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+      margin-top: 10px !important;
     }
-
+    
     .login-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      transform: translateY(-2px) !important;
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3) !important;
     }
-
-    .login-button:active {
-      transform: translateY(0);
+    
+    .login-footer {
+      text-align: center !important;
+      padding: 20px 25px 30px !important;
+      border-top: 1px solid #f3f4f6 !important;
     }
-
-    .login-button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
+    
+    .login-footer a {
+      color: #667eea !important;
+      text-decoration: none !important;
+      font-weight: 600 !important;
     }
-
-    .register-link {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    .register-link a {
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.3s ease;
-    }
-
-    .register-link a:hover {
-      color: #764ba2;
-    }
-
+    
     .error-message {
-      background: #fee;
-      color: #c53030;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      border-left: 4px solid #c53030;
-      display: none;
+      background: #fef2f2 !important;
+      border: 1px solid #fecaca !important;
+      color: #dc2626 !important;
+      padding: 12px !important;
+      border-radius: 8px !important;
+      margin-bottom: 20px !important;
+      font-size: 14px !important;
     }
-
-    .success-message {
-      background: #f0fff4;
-      color: #38a169;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      border-left: 4px solid #38a169;
-      display: none;
-    }
-
-    .loading-spinner {
-      display: none;
-      width: 20px;
-      height: 20px;
-      border: 2px solid transparent;
-      border-top: 2px solid white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-right: 10px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @media (max-width: 480px) {
+    
+    /* MEDIA QUERIES ESPECÍFICAS */
+    @media screen and (max-width: 480px) {
       body {
-        padding: 5px;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        padding: 5px !important;
       }
       
       .login-container {
-        margin: 0;
-        border-radius: 15px;
-        max-width: 100%;
-        width: 100%;
-        max-height: 95vh;
-        overflow-y: auto;
+        max-width: 100% !important;
+        margin: 0 !important;
       }
       
       .login-header {
-        padding: 20px 15px 15px;
-      }
-      
-      .logo-container {
-        padding: 10px;
-        margin-bottom: 10px;
+        padding: 25px 15px !important;
       }
       
       .logo {
-        height: 35px;
-        max-width: 100%;
-        object-fit: contain;
+        height: 40px !important;
       }
       
       .login-title {
-        font-size: 18px;
-        margin-bottom: 5px;
+        font-size: 20px !important;
       }
       
       .login-subtitle {
-        font-size: 13px;
+        font-size: 14px !important;
       }
       
       .login-form {
-        padding: 20px 15px;
+        padding: 25px 20px !important;
       }
       
       .form-input {
-        padding: 12px;
-        font-size: 16px; /* Evita zoom no iOS */
-        margin-bottom: 12px;
+        padding: 12px !important;
       }
       
       .login-button {
-        padding: 12px;
-        font-size: 16px;
-      }
-      
-      .login-footer {
-        padding: 15px;
+        padding: 12px !important;
       }
     }
     
-    @media (max-width: 360px) {
+    @media screen and (max-width: 360px) {
       .login-header {
-        padding: 15px 10px 10px;
+        padding: 20px 10px !important;
       }
       
       .login-form {
-        padding: 15px 10px;
+        padding: 20px 15px !important;
       }
       
       .logo {
-        height: 30px;
+        height: 35px !important;
       }
       
       .login-title {
-        font-size: 16px;
-      }
-      
-      .login-title {
-        font-size: 18px;
+        font-size: 18px !important;
       }
     }
   </style>
@@ -284,141 +207,60 @@
       <div class="logo-container">
         <img src="expressglass-logo.png" alt="ExpressGlass" class="logo">
       </div>
-      <h1 class="login-title">Bem-vindo</h1>
-      <p class="login-subtitle">Faça login na sua conta</p>
+      <h1 class="login-title">ExpressGlass</h1>
+      <p class="login-subtitle">Acesso ao Sistema</p>
     </div>
     
     <form class="login-form" id="loginForm">
-      <div id="errorMessage" class="error-message"></div>
-      <div id="successMessage" class="success-message"></div>
+      <div id="errorMessage" class="error-message" style="display: none;"></div>
       
       <div class="form-group">
         <label for="email" class="form-label">Email</label>
-        <input 
-          type="email" 
-          id="email" 
-          name="email" 
-          class="form-input" 
-          placeholder="seu@email.com"
-          required
-        >
+        <input type="email" id="email" name="email" class="form-input" required>
       </div>
       
       <div class="form-group">
         <label for="password" class="form-label">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password" 
-          class="form-input" 
-          placeholder="••••••••"
-          required
-        >
+        <input type="password" id="password" name="password" class="form-input" required>
       </div>
       
-      <button type="submit" class="login-button" id="loginButton">
-        <span class="loading-spinner" id="loadingSpinner"></span>
-        <span id="buttonText">Entrar</span>
+      <button type="submit" class="login-button">
+        Entrar
       </button>
-      
-      <div class="register-link">
-        <p>Não tem conta? <a href="register.html">Criar conta</a></p>
-      </div>
     </form>
+    
+    <div class="login-footer">
+      <p>Não tem conta? <a href="register.html">Criar conta</a></p>
+    </div>
   </div>
 
   <script>
-    const API_BASE = '/.netlify/functions';
-    
-    const loginForm = document.getElementById('loginForm');
-    const loginButton = document.getElementById('loginButton');
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const buttonText = document.getElementById('buttonText');
-    const errorMessage = document.getElementById('errorMessage');
-    const successMessage = document.getElementById('successMessage');
-
-    function showError(message) {
-      errorMessage.textContent = message;
-      errorMessage.style.display = 'block';
-      successMessage.style.display = 'none';
-    }
-
-    function showSuccess(message) {
-      successMessage.textContent = message;
-      successMessage.style.display = 'block';
-      errorMessage.style.display = 'none';
-    }
-
-    function hideMessages() {
-      errorMessage.style.display = 'none';
-      successMessage.style.display = 'none';
-    }
-
-    function setLoading(loading) {
-      loginButton.disabled = loading;
-      loadingSpinner.style.display = loading ? 'inline-block' : 'none';
-      buttonText.textContent = loading ? 'A entrar...' : 'Entrar';
-    }
-
-    loginForm.addEventListener('submit', async (e) => {
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      hideMessages();
-      setLoading(true);
-
-      const formData = new FormData(loginForm);
-      const email = formData.get('email');
-      const password = formData.get('password');
-
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('errorMessage');
+      
       try {
-        const response = await fetch(`${API_BASE}/auth-login`, {
+        const response = await fetch('/.netlify/functions/auth-login', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-
+        
         const data = await response.json();
-
-        if (response.ok && data.success) {
-          // Guardar token no localStorage
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-          
-          showSuccess('Login realizado com sucesso! A redirecionar...');
-          
-          // Redirecionar após 1 segundo
-          setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 1000);
+        
+        if (data.ok) {
+          localStorage.setItem('token', data.token);
+          window.location.href = '/';
         } else {
-          showError(data.error || 'Erro ao fazer login');
+          errorDiv.textContent = data.error || 'Erro no login';
+          errorDiv.style.display = 'block';
         }
       } catch (error) {
-        console.error('Erro no login:', error);
-        showError('Erro de conexão. Tente novamente.');
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    // Verificar se já está logado
-    window.addEventListener('load', () => {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        // Verificar se token é válido
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          if (payload.exp > Date.now() / 1000) {
-            // Token válido, redirecionar
-            window.location.href = 'index.html';
-            return;
-          }
-        } catch (e) {
-          // Token inválido, remover
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
-        }
+        errorDiv.textContent = 'Erro de conexão';
+        errorDiv.style.display = 'block';
       }
     });
   </script>
