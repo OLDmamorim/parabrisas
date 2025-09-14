@@ -350,7 +350,8 @@ function normalizeRow(r){
     filename:  r.filename ?? r.file ?? '',
     source:    r.source ?? r.origem ?? '',
     brand:     brand,
-    vehicle:   r.vehicle ?? ''
+    vehicle:   r.vehicle ?? '',
+    matricula: r.matricula ?? ''
   };
 }
 
@@ -433,10 +434,10 @@ function renderTable() {
                  value="${row.matricula || ''}" 
                  placeholder="XX-XX-XX"
                  maxlength="8"
-                 style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; text-align: center; text-transform: uppercase;"
-                 onblur="updateMatricula(${row.id}, this.value)"
-                 onkeypress="if(event.key==='Enter') this.blur()"
-                 oninput="formatMatriculaInput(this)">
+                 style="width: 100%; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; font-family: 'Courier New', monospace; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;"
+                 onchange="updateMatricula(${row.id}, this.value)"
+                 oninput="this.value = formatMatricula(this.value)"
+                 title="Matrícula do veículo (formato XX-XX-XX)" />
         </td>
         <td>
           <div style="display: flex; gap: 8px; align-items: center;">
@@ -882,6 +883,73 @@ function detectVehicleAndModelFromText(rawText) {
   return { full: brand + (models.length ? ' ' + models.join(' ') : '') };
 }
 
+// =========================
+// FUNÇÕES DE MATRÍCULA
+// =========================
+
+// Formatar matrícula para XX-XX-XX
+function formatMatricula(input) {
+  if (!input) return '';
+  
+  // Remover espaços e converter para maiúsculas
+  let value = input.replace(/\s/g, '').toUpperCase();
+  
+  // Remover hífens existentes
+  value = value.replace(/-/g, '');
+  
+  // Limitar a 6 caracteres
+  value = value.slice(0, 6);
+  
+  // Adicionar hífens automaticamente
+  if (value.length > 2) {
+    value = value.slice(0, 2) + '-' + value.slice(2);
+  }
+  if (value.length > 5) {
+    value = value.slice(0, 5) + '-' + value.slice(5);
+  }
+  
+  return value;
+}
+
+// Atualizar matrícula de um registo OCR
+async function updateMatricula(id, matricula) {
+  const formattedMatricula = matricula ? matricula.trim() : '';
+  
+  // Validar formato se não estiver vazio
+  if (formattedMatricula && !/^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/.test(formattedMatricula)) {
+    showToast('Formato de matrícula inválido. Use XX-XX-XX', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch(UPDATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        id: id, 
+        matricula: formattedMatricula || null 
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.ok) {
+      // Atualizar dados locais
+      const rowIndex = RESULTS.findIndex(r => r.id === id);
+      if (rowIndex !== -1) {
+        RESULTS[rowIndex].matricula = formattedMatricula || null;
+      }
+      
+      showToast('Matrícula atualizada com sucesso!', 'success');
+    } else {
+      throw new Error(data.error || 'Erro ao atualizar matrícula');
+    }
+  } catch (error) {
+    console.error('Erro ao atualizar matrícula:', error);
+    showToast('Erro ao atualizar matrícula: ' + error.message, 'error');
+  }
+}
+
 
 // =========================
 // FUNÇÕES DE IMPRESSÃO
@@ -1002,19 +1070,7 @@ function getRecordsInDateRange(fromDate, toDate) {
   const to = new Date(toDate + 'T23:59:59');
   
   return RESULTS.filter(record => {
-    // Tentar usar created_at primeiro, depois timestamp como fallback
-    let recordDate;
-    if (record.created_at) {
-      recordDate = new Date(record.created_at);
-    } else if (record.timestamp) {
-      // Se timestamp está no formato "DD/MM/YYYY, HH:MM:SS"
-      const [datePart, timePart] = record.timestamp.split(', ');
-      const [day, month, year] = datePart.split('/');
-      recordDate = new Date(`${year}-${month}-${day}T${timePart || '00:00:00'}`);
-    } else {
-      return false; // Sem data válida
-    }
-    
+    const recordDate = new Date(record.created_at);
     return recordDate >= from && recordDate <= to;
   });
 }
@@ -1132,6 +1188,10 @@ function generatePrintContent(records, fromDate, toDate) {
           font-weight: bold;
           color: #007acc;
         }
+        .matricula {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+        }
         .glass-type {
           font-weight: bold;
           color: #16a34a;
@@ -1153,6 +1213,7 @@ function generatePrintContent(records, fromDate, toDate) {
             <th style="width: 100px;">Veículo</th>
             <th style="width: 120px;">Eurocode</th>
             <th style="width: 80px;">Marca</th>
+            <th style="width: 70px;">Matrícula</th>
           </tr>
         </thead>
         <tbody>
@@ -1166,6 +1227,7 @@ function generatePrintContent(records, fromDate, toDate) {
                 <td>${record.vehicle || '—'}</td>
                 <td class="eurocode">${record.eurocode || '—'}</td>
                 <td>${record.brand || '—'}</td>
+                <td class="matricula">${record.matricula || '—'}</td>
               </tr>
             `;
           }).join('')}
@@ -1224,110 +1286,3 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-
-
-// =========================
-// FUNÇÕES DE MATRÍCULA
-// =========================
-
-// Formatar input de matrícula em tempo real
-function formatMatriculaInput(input) {
-  let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  
-  // Aplicar formato XX-XX-XX
-  if (value.length > 2) {
-    value = value.substring(0, 2) + '-' + value.substring(2);
-  }
-  if (value.length > 5) {
-    value = value.substring(0, 5) + '-' + value.substring(5, 7);
-  }
-  
-  input.value = value;
-}
-
-// Validar formato de matrícula
-function isValidMatricula(matricula) {
-  if (!matricula || matricula.trim() === '') return true; // Facultativo
-  
-  const pattern = /^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/;
-  return pattern.test(matricula);
-}
-
-// Atualizar matrícula de um registo
-async function updateMatricula(recordId, matricula) {
-  try {
-    console.log('🔧 updateMatricula chamada:', { recordId, matricula });
-    console.log('🔧 Array RESULTS tem', RESULTS.length, 'registos');
-    console.log('🔧 IDs disponíveis:', RESULTS.map(r => r.id));
-    
-    // Formatar matrícula
-    matricula = matricula.toUpperCase().trim();
-    console.log('🔧 Matrícula formatada:', matricula);
-    
-    // Validar formato se não estiver vazio
-    if (matricula && !isValidMatricula(matricula)) {
-      console.log('❌ Formato inválido:', matricula);
-      showToast('Formato de matrícula inválido. Use XX-XX-XX', 'error');
-      renderTable(); // Restaurar valor anterior
-      return;
-    }
-    
-    // Encontrar registo local
-    const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
-    console.log('🔧 Procurando registo com ID:', recordId);
-    console.log('🔧 Índice encontrado:', recordIndex);
-    
-    if (recordIndex === -1) {
-      console.log('❌ Registo não encontrado:', recordId);
-      console.log('❌ Registos disponíveis:', RESULTS);
-      showToast('Registo não encontrado', 'error');
-      return;
-    }
-    
-    console.log('🔧 Registo encontrado no índice:', recordIndex);
-    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
-    
-    // Atualizar localmente primeiro
-    RESULTS[recordIndex].matricula = matricula;
-    console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
-    
-    // Enviar para servidor
-    console.log('🔧 Enviando para servidor...');
-    const response = await fetch('/.netlify/functions/update-ocr', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({
-        id: recordId,
-        matricula: matricula
-      })
-    });
-    
-    console.log('🔧 Resposta do servidor:', response.status);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.log('❌ Erro do servidor:', errorData);
-      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar matrícula'}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Sucesso do servidor:', result);
-    
-    // Mostrar sucesso
-    if (matricula) {
-      showToast(`Matrícula ${matricula} guardada`, 'success');
-    } else {
-      showToast('Matrícula removida', 'success');
-    }
-    
-  } catch (error) {
-    console.error('❌ Erro ao atualizar matrícula:', error);
-    showToast(`Erro ao guardar matrícula: ${error.message}`, 'error');
-    
-    // Restaurar valor anterior em caso de erro
-    renderTable();
-  }
-}
