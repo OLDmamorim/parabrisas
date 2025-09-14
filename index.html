@@ -25,7 +25,7 @@ button[onclick*="cancel"] {
   display: none !important;
 }
 
-/* ===== BOTÃO SAIR DISCRETO NA ZONA AZUL ===== */
+/* ===== BOTÃO SAIR DISCRETO - DESKTOP E MOBILE ===== */
 .header {
   flex-direction: column !important;
   align-items: center !important;
@@ -76,6 +76,18 @@ button[onclick*="cancel"] {
 
 #userInfo button::before {
   content: none !important;
+}
+
+/* Mobile: igual mas menor */
+@media (max-width: 768px) {
+  #userInfo {
+    right: 20px !important;
+  }
+  
+  #userInfo button {
+    font-size: 11px !important;
+    padding: 5px 10px !important;
+  }
 }
 
 /* Mobile: esconder */
