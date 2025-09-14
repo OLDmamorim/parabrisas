@@ -1230,6 +1230,7 @@ table#resultsTable > thead > tr > th:nth-child(3) {
     grid-template-columns: repeat(2, 1fr);
   }
   
+
   .print-modal-footer {
     flex-direction: column;
   }
