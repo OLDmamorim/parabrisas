@@ -205,3 +205,4 @@ export async function deleteUser(userId) {
 
   return deletedUser[0];
 }
+
