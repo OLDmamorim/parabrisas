@@ -625,7 +625,6 @@
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden
        onchange="if(this.files&&this.files[0]){ window.processImage && window.processImage(this.files[0]); }" />
       <button id="btnExport" class="btn" onclick="window.exportCSV && window.exportCSV()">📊 Exportar CSV</button>
-      <button id="btnPrint" class="btn" onclick="openPrintModal()">🖨️ Imprimir</button>
       <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
     </div>
 
@@ -676,47 +675,6 @@
       <div class="edit-ocr-footer">
         <button id="editOcrCancel" class="btn btn-secondary">Cancelar</button>
         <button id="editOcrSave" class="btn btn-primary">Guardar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL DE IMPRESSÃO -->
-  <div id="printModal" class="print-modal">
-    <div class="print-modal-content">
-      <div class="print-modal-header">
-        <h3>🖨️ Imprimir Registos</h3>
-        <button class="print-modal-close" id="printModalClose">&times;</button>
-      </div>
-      <div class="print-modal-body">
-        <div class="print-date-section">
-          <h4>📅 Selecionar Período</h4>
-          <div class="print-date-inputs">
-            <div class="print-date-group">
-              <label for="printDateFrom">Data Inicial:</label>
-              <input type="date" id="printDateFrom" class="print-date-input">
-            </div>
-            <div class="print-date-group">
-              <label for="printDateTo">Data Final:</label>
-              <input type="date" id="printDateTo" class="print-date-input">
-            </div>
-          </div>
-          <div class="print-quick-buttons">
-            <button onclick="setPrintDateRange('today')" class="print-quick-btn">Hoje</button>
-            <button onclick="setPrintDateRange('week')" class="print-quick-btn">Esta Semana</button>
-            <button onclick="setPrintDateRange('month')" class="print-quick-btn">Este Mês</button>
-            <button onclick="setPrintDateRange('all')" class="print-quick-btn">Todos</button>
-          </div>
-        </div>
-        <div class="print-preview-section">
-          <h4>📋 Pré-visualização</h4>
-          <div id="printPreviewCount" class="print-preview-count">
-            Selecione um período para ver os registos
-          </div>
-        </div>
-      </div>
-      <div class="print-modal-footer">
-        <button id="printCancel" class="btn btn-secondary">Cancelar</button>
-        <button id="printConfirm" class="btn btn-primary">🖨️ Imprimir</button>
       </div>
     </div>
   </div>
