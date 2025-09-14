@@ -1,6 +1,6 @@
 // Endpoint para obter e atualizar dados do utilizador atual
-import { jsonHeaders, sql } from '../db.mjs';
-import { requireAuth, formatMatricula, isValidMatricula } from '../auth-utils.mjs';
+import { jsonHeaders, sql } from './db.mjs';
+import { requireAuth, formatMatricula, isValidMatricula } from './auth-utils.mjs';
 
 export async function handler(event, context) {
   try {
