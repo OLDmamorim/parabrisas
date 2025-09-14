@@ -25,7 +25,7 @@ button[onclick*="cancel"] {
   display: none !important;
 }
 
-/* ===== QUADRADO NO FIM DA PÁGINA ===== */
+/* ===== BOTÃO SAIR DISCRETO NA ZONA AZUL ===== */
 .header {
   flex-direction: column !important;
   align-items: center !important;
@@ -33,21 +33,16 @@ button[onclick*="cancel"] {
 }
 
 #userInfo {
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(15px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 10px !important;
-  padding: 8px !important;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+  position: absolute !important;
+  top: 150px !important;
+  right: 30px !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
   z-index: 1000 !important;
-  width: 60px !important;
-  height: 60px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  width: auto !important;
+  height: auto !important;
 }
 
 #userInfo > div {
@@ -61,29 +56,35 @@ button[onclick*="cancel"] {
 }
 
 #userInfo button {
-  background: #ef4444 !important;
-  color: white !important;
+  background: none !important;
+  color: rgba(255, 255, 255, 0.7) !important;
   border: none !important;
-  padding: 0 !important;
-  border-radius: 6px !important;
-  font-size: 18px !important;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
-  width: 44px !important;
-  height: 44px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 
 #userInfo button:hover {
-  background: #dc2626 !important;
-  transform: scale(1.1) !important;
+  color: rgba(255, 255, 255, 1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 #userInfo button::before {
-  content: "⏻" !important;
+  content: none !important;
 }
+
+/* Mobile: esconder */
+@media (max-width: 768px) {
+  #userInfo {
+    display: none !important;
+  }
+}
+
 
 /* Mobile */
 @media (max-width: 768px) {
