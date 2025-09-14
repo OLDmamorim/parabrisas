@@ -1257,6 +1257,8 @@ function isValidMatricula(matricula) {
 async function updateMatricula(recordId, matricula) {
   try {
     console.log('🔧 updateMatricula chamada:', { recordId, matricula });
+    console.log('🔧 Array RESULTS tem', RESULTS.length, 'registos');
+    console.log('🔧 IDs disponíveis:', RESULTS.map(r => r.id));
     
     // Formatar matrícula
     matricula = matricula.toUpperCase().trim();
@@ -1271,14 +1273,19 @@ async function updateMatricula(recordId, matricula) {
     }
     
     // Encontrar registo local
-    const recordIndex = RESULTS.findIndex(r => r.id === recordId);
+    const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
+    console.log('🔧 Procurando registo com ID:', recordId);
+    console.log('🔧 Índice encontrado:', recordIndex);
+    
     if (recordIndex === -1) {
       console.log('❌ Registo não encontrado:', recordId);
+      console.log('❌ Registos disponíveis:', RESULTS);
       showToast('Registo não encontrado', 'error');
       return;
     }
     
     console.log('🔧 Registo encontrado no índice:', recordIndex);
+    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
     
     // Atualizar localmente primeiro
     RESULTS[recordIndex].matricula = matricula;
