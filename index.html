@@ -6,6 +6,7 @@
   <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
   <style>
+<style>
 /* ===== EXPANDIR TABELA PARA LARGURA COMPLETA ===== */
 .card {
   width: 98vw !important;
@@ -25,7 +26,17 @@ button[onclick*="cancel"] {
   display: none !important;
 }
 
-/* ===== BOTÃO SAIR - FORÇAR APARECER ===== */
+.view-badge {
+  display: none !important;
+}
+
+/* ===== BOTÃO SAIR DISCRETO ===== */
+.header {
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 15px !important;
+}
+
 #userInfo {
   position: fixed !important;
   top: 150px !important;
@@ -37,12 +48,6 @@ button[onclick*="cancel"] {
   z-index: 9999 !important;
   width: auto !important;
   height: auto !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-#userInfo * {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -82,8 +87,17 @@ button[onclick*="cancel"] {
   background: rgba(255, 255, 255, 0.15) !important;
 }
 
-/* Mobile: mesmo estilo */
+#userInfo button::before {
+  content: none !important;
+}
+
+/* Mobile: mesmo estilo, só ajustar posição */
 @media (max-width: 768px) {
+  .card {
+    width: 96vw !important;
+    margin: 16px 2vw !important;
+  }
+  
   #userInfo {
     top: 140px !important;
     right: 20px !important;
@@ -92,150 +106,6 @@ button[onclick*="cancel"] {
   #userInfo button {
     font-size: 12px !important;
     padding: 6px 12px !important;
-  }
-}
-
-
-/* Mobile: esconder */
-@media (max-width: 768px) {
-  #userInfo {
-    display: none !important;
-  }
-}
-
-
-/* Mobile */
-@media (max-width: 768px) {
-  #userInfo {
-    width: 50px !important;
-    height: 50px !important;
-    bottom: 15px !important;
-    right: 15px !important;
-  }
-  
-  #userInfo button {
-    width: 34px !important;
-    height: 34px !important;
-    font-size: 14px !important;
-  }
-}
-
-
-/* Mobile: junto às capturas no canto direito */
-@media (max-width: 768px) {
-  #userInfo {
-    position: absolute !important;
-    top: auto !important;
-    bottom: 20px !important;
-    right: 20px !important;
-    width: 50px !important;
-    height: 50px !important;
-  }
-  
-  #userInfo button {
-    width: 34px !important;
-    height: 34px !important;
-    font-size: 14px !important;
-  }
-  
-  /* Posicionar dentro do card de capturas mobile */
-  .modern-bottom-card {
-    position: relative !important;
-  }
-}
-
-
-/* Mostrar apenas ícone de logout */
-#userInfo button::before {
-  content: "⏻" !important;
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  #userInfo {
-    width: 50px !important;
-    height: 50px !important;
-    bottom: 15px !important;
-    right: 15px !important;
-  }
-  
-  #userInfo button {
-    width: 34px !important;
-    height: 34px !important;
-    font-size: 16px !important;
-  }
-}
-
-
-/* Mobile: stack vertical */
-@media (max-width: 768px) {
-  #userInfo {
-    flex-direction: column !important;
-    gap: 10px !important;
-    padding: 15px 20px !important;
-  }
-  
-  #userInfo > div {
-    flex-direction: column !important;
-    gap: 5px !important;
-    text-align: center !important;
-  }
-}
-
-
-#userInfo button {
-  background: #ef4444 !important;
-  color: white !important;
-  border: none !important;
-  padding: 8px 16px !important;
-  border-radius: 6px !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-}
-
-#userInfo button:hover {
-  background: #dc2626 !important;
-  transform: translateY(-1px) !important;
-}
-
-/* Mobile: stack vertical */
-@media (max-width: 768px) {
-  #userInfo {
-    flex-direction: column !important;
-    gap: 10px !important;
-    padding: 15px 20px !important;
-  }
-  
-  #userInfo > div {
-    flex-direction: column !important;
-    gap: 5px !important;
-    text-align: center !important;
-  }
-}
-
-#userInfo button {
-  background: #ef4444 !important;
-  border: none !important;
-  padding: 6px 12px !important;
-  border-radius: 6px !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-}
-
-#userInfo button:hover {
-  background: #dc2626 !important;
-  transform: translateY(-1px) !important;
-}
-
-
-@media (max-width: 768px) {
-  .card {
-    width: 96vw !important;
-    margin: 16px 2vw !important;
   }
 }
 </style>
