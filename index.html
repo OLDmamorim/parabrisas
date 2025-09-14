@@ -18,6 +18,29 @@ table {
   width: 100% !important;
 }
 
+/* ===== FORÇAR TABELA DESKTOP GRANDE ===== */
+@media (min-width: 769px) {
+  .card {
+    width: 98vw !important;
+    max-width: none !important;
+    margin: 16px 1vw !important;
+  }
+  
+  .table-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+  
+  table {
+    width: 100% !important;
+    min-width: 1200px !important;
+  }
+  
+  .desktop-only {
+    display: block !important;
+  }
+}
+
 /* ===== ESCONDER BOTÕES DESNECESSÁRIOS ===== */
 #modernBtnNoEurocode,
 #modernBtnCancel,
