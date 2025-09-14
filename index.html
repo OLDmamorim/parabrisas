@@ -183,11 +183,33 @@ table {
     }
     
     .brand .subtitle-new {
-      color: rgba(255,255,255,0.9);
-      font-size: 16px;
-      font-weight: 400;
-      margin: 15px 20px 0;
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 700;
+      font-family: 'Segoe UI', 'Roboto', 'Arial Black', sans-serif;
+      margin: 20px 20px 0;
       text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: linear-gradient(45deg, #ffffff, #f0f8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+    }
+    
+    .brand .subtitle-new::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(45deg, #ffffff, #f0f8ff);
+      border-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
     /* Esconder o badge Mobile */
@@ -207,8 +229,15 @@ table {
       }
       
       .brand .subtitle-new {
-        font-size: 14px;
-        margin: 12px 15px 0;
+        font-size: 18px;
+        margin: 15px 15px 0;
+        letter-spacing: 0.3px;
+      }
+      
+      .brand .subtitle-new::after {
+        width: 40px;
+        height: 2px;
+        bottom: -6px;
       }
     }
 
@@ -644,8 +673,7 @@ table {
         <img src="expressglass-logo.png" class="logo" alt="ExpressGlass - Vidros para Viaturas" />
       </div>
       <h1 class="title">EXPRESSGLASS</h1>
-      <p class="subtitle">Receção material</p>
-      <p class="subtitle-new">Receção material</p>
+      <p class="subtitle-new" style="color: #ffffff !important; font-size: 24px !important; font-weight: 700 !important; font-family: 'Arial Black', sans-serif !important; margin: 20px 20px 0 !important; text-align: center !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important; letter-spacing: 1px !important; text-transform: uppercase !important;">RECEÇÃO MATERIAL</p>
     </div>
     <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
