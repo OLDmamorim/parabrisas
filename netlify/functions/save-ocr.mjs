@@ -1,53 +1,74 @@
-// /.netlify/functions/save-ocr.mjs
-import { neon } from '@neondatabase/serverless';
+// /.netlify/functions/save-ocr.mjs - Com autenticação
+import { jsonHeaders, sql, init } from '../../db.mjs';
+import { requireAuth } from '../../auth-utils.mjs';
 
 const ok = (data) => ({
   statusCode: 200,
-  headers: {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  },
+  headers: jsonHeaders,
   body: JSON.stringify(data),
 });
 
 const err = (status, message) => ({
   statusCode: status,
-  headers: {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  },
+  headers: jsonHeaders,
   body: JSON.stringify({ ok: false, error: message }),
 });
 
 export const handler = async (event) => {
-  // Preflight CORS
+  // CORS preflight
   if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
 
-  if (event.httpMethod !== 'POST') {
-    return err(405, 'Method Not Allowed');
-  }
+  // Só aceita POST
+  if (event.httpMethod !== 'POST') return err(405, 'Method Not Allowed');
 
   try {
-    const dbUrl = process.env.DATABASE_URL;
-    if (!dbUrl) return err(500, 'No database connection string was provided (DATABASE_URL not set?)');
+    // Inicializar BD
+    await init();
+    
+    // Verificar autenticação
+    const user = await requireAuth(event);
 
-    const sql = neon(dbUrl);
+    // body JSON
+    let payload = {};
+    try {
+      payload = JSON.parse(event.body || '{}');
+    } catch {
+      return err(400, 'Invalid JSON body');
+    }
 
-    // Body JSON
-    const { text = '', eurocode = '', filename = '', source = '', brand = '', vehicle = '' } =
-      JSON.parse(event.body || '{}');
+    const {
+      text = '',
+      eurocode = '',
+      filename = '',
+      source = '',
+      brand = '',
+      vehicle = ''
+    } = payload;
 
-    // Insert
-    const rows = await sql/*sql*/`
-      INSERT INTO ocr_results (ts, text, euro_validado, brand, vehicle, filename, source)
-      VALUES (NOW(), ${text}, ${eurocode}, ${brand}, ${vehicle}, ${filename}, ${source})
-      RETURNING id, ts AS created_at, text, euro_validado AS eurocode, brand, vehicle, filename, source
-    `;
-
-    return ok({ ok: true, row: rows[0] });
+    // Inserir com user_id do utilizador autenticado
+    try {
+      const rows = await sql/*sql*/`
+        INSERT INTO ocr_results (text, eurocode, brand, vehicle, filename, source, user_id)
+        VALUES (${text}, ${eurocode}, ${brand}, ${vehicle}, ${filename}, ${source}, ${user.id})
+        RETURNING id, ts AS created_at
+      `;
+      return ok({ ok: true, row: rows[0] });
+    } catch (e) {
+      // Se algumas colunas ainda não existirem, fazer fallback
+      const msg = String(e?.message || e);
+      if (msg.includes('column') && msg.includes('does not exist')) {
+        const rows = await sql/*sql*/`
+          INSERT INTO ocr_results (text, filename, source, user_id)
+          VALUES (${text}, ${filename}, ${source}, ${user.id})
+          RETURNING id, ts AS created_at
+        `;
+        return ok({ ok: true, row: rows[0], note: 'Some columns missing (ignored)' });
+      }
+      throw e;
+    }
   } catch (e) {
-    return err(500, String(e?.message || e));
+    console.error('Erro ao guardar OCR:', e);
+    const statusCode = e.message.includes('Token') || e.message.includes('autenticação') ? 401 : 500;
+    return err(statusCode, String(e?.message || e));
   }
 };
