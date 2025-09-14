@@ -412,7 +412,7 @@ function renderTable() {
       ? 'Nenhum registo encontrado para esta procura'
       : 'Nenhum registo encontrado';
     resultsBody.innerHTML =
-      `<tr><td colspan="7" style="text-align:center; padding:20px;">${message}</td></tr>`;
+      `<tr><td colspan="8" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
@@ -428,6 +428,16 @@ function renderTable() {
         <td>${row.vehicle || '—'}</td>
         <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
         <td>${row.brand || '—'}</td>
+        <td>
+          <input type="text" 
+                 value="${row.matricula || ''}" 
+                 placeholder="XX-XX-XX"
+                 maxlength="8"
+                 style="width: 100%; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; font-family: 'Courier New', monospace; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;"
+                 onchange="updateMatricula(${row.id}, this.value)"
+                 oninput="this.value = formatMatricula(this.value)"
+                 title="Matrícula do veículo (formato XX-XX-XX)" />
+        </td>
         <td>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button onclick="openEditOcrModal(RESULTS[${originalIndex}])"
@@ -870,4 +880,71 @@ function detectVehicleAndModelFromText(rawText) {
     }
   }
   return { full: brand + (models.length ? ' ' + models.join(' ') : '') };
+}
+
+// =========================
+// FUNÇÕES DE MATRÍCULA
+// =========================
+
+// Formatar matrícula para XX-XX-XX
+function formatMatricula(input) {
+  if (!input) return '';
+  
+  // Remover espaços e converter para maiúsculas
+  let value = input.replace(/\s/g, '').toUpperCase();
+  
+  // Remover hífens existentes
+  value = value.replace(/-/g, '');
+  
+  // Limitar a 6 caracteres
+  value = value.slice(0, 6);
+  
+  // Adicionar hífens automaticamente
+  if (value.length > 2) {
+    value = value.slice(0, 2) + '-' + value.slice(2);
+  }
+  if (value.length > 5) {
+    value = value.slice(0, 5) + '-' + value.slice(5);
+  }
+  
+  return value;
+}
+
+// Atualizar matrícula de um registo OCR
+async function updateMatricula(id, matricula) {
+  const formattedMatricula = matricula ? matricula.trim() : '';
+  
+  // Validar formato se não estiver vazio
+  if (formattedMatricula && !/^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/.test(formattedMatricula)) {
+    showToast('Formato de matrícula inválido. Use XX-XX-XX', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch(UPDATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        id: id, 
+        matricula: formattedMatricula || null 
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.ok) {
+      // Atualizar dados locais
+      const rowIndex = RESULTS.findIndex(r => r.id === id);
+      if (rowIndex !== -1) {
+        RESULTS[rowIndex].matricula = formattedMatricula || null;
+      }
+      
+      showToast('Matrícula atualizada com sucesso!', 'success');
+    } else {
+      throw new Error(data.error || 'Erro ao atualizar matrícula');
+    }
+  } catch (error) {
+    console.error('Erro ao atualizar matrícula:', error);
+    showToast('Erro ao atualizar matrícula: ' + error.message, 'error');
+  }
 }
