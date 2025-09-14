@@ -1539,12 +1539,30 @@ function generatePrintContent(records, fromDate, toDate) {
   };
   
   const formatDateTime = (dateStr) => {
+    if (!dateStr) return '—';
+    
+    // Se for timestamp no formato DD/MM/YYYY, HH:MM:SS
+    if (typeof dateStr === 'string' && dateStr.includes('/')) {
+      const [datePart, timePart] = dateStr.split(', ');
+      if (datePart && timePart) {
+        const [day, month, year] = datePart.split('/');
+        const formattedDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`);
+        return formattedDate.toLocaleString('pt-PT');
+      }
+    }
+    
+    // Parsing normal para ISO dates
     return new Date(dateStr).toLocaleString('pt-PT');
   };
   
   const periodText = fromDate === toDate 
     ? `Dia ${formatDate(fromDate)}`
     : `Período de ${formatDate(fromDate)} a ${formatDate(toDate)}`;
+  
+  // Obter email do utilizador
+  const userEmail = (window.authManager && window.authManager.user && window.authManager.user.email) 
+    ? window.authManager.user.email 
+    : 'utilizador@expressglass.pt';
   
   return `
     <!DOCTYPE html>
@@ -1574,6 +1592,12 @@ function generatePrintContent(records, fromDate, toDate) {
           margin: 10px 0 0 0;
           font-size: 14px;
           color: #666;
+        }
+        .print-header .print-user {
+          margin: 5px 0 0 0;
+          font-size: 12px;
+          color: #888;
+          font-style: italic;
         }
         .print-table {
           width: 100%;
@@ -1623,6 +1647,7 @@ function generatePrintContent(records, fromDate, toDate) {
       <div class="print-header">
         <h1>EXPRESSGLASS - Receção de Material</h1>
         <div class="print-period">${periodText}</div>
+        <div class="print-user">Utilizador: ${userEmail}</div>
       </div>
       
       <table class="print-table">
@@ -1641,6 +1666,7 @@ function generatePrintContent(records, fromDate, toDate) {
           ${records.map((record, index) => {
             const glassType = detectGlassType(record.eurocode);
             const recordDateTime = record.created_at || record.timestamp;
+            console.log('Formatando data para impressão:', recordDateTime);
             return `
               <tr>
                 <td>${index + 1}</td>
