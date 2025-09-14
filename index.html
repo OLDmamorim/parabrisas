@@ -6,6 +6,38 @@
   <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
   <style>
+/* ===== EXPANDIR TABELA PARA LARGURA COMPLETA ===== */
+.card {
+  width: 98vw !important;
+  max-width: none !important;
+  margin: 16px 1vw !important;
+}
+
+table {
+  width: 100% !important;
+}
+
+/* ===== ESCONDER BOTÕES DESNECESSÁRIOS ===== */
+#modernBtnNoEurocode,
+#modernBtnCancel,
+button[onclick*="noEurocode"],
+button[onclick*="cancel"] {
+  display: none !important;
+}
+
+.view-badge {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .card {
+    width: 96vw !important;
+    margin: 16px 2vw !important;
+  }
+}
+</style>
+
+  <style>
     /* ===== MODIFICAÇÃO DO LOGÓTIPO ===== */
     .brand .title {
       display: none; /* Esconder o texto original */
