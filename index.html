@@ -25,7 +25,7 @@ button[onclick*="cancel"] {
   display: none !important;
 }
 
-/* ===== BOTÃO SAIR DISCRETO - DESKTOP E MOBILE ===== */
+/* ===== BOTÃO SAIR - DESKTOP E MOBILE ===== */
 .header {
   flex-direction: column !important;
   align-items: center !important;
@@ -33,7 +33,7 @@ button[onclick*="cancel"] {
 }
 
 #userInfo {
-  position: absolute !important;
+  position: fixed !important;
   top: 150px !important;
   right: 30px !important;
   background: none !important;
@@ -43,6 +43,7 @@ button[onclick*="cancel"] {
   z-index: 1000 !important;
   width: auto !important;
   height: auto !important;
+  display: block !important;
 }
 
 #userInfo > div {
@@ -67,6 +68,7 @@ button[onclick*="cancel"] {
   transition: all 0.2s ease !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
+  display: block !important;
 }
 
 #userInfo button:hover {
@@ -78,17 +80,26 @@ button[onclick*="cancel"] {
   content: none !important;
 }
 
-/* Mobile: igual mas menor */
+/* Mobile: forçar aparecer */
 @media (max-width: 768px) {
   #userInfo {
+    position: fixed !important;
+    top: 150px !important;
     right: 20px !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   #userInfo button {
     font-size: 11px !important;
     padding: 5px 10px !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 }
+
 
 /* Mobile: esconder */
 @media (max-width: 768px) {
