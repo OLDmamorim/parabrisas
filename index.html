@@ -25,7 +25,7 @@ button[onclick*="cancel"] {
   display: none !important;
 }
 
-/* ===== QUADRADO COMPACTO NO CANTO ===== */
+/* ===== QUADRADO NO CANTO DIREITO AZUL ===== */
 .header {
   flex-direction: column !important;
   align-items: center !important;
@@ -34,11 +34,11 @@ button[onclick*="cancel"] {
 
 #userInfo {
   position: fixed !important;
-  bottom: 20px !important;
+  top: 150px !important; /* Na zona azul, abaixo do "Receção material" */
   right: 20px !important;
   background: rgba(15, 23, 42, 0.95) !important;
   backdrop-filter: blur(15px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: 10px !important;
   padding: 8px !important;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
@@ -53,12 +53,11 @@ button[onclick*="cancel"] {
 #userInfo > div {
   background: none !important;
   padding: 0 !important;
-  text-align: center !important;
-  display: none !important; /* Esconder nome e email */
+  display: none !important;
 }
 
 #userName, #userEmail {
-  display: none !important; /* Esconder textos */
+  display: none !important;
 }
 
 #userInfo button {
@@ -67,7 +66,7 @@ button[onclick*="cancel"] {
   border: none !important;
   padding: 0 !important;
   border-radius: 6px !important;
-  font-size: 20px !important;
+  font-size: 18px !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   width: 44px !important;
@@ -81,6 +80,34 @@ button[onclick*="cancel"] {
   background: #dc2626 !important;
   transform: scale(1.1) !important;
 }
+
+#userInfo button::before {
+  content: "⏻" !important;
+}
+
+/* Mobile: junto às capturas no canto direito */
+@media (max-width: 768px) {
+  #userInfo {
+    position: absolute !important;
+    top: auto !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 50px !important;
+    height: 50px !important;
+  }
+  
+  #userInfo button {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Posicionar dentro do card de capturas mobile */
+  .modern-bottom-card {
+    position: relative !important;
+  }
+}
+
 
 /* Mostrar apenas ícone de logout */
 #userInfo button::before {
