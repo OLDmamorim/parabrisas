@@ -1256,11 +1256,15 @@ function isValidMatricula(matricula) {
 // Atualizar matrícula de um registo
 async function updateMatricula(recordId, matricula) {
   try {
+    console.log('🔧 updateMatricula chamada:', { recordId, matricula });
+    
     // Formatar matrícula
     matricula = matricula.toUpperCase().trim();
+    console.log('🔧 Matrícula formatada:', matricula);
     
     // Validar formato se não estiver vazio
     if (matricula && !isValidMatricula(matricula)) {
+      console.log('❌ Formato inválido:', matricula);
       showToast('Formato de matrícula inválido. Use XX-XX-XX', 'error');
       renderTable(); // Restaurar valor anterior
       return;
@@ -1269,14 +1273,19 @@ async function updateMatricula(recordId, matricula) {
     // Encontrar registo local
     const recordIndex = RESULTS.findIndex(r => r.id === recordId);
     if (recordIndex === -1) {
+      console.log('❌ Registo não encontrado:', recordId);
       showToast('Registo não encontrado', 'error');
       return;
     }
     
+    console.log('🔧 Registo encontrado no índice:', recordIndex);
+    
     // Atualizar localmente primeiro
     RESULTS[recordIndex].matricula = matricula;
+    console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
     
     // Enviar para servidor
+    console.log('🔧 Enviando para servidor...');
     const response = await fetch('/.netlify/functions/update-ocr', {
       method: 'POST',
       headers: {
@@ -1289,9 +1298,16 @@ async function updateMatricula(recordId, matricula) {
       })
     });
     
+    console.log('🔧 Resposta do servidor:', response.status);
+    
     if (!response.ok) {
-      throw new Error('Erro ao atualizar matrícula');
+      const errorData = await response.json();
+      console.log('❌ Erro do servidor:', errorData);
+      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar matrícula'}`);
     }
+    
+    const result = await response.json();
+    console.log('✅ Sucesso do servidor:', result);
     
     // Mostrar sucesso
     if (matricula) {
@@ -1301,8 +1317,8 @@ async function updateMatricula(recordId, matricula) {
     }
     
   } catch (error) {
-    console.error('Erro ao atualizar matrícula:', error);
-    showToast('Erro ao guardar matrícula', 'error');
+    console.error('❌ Erro ao atualizar matrícula:', error);
+    showToast(`Erro ao guardar matrícula: ${error.message}`, 'error');
     
     // Restaurar valor anterior em caso de erro
     renderTable();
