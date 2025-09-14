@@ -1,6 +1,6 @@
 // Endpoint para obter dados do utilizador atual
-import { jsonHeaders } from '../../db.mjs';
-import { requireAuth } from '../../auth-utils.mjs';
+import { jsonHeaders } from '././db.mjs';
+import { requireAuth } from '././auth-utils.mjs';
 
 export async function handler(event, context) {
   // Apenas GET
