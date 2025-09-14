@@ -1,6 +1,6 @@
 // Endpoint para gestão de utilizadores (apenas admin)
-import { jsonHeaders } from '././db.mjs';
-import { requireAdmin, getAllUsers, updateUser, deleteUser } from '././auth-utils.mjs';
+import { jsonHeaders } from '../db.mjs';
+import { requireAdmin, getAllUsers, updateUser, deleteUser, resetUserPassword } from '../auth-utils.mjs';
 
 export async function handler(event, context) {
   try {
@@ -16,6 +16,9 @@ export async function handler(event, context) {
         
       case 'DELETE':
         return await handleDeleteUser(event);
+        
+      case 'PATCH':
+        return await handleResetPassword(event);
         
       default:
         return {
@@ -100,3 +103,29 @@ async function handleDeleteUser(event) {
     })
   };
 }
+
+async function handleResetPassword(event) {
+  const { userId } = JSON.parse(event.body);
+  
+  if (!userId) {
+    return {
+      statusCode: 400,
+      headers: jsonHeaders,
+      body: JSON.stringify({ error: 'ID do utilizador é obrigatório' })
+    };
+  }
+  
+  const result = await resetUserPassword(userId);
+  
+  return {
+    statusCode: 200,
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      success: true,
+      message: 'Password redefinida com sucesso',
+      newPassword: result.newPassword,
+      user: result.user
+    })
+  };
+}
+

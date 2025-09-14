@@ -1,8 +1,6 @@
 // Endpoint para login de utilizadores
-import { jsonHeaders, sql, init } from './db.mjs';
-import { requireAuth, authenticateUser, generateToken } from './auth-utils.mjs';
-
-
+import { jsonHeaders } from '../db.mjs';
+import { authenticateUser, generateToken } from '../auth-utils.mjs';
 
 export async function handler(event, context) {
   // Apenas POST
@@ -62,3 +60,4 @@ export async function handler(event, context) {
     };
   }
 }
+

@@ -1,6 +1,6 @@
 // /.netlify/functions/save-ocr.mjs - Com autenticação
-import { jsonHeaders, sql, init } from '././db.mjs';
-import { requireAuth } from '././auth-utils.mjs';
+import { jsonHeaders, sql, init } from '../db.mjs';
+import { requireAuth } from '../auth-utils.mjs';
 
 const ok = (data) => ({
   statusCode: 200,
@@ -42,14 +42,15 @@ export const handler = async (event) => {
       filename = '',
       source = '',
       brand = '',
-      vehicle = ''
+      vehicle = '',
+      matricula = ''
     } = payload;
 
     // Inserir com user_id do utilizador autenticado
     try {
       const rows = await sql/*sql*/`
-        INSERT INTO ocr_results (text, eurocode, brand, vehicle, filename, source, user_id)
-        VALUES (${text}, ${eurocode}, ${brand}, ${vehicle}, ${filename}, ${source}, ${user.id})
+        INSERT INTO ocr_results (text, eurocode, brand, vehicle, filename, source, matricula, user_id)
+        VALUES (${text}, ${eurocode}, ${brand}, ${vehicle}, ${filename}, ${source}, ${matricula || null}, ${user.id})
         RETURNING id, ts AS created_at
       `;
       return ok({ ok: true, row: rows[0] });
@@ -72,3 +73,4 @@ export const handler = async (event) => {
     return err(statusCode, String(e?.message || e));
   }
 };
+

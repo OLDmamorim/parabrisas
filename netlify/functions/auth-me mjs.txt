@@ -1,0 +1,46 @@
+// Endpoint para obter dados do utilizador atual
+import { jsonHeaders } from '././db.mjs';
+import { requireAuth } from '././auth-utils.mjs';
+
+export async function handler(event, context) {
+  // Apenas GET
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers: jsonHeaders,
+      body: JSON.stringify({ error: 'Método não permitido' })
+    };
+  }
+  
+  try {
+    // Verificar autenticação
+    const user = await requireAuth(event);
+    
+    return {
+      statusCode: 200,
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          created_at: user.created_at,
+          last_login: user.last_login
+        }
+      })
+    };
+    
+  } catch (error) {
+    console.error('Erro ao obter utilizador:', error);
+    
+    return {
+      statusCode: 401,
+      headers: jsonHeaders,
+      body: JSON.stringify({ 
+        error: error.message || 'Não autorizado' 
+      })
+    };
+  }
+}

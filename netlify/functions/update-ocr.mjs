@@ -1,6 +1,6 @@
 // /.netlify/functions/update-ocr.mjs - Com autenticação
-import { jsonHeaders, sql, init } from '././db.mjs';
-import { requireAuth } from '././auth-utils.mjs';
+import { jsonHeaders, sql, init } from '../db.mjs';
+import { requireAuth } from '../auth-utils.mjs';
 
 const cors = (status, body = {}) => ({
   statusCode: status,
@@ -59,6 +59,7 @@ export const handler = async (event) => {
     const newFilename = payload.filename ?? currentRecord.filename;
     const newSource   = payload.source ?? currentRecord.source;
     const newVehicle  = payload.vehicle ?? currentRecord.vehicle;
+    const newMatricula = payload.matricula ?? currentRecord.matricula;
 
     // Brand: se o cliente enviou, usa; senão, se o texto mudou, recalcula; senão mantém
     let newBrand = payload.brand;
@@ -76,7 +77,8 @@ export const handler = async (event) => {
           brand = ${newBrand || ''},
           vehicle = ${newVehicle || ''},
           filename = ${newFilename},
-          source = ${newSource}
+          source = ${newSource},
+          matricula = ${newMatricula || null}
         WHERE id = ${id} AND user_id = ${user.id}
         RETURNING id, ts AS updated_at
       `;
@@ -112,3 +114,4 @@ export const handler = async (event) => {
     return cors(statusCode, { ok: false, error: String(e?.message || e) });
   }
 };
+
