@@ -1,1 +1,1025 @@
-Inherited file content will not be shown
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Receção material</title>
+  <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
+  <style>
+    /* ===== MODIFICAÇÃO DO LOGÓTIPO ===== */
+    .brand .title {
+      display: none; /* Esconder o texto original */
+    }
+    
+    .brand .subtitle {
+      display: none; /* Esconder o subtítulo original */
+    }
+    
+    .brand {
+      width: 100%;
+      padding: 0;
+      position: relative;
+    }
+    
+    .logo-container {
+      background: white;
+      border-radius: 15px;
+      padding: 15px 20px;
+      margin: 0; /* Sem margens - ponta a ponta */
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .brand .logo {
+      max-width: 100%;
+      height: auto;
+      max-height: 60px;
+    }
+    
+    .brand .subtitle-new {
+      color: rgba(255,255,255,0.9);
+      font-size: 16px;
+      font-weight: 400;
+      margin: 15px 20px 0;
+      text-align: center;
+    }
+    
+    /* Esconder o badge Mobile */
+    .view-badge {
+      display: none !important;
+    }
+
+    /* Responsividade mobile para a nova versão */
+    @media (max-width: 768px) {
+      .modern-mobile {
+        display: block !important;
+      }
+      
+      .desktop-only {
+        display: none !important;
+      }
+      
+      .mobile-only {
+        display: none !important;
+      }
+
+      /* Estilos para a nova versão mobile */
+      .modern-mobile {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      .modern-status {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.95);
+        color: #333;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        z-index: 1000;
+        opacity: 0;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        max-width: 90%;
+        text-align: center;
+      }
+
+      .modern-status.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(10px);
+      }
+
+      .modern-status.error {
+        background: #ef4444;
+        color: white;
+      }
+
+      .modern-status.success {
+        background: #10b981;
+        color: white;
+      }
+
+      .modern-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+      }
+
+      .modern-circle {
+        width: 180px;
+        height: 180px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        margin-bottom: 40px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .modern-circle:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      }
+
+      .modern-circle:active {
+        transform: translateY(-2px);
+      }
+
+      .modern-circle.processing {
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .modern-circle.processing:hover {
+        transform: none;
+      }
+
+      .modern-camera-icon {
+        font-size: 50px;
+        margin-bottom: 8px;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        transition: all 0.3s ease;
+      }
+
+      .modern-camera-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+      }
+
+      .modern-circle.processing .modern-camera-label {
+        color: #22c55e;
+        font-weight: 700;
+      }
+
+      /* ANIMAÇÃO CORRIGIDA - Anel verde que roda ao redor do círculo */
+      .modern-progress-ring {
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        width: 196px;
+        height: 196px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .modern-circle.processing .modern-progress-ring {
+        opacity: 1;
+      }
+
+      .modern-progress-ring circle {
+        fill: none;
+        stroke: #22c55e;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 580;
+        stroke-dashoffset: 580;
+        transform-origin: center;
+      }
+
+      /* Animação de processamento - anel verde rotativo */
+      .modern-circle.processing .modern-progress-ring circle {
+        animation: modernProcessingRing 1.5s linear infinite;
+        stroke-dasharray: 200 580;
+        stroke-dashoffset: 0;
+      }
+
+      @keyframes modernProcessingRing {
+        0% { 
+          transform: rotate(0deg);
+          stroke-dashoffset: 0;
+        }
+        50% {
+          stroke-dashoffset: -100;
+        }
+        100% { 
+          transform: rotate(360deg);
+          stroke-dashoffset: -200;
+        }
+      }
+
+      .modern-bottom-card {
+        background: rgba(255,255,255,0.95);
+        border-radius: 20px 20px 0 0;
+        padding: 25px 20px;
+        margin: 0 -20px -20px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        max-height: 40vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .modern-captures-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f1f5f9;
+      }
+
+      .modern-captures-icon {
+        font-size: 24px;
+        margin-right: 12px;
+      }
+
+      .modern-captures-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+      }
+
+      .modern-capture-list {
+        flex: 1;
+        overflow-y: auto;
+        margin: 0 -5px;
+      }
+
+      .modern-capture-item {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-left: 4px solid #667eea;
+        transition: all 0.2s ease;
+      }
+
+      .modern-capture-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+
+      .modern-capture-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+
+      .modern-capture-time {
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 500;
+      }
+
+      .modern-capture-type {
+        background: #22c55e;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .modern-capture-content {
+        margin-bottom: 8px;
+      }
+
+      .modern-capture-eurocode {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e40af;
+        margin-bottom: 4px;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 0.5px;
+      }
+
+      .modern-capture-details {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.4;
+      }
+
+      .modern-capture-vehicle {
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .modern-capture-brand {
+        color: #6b7280;
+      }
+
+      .modern-capture-empty {
+        text-align: center;
+        color: #9ca3af;
+        font-style: italic;
+        padding: 40px 20px;
+        font-size: 14px;
+      }
+
+      /* Modal de seleção de eurocode */
+      .modern-eurocode-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.8);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modern-eurocode-modal.show {
+        display: flex !important;
+      }
+
+      .modern-modal-content {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 400px;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        animation: modalSlideUp 0.3s ease-out;
+      }
+
+      @keyframes modalSlideUp {
+        from {
+          opacity: 0;
+          transform: translateY(50px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .modern-modal-header {
+        padding: 25px 25px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+      }
+
+      .modern-modal-icon {
+        font-size: 24px;
+        margin-right: 12px;
+      }
+
+      .modern-modal-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+      }
+
+      .modern-modal-body {
+        padding: 20px 25px;
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      .modern-ocr-section {
+        margin-bottom: 20px;
+      }
+
+      .modern-ocr-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .modern-ocr-text {
+        background: #f8f9fa;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #2d3748;
+        max-height: 100px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .modern-eurocodes-section {
+        margin-bottom: 20px;
+      }
+
+      .modern-eurocodes-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 15px;
+        display: block;
+      }
+
+      .modern-eurocode-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .modern-eurocode-button {
+        background: #3182ce;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        letter-spacing: 0.5px;
+      }
+
+      .modern-eurocode-button:hover {
+        background: #2c5aa0;
+        transform: translateY(-1px);
+      }
+
+      .modern-eurocode-button:active {
+        transform: translateY(0);
+      }
+
+      .modern-modal-footer {
+        padding: 20px 25px 25px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 12px;
+      }
+
+      .modern-modal-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+      }
+
+      .modern-btn-secondary {
+        background: #6b7280;
+        color: white;
+      }
+
+      .modern-btn-secondary:hover {
+        background: #4b5563;
+      }
+
+      .modern-btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .modern-btn-danger:hover {
+        background: #dc2626;
+      }
+    }
+
+    /* Desktop mantém-se igual - sem alterações */
+    @media (min-width: 769px) {
+      .modern-mobile {
+        display: none !important;
+      }
+      .modern-eurocode-modal {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand">
+      <div class="logo-container">
+        <img src="expressglass-logo.png" class="logo" alt="ExpressGlass - Vidros para Viaturas" />
+      </div>
+      <h1 class="title">EXPRESSGLASS</h1>
+      <p class="subtitle">Receção material</p>
+      <p class="subtitle-new">Receção material</p>
+    </div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
+  </header>
+
+  <!-- MOBILE VIEW ORIGINAL (escondida) -->
+  <main id="mobileView" class="card mobile-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    
+    <div class="mobile-cta">
+      <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
+          <span class="emoji">📷</span>
+          <span class="mode-label">Eurocode</span>
+        </button>
+      </div>
+    </div>
+
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <div id="mobileStatus" class="status"></div>
+
+    <!-- Histórico de Capturas -->
+    <div id="mobileHistory" class="history-section">
+      <h3 class="history-title">📋 Últimas Capturas</h3>
+      <div id="mobileHistoryList" class="history-list">
+        <p class="history-empty">Ainda não há Eurocodes guardados.</p>
+      </div>
+    </div>
+
+    <footer class="footnote">
+      <small>Feito por Marco Amorim</small>
+    </footer>
+  </main>
+
+  <!-- NOVA MOBILE VIEW MODERNA -->
+  <main class="modern-mobile mobile-only">
+    <!-- Status Message -->
+    <div id="modernStatus" class="modern-status"></div>
+
+    <!-- Main Container -->
+    <div class="modern-main">
+      <!-- Central Circle -->
+      <div class="modern-circle" id="modernCameraButton">
+        <!-- Progress Ring -->
+        <svg class="modern-progress-ring">
+          <circle cx="98" cy="98" r="92"></circle>
+        </svg>
+        
+        <!-- Camera Icon -->
+        <div class="modern-camera-icon">📷</div>
+        <div class="modern-camera-label">Eurocode</div>
+      </div>
+    </div>
+
+    <!-- Bottom Card -->
+    <div class="modern-bottom-card">
+      <div class="modern-captures-header">
+        <span class="modern-captures-icon">📋</span>
+        <h2 class="modern-captures-title">Últimas Capturas</h2>
+      </div>
+
+      <div id="modernCapturesList" class="modern-capture-list">
+        <!-- Will be populated by JavaScript -->
+      </div>
+    </div>
+  </main>
+
+ <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
+<div id="modernEurocodeModal" class="modern-eurocode-modal">
+  <div class="modern-modal-content">
+    <div class="modern-modal-header">
+      <span class="modern-modal-icon">🔍</span>
+      <h3 class="modern-modal-title">Selecionar Eurocode</h3>
+    </div>
+
+    <div class="modern-modal-body">
+      <!-- Só a lista de eurocodes -->
+      <div class="modern-eurocodes-section">
+        <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
+        <div id="modernEurocodeList" class="modern-eurocode-list"></div>
+      </div>
+    </div>
+
+    <div class="modern-modal-footer">
+      <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
+      <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+  <!-- DESKTOP VIEW (mantém-se 100% igual ao original) -->
+  <section id="desktopView" class="card desktop-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
+    
+    <div class="toolbar">
+      <button id="btnUpload" class="btn" onclick="document.getElementById('fileInput').click()">📁 Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden
+       onchange="if(this.files&&this.files[0]){ window.processImage && window.processImage(this.files[0]); }" />
+      <button id="btnExport" class="btn" onclick="window.exportCSV && window.exportCSV()">📊 Exportar CSV</button>
+      <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+  <tr>
+    <th style="width:60px">#</th>
+    <th style="width:220px">Data/Hora</th>
+    <th style="width:120px">Tipo</th>
+    <th style="width:160px">Veículo</th>
+    <th style="width:180px">Eurocode</th>
+    <th style="width:160px">Marca</th>
+    <th style="width:120px">Matrícula</th>
+    <th style="width:140px">Ações</th>
+  </tr>
+</thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div id="desktopStatus" class="status"></div>
+  </section>
+
+  <!-- MODAL DE AJUDA -->
+  <div id="helpModal" class="help-modal">
+    <div class="help-content">
+      <button class="help-close" id="helpClose">&times;</button>
+      <h3>💡 Como usar</h3>
+      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO OCR -->
+  <div id="editOcrModal" class="edit-ocr-modal">
+    <div class="edit-ocr-content">
+      <div class="edit-ocr-header">
+        <h3>✏️ Editar texto lido (OCR)</h3>
+        <button class="edit-ocr-close" id="editOcrClose">&times;</button>
+      </div>
+      <div class="edit-ocr-body">
+        <textarea id="editOcrTextarea" class="edit-ocr-textarea" placeholder="Texto do OCR..."></textarea>
+      </div>
+      <div class="edit-ocr-footer">
+        <button id="editOcrCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="editOcrSave" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- App original (mantém-se igual) -->
+  <script src="app.js"></script>
+
+  <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
+  <script>
+    // DOM Elements for modern mobile
+    const modernCameraButton = document.getElementById('modernCameraButton');
+    const modernCapturesList = document.getElementById('modernCapturesList');
+    const modernStatus = document.getElementById('modernStatus');
+    const modernEurocodeModal = document.getElementById('modernEurocodeModal');
+    const modernOcrText = document.getElementById('modernOcrText');
+    const modernEurocodeList = document.getElementById('modernEurocodeList');
+    const modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
+    const modernBtnCancel = document.getElementById('modernBtnCancel');
+
+    let isProcessing = false;
+    let processingTimeout = null;
+
+    // Show modern status message
+    function showModernStatus(message, type = '') {
+      if (!modernStatus) return;
+      modernStatus.textContent = message;
+      modernStatus.className = `modern-status show ${type}`;
+      setTimeout(() => {
+        modernStatus.className = 'modern-status';
+      }, 3000);
+    }
+
+    // Start processing animation
+    function startProcessing() {
+      if (isProcessing) return;
+      isProcessing = true;
+      
+      if (modernCameraButton) {
+        modernCameraButton.classList.add('processing');
+        const label = modernCameraButton.querySelector('.modern-camera-label');
+        if (label) label.textContent = 'A processar...';
+      }
+      
+      // Auto-stop after 30 seconds
+      processingTimeout = setTimeout(() => {
+        stopProcessing();
+        showModernStatus('Tempo limite excedido. Tente novamente.', 'error');
+      }, 30000);
+    }
+
+    // Stop processing animation
+    function stopProcessing() {
+      isProcessing = false;
+      
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+        processingTimeout = null;
+      }
+      
+      if (modernCameraButton) {
+        modernCameraButton.classList.remove('processing');
+        const label = modernCameraButton.querySelector('.modern-camera-label');
+        if (label) label.textContent = 'Eurocode';
+      }
+    }
+
+    // Handle camera button click
+    if (modernCameraButton) {
+      modernCameraButton.addEventListener('click', () => {
+        if (isProcessing) return;
+        
+        // Create hidden file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment';
+        input.style.display = 'none';
+        
+        input.addEventListener('change', (e) => {
+          const file = e.target.files?.[0];
+          if (file && window.processImage) {
+            startProcessing();
+            showModernStatus('A processar imagem...', '');
+            window.processImage(file);
+          }
+          document.body.removeChild(input);
+        });
+        
+        document.body.appendChild(input);
+        input.click();
+      });
+    }
+
+    // Update modern captures list
+    function updateModernCapturesList() {
+      if (!modernCapturesList) return;
+      
+      const recentCaptures = RESULTS.slice(0, 5);
+      
+      if (recentCaptures.length === 0) {
+        modernCapturesList.innerHTML = '<div class="modern-capture-empty">Ainda não há capturas realizadas.</div>';
+        return;
+      }
+      
+      modernCapturesList.innerHTML = recentCaptures.map(capture => {
+        const glassType = detectGlassType(capture.eurocode);
+        return `
+          <div class="modern-capture-item">
+            <div class="modern-capture-header">
+              <span class="modern-capture-time">${capture.timestamp}</span>
+              <span class="modern-capture-type">${glassType}</span>
+            </div>
+            <div class="modern-capture-content">
+              <div class="modern-capture-eurocode">${capture.eurocode || 'Sem código'}</div>
+              <div class="modern-capture-details">
+                <span class="modern-capture-vehicle">${capture.vehicle || 'Veículo não identificado'}</span>
+                ${capture.brand ? ` • <span class="modern-capture-brand">${capture.brand}</span>` : ''}
+                ${capture.matricula ? ` • <span class="modern-capture-matricula">${capture.matricula}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Handle eurocode selection in modal
+    function handleModernEurocodeSelection(selectedEurocode) {
+      if (modernEurocodeModal) {
+        modernEurocodeModal.classList.remove('show');
+      }
+      
+      if (currentImageData) {
+        // Continue with the selected eurocode
+        continueProcessingWithEurocode(selectedEurocode);
+      }
+    }
+
+    // Continue processing with selected eurocode
+    function continueProcessingWithEurocode(eurocode) {
+      if (!currentImageData) return;
+      
+      const { text, filename, vehicle, brand } = currentImageData;
+      
+      // Save to database
+      saveOcrResult({
+        text: text,
+        eurocode: eurocode,
+        filename: filename,
+        source: 'mobile_camera',
+        vehicle: vehicle,
+        brand: brand
+      }).then(() => {
+        showModernStatus('Eurocode guardado com sucesso!', 'success');
+        stopProcessing();
+        updateModernCapturesList();
+        currentImageData = null;
+      }).catch(error => {
+        console.error('Erro ao guardar:', error);
+        showModernStatus('Erro ao guardar: ' + error.message, 'error');
+        stopProcessing();
+      });
+    }
+
+    // Handle "No Eurocode" button
+    if (modernBtnNoEurocode) {
+      modernBtnNoEurocode.addEventListener('click', () => {
+        handleModernEurocodeSelection('');
+      });
+    }
+
+    // Handle "Cancel" button
+    if (modernBtnCancel) {
+      modernBtnCancel.addEventListener('click', () => {
+        if (modernEurocodeModal) {
+          modernEurocodeModal.classList.remove('show');
+        }
+        stopProcessing();
+        currentImageData = null;
+        showModernStatus('Operação cancelada', '');
+      });
+    }
+
+    // Override the original showEurocodeModal for mobile
+    const originalShowEurocodeModal = window.showEurocodeModal;
+    window.showEurocodeModal = function(eurocodes, ocrText, filename, vehicle, brand) {
+      // Check if we're on mobile
+      if (window.innerWidth <= 768) {
+        currentImageData = { text: ocrText, filename, vehicle, brand };
+        
+        if (!modernEurocodeModal || !modernEurocodeList) return;
+        
+        // Populate eurocode list
+        modernEurocodeList.innerHTML = eurocodes.map(code => 
+          `<button class="modern-eurocode-button" onclick="handleModernEurocodeSelection('${code}')">${code}</button>`
+        ).join('');
+        
+        // Show modal
+        modernEurocodeModal.classList.add('show');
+      } else {
+        // Use original modal for desktop
+        if (originalShowEurocodeModal) {
+          originalShowEurocodeModal(eurocodes, ocrText, filename, vehicle, brand);
+        }
+      }
+    };
+
+    // Update captures list when RESULTS changes
+    const originalRenderTable = window.renderTable;
+    window.renderTable = function() {
+      if (originalRenderTable) {
+        originalRenderTable();
+      }
+      updateModernCapturesList();
+    };
+
+    // Initial update
+    updateModernCapturesList();
+  </script>
+
+  <!-- Script para lista de eurocodes -->
+  <script>
+  (function(){
+    const listEl = document.getElementById('eurocodesList');
+    if (!listEl) return;
+
+    function pickEuro(row) {
+      return row?.eurocode || row?.euro_validado || '';
+    }
+
+    async function fetchRowsFromAPI() {
+      try {
+        const response = await fetch('/.netlify/functions/list-ocr');
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data?.rows || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function scrapeEurocodesFromTable() {
+      const rows = Array.from(document.querySelectorAll('#resultsTable tbody tr'));
+      return rows.map(tr => {
+        const cells = tr.querySelectorAll('td');
+        return cells[4]?.textContent?.trim() || '';
+      }).filter(Boolean);
+    }
+
+    function renderList(codes) {
+      if (!codes || codes.length === 0) {
+        listEl.innerHTML = '<p style="color:#999; font-style:italic; text-align:center; padding:20px;">Nenhum eurocode encontrado</p>';
+        return;
+      }
+      const ul = document.createElement('ul');
+      ul.style.cssText = 'list-style:none; padding:0; margin:0; max-height:200px; overflow-y:auto; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid rgba(255,255,255,0.1);';
+      codes.forEach(code => {
+        const li = document.createElement('li');
+        li.textContent = code;
+        li.style.textAlign = 'left';
+        li.style.padding = '10px 12px';
+        li.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+        li.style.fontWeight = '700';
+        li.style.letterSpacing = '.3px';
+        ul.appendChild(li);
+      });
+      listEl.innerHTML = '';
+      listEl.appendChild(ul);
+    }
+
+    async function refresh(){
+      const apiRows = await fetchRowsFromAPI();
+      if (apiRows){
+        const codes = apiRows.map(pickEuro).filter(Boolean);
+        renderList([...new Set(codes)].slice(0,50));
+        return;
+      }
+      const codes = scrapeEurocodesFromTable();
+      renderList([...new Set(codes)].slice(0,50));
+    }
+
+    refresh();
+
+    const tbody = document.getElementById('resultsBody');
+    if (tbody){
+      new MutationObserver(refresh)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      const txt = (t?.textContent || '').toLowerCase();
+      const isValidate = txt.includes('valid') || t?.dataset?.action === 'validate';
+      if (isValidate) setTimeout(refresh, 500);
+    });
+
+    setInterval(refresh, 10000);
+  })();
+  </script>
+
+  <script>
+  (function(){
+    const tbody = document.getElementById('resultsBody');
+    function fixCol3(){
+      document.querySelectorAll('#resultsTable tbody tr td:nth-child(3)').forEach(td=>{
+        td.style.setProperty('font-size','14px','important');
+        td.style.setProperty('line-height','1.35','important');
+        td.style.setProperty('white-space','pre-wrap','important');
+        td.style.setProperty('word-break','break-word','important');
+        td.style.setProperty('letter-spacing','0','important');
+      });
+    }
+    fixCol3();
+    if (tbody){
+      new MutationObserver(fixCol3)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+    window.addEventListener('resize', fixCol3);
+  })();
+  </script>
+<script>
+window.addEventListener('load', () => {
+  const fileInput = document.getElementById('fileInput');
+  const btnUpload = document.getElementById('btnUpload');
+  const btnExport = document.getElementById('btnExport');
+  const btnClear  = document.getElementById('btnClear');
+
+  btnUpload?.addEventListener('click', () => fileInput?.click());
+  fileInput?.addEventListener('change', (e) => {
+    const f = e.target.files?.[0];
+    if (f && window.processImage) window.processImage(f);
+  });
+
+  btnExport?.addEventListener('click', () => {
+    if (window.exportCSV) window.exportCSV();
+  });
+
+  btnClear?.addEventListener('click', () => {
+    if (window.clearTable) window.clearTable();
+  });
+});
+
+</script>
+<script src="auth.js"></script>
+</body>
+</html>
