@@ -22,7 +22,7 @@ export async function init() {
   inited = true;
 }
 
-// headers comuns
+// headers comuns 
 export const jsonHeaders = {
   'content-type': 'application/json',
   'access-control-allow-origin': '*'
