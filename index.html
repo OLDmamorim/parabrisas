@@ -25,7 +25,7 @@ button[onclick*="cancel"] {
   display: none !important;
 }
 
-/* ===== QUADRADO NO CANTO DIREITO AZUL ===== */
+/* ===== QUADRADO NO FIM DA PÁGINA ===== */
 .header {
   flex-direction: column !important;
   align-items: center !important;
@@ -34,7 +34,7 @@ button[onclick*="cancel"] {
 
 #userInfo {
   position: fixed !important;
-  top: 150px !important; /* Na zona azul, abaixo do "Receção material" */
+  bottom: 20px !important;
   right: 20px !important;
   background: rgba(15, 23, 42, 0.95) !important;
   backdrop-filter: blur(15px) !important;
@@ -84,6 +84,23 @@ button[onclick*="cancel"] {
 #userInfo button::before {
   content: "⏻" !important;
 }
+
+/* Mobile */
+@media (max-width: 768px) {
+  #userInfo {
+    width: 50px !important;
+    height: 50px !important;
+    bottom: 15px !important;
+    right: 15px !important;
+  }
+  
+  #userInfo button {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 14px !important;
+  }
+}
+
 
 /* Mobile: junto às capturas no canto direito */
 @media (max-width: 768px) {
