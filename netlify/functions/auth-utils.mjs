@@ -65,6 +65,17 @@ export async function requireAuth(event) {
   return user[0];
 }
 
+// Middleware para verificar se é admin
+export async function requireAdmin(event) {
+  const user = await requireAuth(event);
+  
+  if (user.role !== 'admin') {
+    throw new Error('Acesso negado. Apenas administradores.');
+  }
+  
+  return user;
+}
+
 // Função para criar utilizador
 export async function createUser(email, password, name, role = 'user') {
   // Verificar se email já existe
