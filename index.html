@@ -25,13 +25,7 @@ button[onclick*="cancel"] {
   display: none !important;
 }
 
-/* ===== BOTÃO SAIR - DESKTOP E MOBILE ===== */
-.header {
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 15px !important;
-}
-
+/* ===== BOTÃO SAIR - FORÇAR APARECER ===== */
 #userInfo {
   position: fixed !important;
   top: 150px !important;
@@ -40,10 +34,18 @@ button[onclick*="cancel"] {
   border: none !important;
   padding: 0 !important;
   box-shadow: none !important;
-  z-index: 1000 !important;
+  z-index: 9999 !important;
   width: auto !important;
   height: auto !important;
   display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+#userInfo * {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 #userInfo > div {
@@ -58,45 +60,38 @@ button[onclick*="cancel"] {
 
 #userInfo button {
   background: none !important;
-  color: rgba(255, 255, 255, 0.7) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
   border: none !important;
-  padding: 6px 12px !important;
+  padding: 8px 15px !important;
   border-radius: 4px !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
   display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 9999 !important;
 }
 
 #userInfo button:hover {
   color: rgba(255, 255, 255, 1) !important;
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
 }
 
-#userInfo button::before {
-  content: none !important;
-}
-
-/* Mobile: forçar aparecer */
+/* Mobile: mesmo estilo */
 @media (max-width: 768px) {
   #userInfo {
-    position: fixed !important;
-    top: 150px !important;
+    top: 140px !important;
     right: 20px !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
   }
   
   #userInfo button {
-    font-size: 11px !important;
-    padding: 5px 10px !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    font-size: 12px !important;
+    padding: 6px 12px !important;
   }
 }
 
