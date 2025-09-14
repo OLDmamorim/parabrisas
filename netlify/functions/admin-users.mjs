@@ -1,6 +1,6 @@
 // Endpoint para gestão de utilizadores (apenas admin)
-import { jsonHeaders } from '../../db.mjs';
-import { requireAdmin, getAllUsers, updateUser, deleteUser } from '../../auth-utils.mjs';
+import { jsonHeaders } from '././db.mjs';
+import { requireAdmin, getAllUsers, updateUser, deleteUser } from '././auth-utils.mjs';
 
 export async function handler(event, context) {
   try {
