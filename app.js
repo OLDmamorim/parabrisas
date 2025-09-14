@@ -1334,9 +1334,8 @@ async function updateMatricula(recordId, matricula) {
 }
 
 
-
 // =========================
-// FUNÇÕES DE IMPRESSÃO
+// FUNÇÕES DE IMPRESSÃO MELHORADAS
 // =========================
 
 // Abrir modal de impressão
@@ -1399,7 +1398,7 @@ function setPrintDateRange(range) {
       // Todos os registos (desde o primeiro registo)
       if (RESULTS.length > 0) {
         const oldestRecord = RESULTS[RESULTS.length - 1];
-        fromDate = new Date(oldestRecord.created_at);
+        fromDate = new Date(oldestRecord.created_at || oldestRecord.timestamp);
       } else {
         fromDate = today;
       }
@@ -1451,15 +1450,49 @@ function updatePrintPreview() {
   }
 }
 
-// Obter registos num intervalo de datas
+// Obter registos num intervalo de datas - VERSÃO MELHORADA
 function getRecordsInDateRange(fromDate, toDate) {
   const from = new Date(fromDate + 'T00:00:00');
   const to = new Date(toDate + 'T23:59:59');
   
-  return RESULTS.filter(record => {
-    const recordDate = new Date(record.created_at);
-    return recordDate >= from && recordDate <= to;
+  console.log('🔍 Filtrar registos entre:', from.toLocaleDateString('pt-PT'), 'e', to.toLocaleDateString('pt-PT'));
+  console.log('📊 Total de registos disponíveis:', RESULTS.length);
+  
+  const filtered = RESULTS.filter(record => {
+    // Tentar usar created_at primeiro, depois timestamp como fallback
+    let recordDate;
+    
+    if (record.created_at) {
+      recordDate = new Date(record.created_at);
+    } else if (record.timestamp) {
+      // Se timestamp está no formato "DD/MM/YYYY, HH:MM:SS"
+      const timestampStr = record.timestamp.toString();
+      if (timestampStr.includes('/')) {
+        const [datePart, timePart] = timestampStr.split(', ');
+        const [day, month, year] = datePart.split('/');
+        recordDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart || '00:00:00'}`);
+      } else {
+        // Tentar parsing direto
+        recordDate = new Date(record.timestamp);
+      }
+    } else {
+      console.log('⚠️ Registo sem data válida:', record);
+      return false; // Sem data válida
+    }
+    
+    if (isNaN(recordDate.getTime())) {
+      console.log('❌ Data inválida para registo:', record);
+      return false;
+    }
+    
+    const isInRange = recordDate >= from && recordDate <= to;
+    console.log(`📅 Registo ${record.id}: ${recordDate.toLocaleDateString('pt-PT')} - ${isInRange ? '✅ Incluído' : '❌ Excluído'}`);
+    
+    return isInRange;
   });
+  
+  console.log('✅ Registos filtrados:', filtered.length);
+  return filtered;
 }
 
 // Executar impressão
@@ -1579,6 +1612,11 @@ function generatePrintContent(records, fromDate, toDate) {
           font-weight: bold;
           color: #16a34a;
         }
+        .matricula {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+          color: #059669;
+        }
       </style>
     </head>
     <body>
@@ -1602,15 +1640,16 @@ function generatePrintContent(records, fromDate, toDate) {
         <tbody>
           ${records.map((record, index) => {
             const glassType = detectGlassType(record.eurocode);
+            const recordDateTime = record.created_at || record.timestamp;
             return `
               <tr>
                 <td>${index + 1}</td>
-                <td>${formatDateTime(record.created_at)}</td>
+                <td>${formatDateTime(recordDateTime)}</td>
                 <td class="glass-type">${glassType}</td>
                 <td>${record.vehicle || '—'}</td>
                 <td class="eurocode">${record.eurocode || '—'}</td>
                 <td>${record.brand || '—'}</td>
-                <td>${record.matricula || '—'}</td>
+                <td class="matricula">${record.matricula || '—'}</td>
               </tr>
             `;
           }).join('')}
