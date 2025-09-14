@@ -1,23 +1,16 @@
-// /.netlify/functions/list-ocr.mjs
-import { neon } from '@neondatabase/serverless';
+// /.netlify/functions/list-ocr.mjs - Com autenticação
+import { jsonHeaders, sql, init } from '../../db.mjs';
+import { requireAuth } from '../../auth-utils.mjs';
 
 const ok = (data) => ({
   statusCode: 200,
-  headers: {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  },
+  headers: jsonHeaders,
   body: JSON.stringify(data),
 });
 
 const err = (status, message) => ({
   statusCode: status,
-  headers: {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  },
+  headers: jsonHeaders,
   body: JSON.stringify({ ok: false, error: message }),
 });
 
@@ -26,49 +19,60 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'GET')     return err(405, 'Method Not Allowed');
 
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    // Inicializar BD
+    await init();
+    
+    // Verificar autenticação
+    const user = await requireAuth(event);
 
-    // Tenta com a coluna vehicle
+    // Buscar apenas registos do utilizador atual
     try {
       const rows = await sql/*sql*/`
         SELECT
           id,
           ts                       AS created_at,
           text,
-          euro_validado            AS eurocode,
+          eurocode,
           brand,
-          vehicle,                      -- 👈 nova coluna (se existir)
+          vehicle,
           filename,
-          source
+          source,
+          user_id
         FROM ocr_results
+        WHERE user_id = ${user.id}
         ORDER BY ts DESC
         LIMIT 300
       `;
       return ok({ ok: true, rows });
     } catch (e) {
-      // Se a coluna ainda não existir, faz fallback e devolve vehicle: null
+      // Se as colunas ainda não existirem, fazer fallback
       const msg = String(e?.message || e);
-      if (msg.includes('column "vehicle" does not exist')) {
-        const rowsNoVehicle = await sql/*sql*/`
+      if (msg.includes('column') && msg.includes('does not exist')) {
+        const rowsBasic = await sql/*sql*/`
           SELECT
             id,
             ts                AS created_at,
             text,
-            euro_validado     AS eurocode,
-            brand,
             filename,
             source
           FROM ocr_results
+          WHERE user_id = ${user.id}
           ORDER BY ts DESC
           LIMIT 300
         `;
-        const rows = rowsNoVehicle.map(r => ({ ...r, vehicle: null }));
-        return ok({ ok: true, rows, note: 'vehicle column missing, returned as null' });
+        const rows = rowsBasic.map(r => ({ 
+          ...r, 
+          eurocode: null, 
+          brand: null, 
+          vehicle: null 
+        }));
+        return ok({ ok: true, rows, note: 'Some columns missing, returned as null' });
       }
-      // outro erro qualquer
       throw e;
     }
   } catch (e) {
-    return err(500, String(e?.message || e));
+    console.error('Erro ao listar OCR:', e);
+    const statusCode = e.message.includes('Token') || e.message.includes('autenticação') ? 401 : 500;
+    return err(statusCode, String(e?.message || e));
   }
 };
