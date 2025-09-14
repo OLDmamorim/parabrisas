@@ -401,6 +401,7 @@
         
         if (response.ok && data.success) {
           users = data.users;
+          console.log('Utilizadores carregados:', users); // Debug
           renderUsers();
         } else {
           throw new Error(data.error || 'Erro ao carregar utilizadores');
@@ -422,7 +423,7 @@
         return;
       }
       
-      tbody.innerHTML = users.map(user => `
+      tbody.innerHTML = users.map((user, index) => `
         <tr>
           <td><strong>${user.name}</strong></td>
           <td>${user.email}</td>
@@ -440,10 +441,10 @@
           <td>${formatDate(user.last_login)}</td>
           <td>
             <div class="actions">
-              <button onclick="editUser(${user.id})" class="btn btn-primary btn-sm" title="Editar utilizador">
+              <button onclick="editUser(${index})" class="btn btn-primary btn-sm" title="Editar utilizador">
                 ✏️
               </button>
-              <button onclick="deleteUser(${user.id}, '${user.name}')" class="btn btn-danger btn-sm" title="Eliminar utilizador">
+              <button onclick="deleteUser(${user.id}, '${user.name.replace(/'/g, "\\'")}', ${index})" class="btn btn-danger btn-sm" title="Eliminar utilizador">
                 🗑️
               </button>
             </div>
@@ -452,13 +453,18 @@
       `).join('');
     }
 
-    function editUser(userId) {
-      console.log('Editando utilizador:', userId); // Debug
-      const user = users.find(u => u.id === userId);
-      if (!user) {
-        console.error('Utilizador não encontrado:', userId);
+    function editUser(userIndex) {
+      console.log('Editando utilizador no índice:', userIndex); // Debug
+      console.log('Array de utilizadores:', users); // Debug
+      
+      if (userIndex < 0 || userIndex >= users.length) {
+        console.error('Índice de utilizador inválido:', userIndex);
+        showMessage('Erro: Utilizador não encontrado', 'error');
         return;
       }
+      
+      const user = users[userIndex];
+      console.log('Utilizador encontrado:', user); // Debug
       
       document.getElementById('editUserId').value = user.id;
       document.getElementById('editName').value = user.name;
@@ -467,7 +473,7 @@
       
       const modal = document.getElementById('editModal');
       modal.classList.add('show');
-      console.log('Modal aberto'); // Debug
+      console.log('Modal aberto para utilizador:', user.name); // Debug
     }
 
     function closeEditModal() {
@@ -483,6 +489,8 @@
       const name = document.getElementById('editName').value;
       const role = document.getElementById('editRole').value;
       const is_active = document.getElementById('editStatus').value === 'true';
+      
+      console.log('Guardando utilizador:', { userId, name, role, is_active }); // Debug
       
       try {
         const response = await authManager.makeAuthenticatedRequest(`${API_BASE}/admin-users`, {
@@ -505,7 +513,9 @@
       }
     }
 
-    async function deleteUser(userId, userName) {
+    async function deleteUser(userId, userName, userIndex) {
+      console.log('Eliminando utilizador:', { userId, userName, userIndex }); // Debug
+      
       if (!confirm(`Tem certeza que deseja eliminar o utilizador "${userName}"?\n\nEsta ação irá eliminar também todos os registos OCR associados e não pode ser desfeita.`)) {
         return;
       }
