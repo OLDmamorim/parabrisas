@@ -1,6 +1,6 @@
 // /.netlify/functions/list-ocr.mjs - Com autenticação
-import { jsonHeaders, sql, init } from '././db.mjs';
-import { requireAuth } from '././auth-utils.mjs';
+import { jsonHeaders, sql, init } from '../../db.mjs';
+import { requireAuth } from '../../auth-utils.mjs';
 
 const ok = (data) => ({
   statusCode: 200,
@@ -37,6 +37,7 @@ export const handler = async (event) => {
           vehicle,
           filename,
           source,
+          matricula,
           user_id
         FROM ocr_results
         WHERE user_id = ${user.id}
@@ -54,7 +55,8 @@ export const handler = async (event) => {
             ts                AS created_at,
             text,
             filename,
-            source
+            source,
+            matricula
           FROM ocr_results
           WHERE user_id = ${user.id}
           ORDER BY ts DESC
@@ -76,3 +78,4 @@ export const handler = async (event) => {
     return err(statusCode, String(e?.message || e));
   }
 };
+
