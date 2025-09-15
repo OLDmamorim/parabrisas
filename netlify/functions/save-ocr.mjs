@@ -1,5 +1,5 @@
 // /.netlify/functions/save-ocr.mjs - Com autenticação
-import { jsonHeaders, sql, init } from '../../db.mjs';
+import { jsonHeaders, sql, init } from './db.mjs';
 import { requireAuth } from '../../auth-utils.mjs';
 
 const ok = (data) => ({
@@ -73,3 +73,4 @@ export const handler = async (event) => {
     return err(statusCode, String(e?.message || e));
   }
 };
+
