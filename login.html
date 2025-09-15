@@ -18,7 +18,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 10px;
       padding: 20px;
     }
 
@@ -195,54 +194,21 @@
     }
 
     @media (max-width: 480px) {
+      body {
+        padding: 5px;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
       .login-container {
-        margin: 5px;
-        width: calc(100% - 10px);
-        max-width: none;
-        min-height: 80vh;
-      }
-      
-      .login-header {
-        padding: 30px 20px;
-      }
-      
-      .logo-container {
-        padding: 20px;
-        margin-bottom: 20px;
-      }
-      
-      .logo {
-        height: 60px;
-      }
-      
-      .login-title {
-        font-size: 28px;
-        margin-bottom: 10px;
-      }
-      
-      .login-subtitle {
-        font-size: 18px;
-      }
-      
-      .login-form {
-        padding: 30px 25px;
-      }
-      
-      .form-input {
-        padding: 18px;
-        font-size: 18px;
-        margin-bottom: 20px;
-      }
-      
-      .login-button {
-        padding: 18px;
-        font-size: 18px;
-        margin-top: 15px;
-      }
-      
-      .login-footer {
-        padding: 25px;
-        font-size: 16px;
+        margin: 0;
+        border-radius: 15px;
+        max-width: 100%;
+        width: 100%;
+        max-height: 95vh;
+        overflow-y: auto;
       }
       
       .login-header {
