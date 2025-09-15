@@ -114,4 +114,3 @@ export const handler = async (event) => {
     return cors(statusCode, { ok: false, error: String(e?.message || e) });
   }
 };
-
