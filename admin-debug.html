@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Admin Debug</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .debug-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f8f9fa;
+    }
+
+    .debug-section h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      font-weight: 500;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .status.loading {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+
+    .btn:hover {
+      background: #5a6fd8;
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    pre {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .test-result {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .test-result.pass {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .test-result.fail {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 EXPRESSGLASS - Debug do Painel Admin</h1>
+    
+    <div class="debug-section">
+      <h2>🔍 Informações do Sistema</h2>
+      <div id="systemInfo" class="status loading">Carregando informações...</div>
+      <button class="btn" onclick="checkSystemInfo()">Verificar Sistema</button>
+    </div>
+
+    <div class="debug-section">
+      <h2>🔑 Teste de Autenticação</h2>
+      <div id="authInfo" class="status loading">Aguardando teste...</div>
+      <button class="btn" onclick="testAuthentication()">Testar Auth</button>
+    </div>
+
+    <div class="debug-section">
+      <h2>🌐 Teste das Funções Netlify</h2>
+      <div id="functionsInfo" class="status loading">Aguardando teste...</div>
+      <button class="btn" onclick="testNetlifyFunctions()">Testar Funções</button>
+    </div>
+
+    <div class="debug-section">
+      <h2>👥 Teste Admin Users</h2>
+      <div id="adminUsersInfo" class="status loading">Aguardando teste...</div>
+      <button class="btn" onclick="testAdminUsers()">Testar Admin Users</button>
+    </div>
+
+    <div class="debug-section">
+      <h2>📊 Logs Detalhados</h2>
+      <pre id="detailedLogs">Logs aparecerão aqui...</pre>
+      <button class="btn" onclick="clearLogs()">Limpar Logs</button>
+    </div>
+  </div>
+
+  <script>
+    let logs = [];
+    
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+      logs.push(logEntry);
+      
+      document.getElementById('detailedLogs').textContent = logs.join('\n');
+      console.log(logEntry);
+      
+      // Auto-scroll para o final
+      const logsElement = document.getElementById('detailedLogs');
+      logsElement.scrollTop = logsElement.scrollHeight;
+    }
+
+    function clearLogs() {
+      logs = [];
+      document.getElementById('detailedLogs').textContent = 'Logs limpos...';
+    }
+
+    function updateStatus(elementId, message, type) {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.className = `status ${type}`;
+    }
+
+    function checkSystemInfo() {
+      log('Verificando informações do sistema...');
+      
+      const info = {
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        protocol: window.location.protocol,
+        host: window.location.host,
+        pathname: window.location.pathname,
+        localStorage: !!window.localStorage,
+        sessionStorage: !!window.sessionStorage,
+        fetch: !!window.fetch,
+        timestamp: new Date().toISOString()
+      };
+      
+      log(`Sistema: ${JSON.stringify(info, null, 2)}`);
+      updateStatus('systemInfo', '✅ Informações coletadas - ver logs', 'success');
+    }
+
+    async function testAuthentication() {
+      log('Testando autenticação...');
+      updateStatus('authInfo', 'Testando...', 'loading');
+      
+      try {
+        // Verificar se há token no localStorage
+        const token = localStorage.getItem('token');
+        const user = localStorage.getItem('user');
+        
+        log(`Token presente: ${!!token}`);
+        log(`User data presente: ${!!user}`);
+        
+        if (token) {
+          log(`Token: ${token.substring(0, 20)}...`);
+        }
+        
+        if (user) {
+          const userData = JSON.parse(user);
+          log(`User: ${JSON.stringify(userData, null, 2)}`);
+        }
+        
+        if (!token) {
+          throw new Error('Sem token de autenticação');
+        }
+        
+        updateStatus('authInfo', '✅ Token encontrado - ver logs', 'success');
+        
+      } catch (error) {
+        log(`Erro na autenticação: ${error.message}`, 'error');
+        updateStatus('authInfo', `❌ ${error.message}`, 'error');
+      }
+    }
+
+    async function testNetlifyFunctions() {
+      log('Testando funções Netlify...');
+      updateStatus('functionsInfo', 'Testando...', 'loading');
+      
+      const functions = [
+        'admin-users',
+        'auth-me',
+        'list-ocr'
+      ];
+      
+      let results = [];
+      
+      for (const func of functions) {
+        try {
+          log(`Testando função: ${func}`);
+          
+          const url = `/.netlify/functions/${func}`;
+          log(`URL: ${url}`);
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token') || 'no-token'}`
+            }
+          });
+          
+          log(`${func}: Status ${response.status}`);
+          
+          const responseText = await response.text();
+          log(`${func}: Response: ${responseText.substring(0, 200)}...`);
+          
+          results.push(`${func}: ${response.status}`);
+          
+        } catch (error) {
+          log(`${func}: ERRO - ${error.message}`, 'error');
+          results.push(`${func}: ERRO`);
+        }
+      }
+      
+      updateStatus('functionsInfo', `Testado: ${results.join(', ')}`, 'success');
+    }
+
+    async function testAdminUsers() {
+      log('Testando especificamente admin-users...');
+      updateStatus('adminUsersInfo', 'Testando...', 'loading');
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Sem token de autenticação');
+        }
+        
+        log('Fazendo request para admin-users...');
+        
+        const response = await fetch('/.netlify/functions/admin-users', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        log(`Status: ${response.status}`);
+        log(`Headers: ${JSON.stringify([...response.headers.entries()], null, 2)}`);
+        
+        const responseText = await response.text();
+        log(`Response completa: ${responseText}`);
+        
+        if (response.ok) {
+          const data = JSON.parse(responseText);
+          log(`Dados parseados: ${JSON.stringify(data, null, 2)}`);
+          
+          if (data.success && data.users) {
+            updateStatus('adminUsersInfo', `✅ ${data.users.length} utilizadores encontrados`, 'success');
+          } else {
+            updateStatus('adminUsersInfo', `❌ Resposta inválida: ${data.error || 'Sem dados'}`, 'error');
+          }
+        } else {
+          updateStatus('adminUsersInfo', `❌ Erro HTTP ${response.status}: ${responseText}`, 'error');
+        }
+        
+      } catch (error) {
+        log(`Erro crítico: ${error.message}`, 'error');
+        log(`Stack: ${error.stack}`, 'error');
+        updateStatus('adminUsersInfo', `❌ ${error.message}`, 'error');
+      }
+    }
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', function() {
+      log('Página de debug carregada');
+      log('Clique nos botões para executar os testes');
+      
+      // Auto-executar verificação do sistema
+      setTimeout(checkSystemInfo, 1000);
+    });
+  </script>
+</body>
+</html>
