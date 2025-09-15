@@ -833,6 +833,7 @@ function guessVehicleFromToken(t) {
   if (t.includes("PEUGEOT")) return "Peugeot";
   if (t.includes("CITROEN")) return "Citroën";
   if (t.includes("RENAULT")) return "Renault";
+  if (t.includes("BM")) return "BMW";
   if (t.includes("DACIA")) return "Dacia";
   if (t.includes("ALFAROMEO")) return "Alfa Romeo";
   if (t.includes("LANDROVER")) return "Land Rover";
