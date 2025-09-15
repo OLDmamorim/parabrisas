@@ -1,6 +1,6 @@
 // Endpoint para registo de novos utilizadores
 import { jsonHeaders } from './db.mjs';
-import { createUser, generateToken } from './auth-utils.mjs';
+import { createUser, generateToken } from '../../auth-utils.mjs';
 
 export async function handler(event, context) {
   // Apenas POST

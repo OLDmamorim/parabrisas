@@ -1,6 +1,6 @@
 // /.netlify/functions/update-ocr.mjs - Com autenticação
 import { jsonHeaders, sql, init } from './db.mjs';
-import { requireAuth } from './auth-utils.mjs';
+import { requireAuth } from '../../auth-utils.mjs';
 
 const cors = (status, body = {}) => ({
   statusCode: status,
