@@ -766,13 +766,13 @@ function normVehicleText(s){
 
 const VEHICLE_PATTERNS = [
   { canon:"BMW", rx:/\bBMW\b|\bBM\b/ },
-  { canon: "Mercedes-Benz", rx: /\bMERCEDES(?:[-\s]?BENZ)?\b|\bMERCEDES\b/ },
+  { canon: "Mercedes-Benz", rx: /\bMERCEDES(?:[-\s]?BENZ)?\b|\bMERCEDES\b|\bMB\b/ },
   { canon: "Audi",          rx: /\bAUDI\b/ },
   { canon: "Volkswagen",    rx: /\bVOLKSWAGEN\b|\bVW\b/ },
   { canon: "Seat",          rx: /\bSEAT\b/ },
   { canon: "Jeep",          rx: /\bJEEP\b/ },
   { canon: "Škoda",         rx: /\bSKODA\b/ },
-  { canon: "Opel",          rx: /\bOPEL\b|\bVAUXHALL\b/ },
+  { canon: "Opel",          rx: /\bOPEL\b|\bVAUXHALL\b|\bOP\b/ },
   { canon: "Peugeot",       rx: /\bPEUGEOT\b/ },
   { canon: "Citroën",       rx: /\bCITRO[ËE]N\b|\bCITROEN\b/ },
   { canon: "Renault",       rx: /\bRENAULT\b|\bRN\b/ },
