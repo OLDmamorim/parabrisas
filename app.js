@@ -770,6 +770,7 @@ const VEHICLE_PATTERNS = [
   { canon: "Audi",          rx: /\bAUDI\b/ },
   { canon: "Volkswagen",    rx: /\bVOLKSWAGEN\b|\bVW\b/ },
   { canon: "Seat",          rx: /\bSEAT\b/ },
+  { canon: "Jeep",          rx: /\bJEEP\b/ },
   { canon: "Škoda",         rx: /\bSKODA\b/ },
   { canon: "Opel",          rx: /\bOPEL\b|\bVAUXHALL\b/ },
   { canon: "Peugeot",       rx: /\bPEUGEOT\b/ },
