@@ -674,8 +674,8 @@ const BRAND_PATTERNS = [
   { canon: "Benson",               rx: /\bBENS[0O]N\b|\bBENSON\b/ },
   { canon: "Lucas",                rx: /\bLUCAS\b|\bLUC4S\b|\bLUCA5\b/ },
   { canon: "Scania",               rx: /\bSCANIA\b/ },
-  { canon: "MAN",                  rx: /\bMAN\b/ },
-  { canon: "DAF",                  rx: /\bDAF\b/ },
+  { canon: "MAN",                  rx: /\bMAN\b|\bMN\b/ },
+  { canon: "DAF",                  rx: /\bDAF\b|\bDF\b/ },
   { canon: "Volvo",                rx: /\bVOLVO\b/ }
 ];
 
