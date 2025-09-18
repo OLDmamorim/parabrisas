@@ -629,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
   if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', openExportModal);
+  if (btnExport)  btnExport.addEventListener('click', exportCSV);
   if (btnClear)   btnClear.addEventListener('click', clearTable);
 
   const isMobile = window.innerWidth <= 768;
@@ -1754,116 +1754,33 @@ window.setAuthToken = function(t){
 };
 
 
-// ===== Excel Export (SheetJS) =====
-function exportExcelWithData(dataToExport){
-  const list = Array.isArray(dataToExport) ? dataToExport : (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS);
-  const rows = list.map((row, index) => ({
-    "#": index + 1,
-    "Data/Hora": row.timestamp || "",
-    "Tipologia": (typeof detectGlassType === 'function' ? detectGlassType(row.eurocode) : "") || "",
-    "Veículo": row.vehicle || "",
-    "Eurocode": row.eurocode || "",
-    "Marca Vidro": row.brand || "",
-    "Matrícula": row.matricula || "",
-    "Ficheiro": row.filename || "",
-    "Origem": row.source || "",
-    "Texto OCR": row.text || ""
-  }));
-  try {
-    let ws;
-    if (rows.length === 0) {
-      const headers = ["#", "Data/Hora", "Tipologia", "Veículo", "Eurocode", "Marca Vidro", "Matrícula", "Ficheiro", "Origem", "Texto OCR"];
-      ws = XLSX.utils.aoa_to_sheet([headers]);
-    } else {
-      ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
-    }
-    ws['!cols'] = [
-      { wch: 4 },  { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
-      { wch: 16 }, { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 80 }
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Registos");
-    const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, filename);
-    if (typeof showToast === 'function') showToast('Excel exportado com sucesso!', 'success');
-  } catch (e) {
-    console.error('Erro ao exportar Excel:', e);
-    if (typeof showToast === 'function') showToast('Erro ao exportar Excel', 'error');
-  }
+// ===== Helpers: datas utilitárias =====
+function fmtYMD(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
-function exportExcel(){ exportExcelWithData(); }
+function firstDayOfMonth(d){
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
 
-// ===== Helpers: datas e filtro por intervalo =====
-function parseAnyDate(ts){
-  if (!ts) return null;
-  const d = new Date(ts);
-  if (!isNaN(d)) return d;
+// ===== Memória de seleção do export =====
+const EXPORT_MEMO_START = 'export_start_ymd';
+const EXPORT_MEMO_END   = 'export_end_ymd';
+const EXPORT_MEMO_USEF  = 'export_use_search';
+
+function saveExportPrefs(s, e, useF){
   try{
-    const m = String(ts).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[^\d]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
-    if (m){
-      const dd = parseInt(m[1],10), mm = parseInt(m[2],10)-1, yy = parseInt(m[3].length===2? '20'+m[3]:m[3],10);
-      const hh = parseInt(m[4]||'0',10), mi = parseInt(m[5]||'0',10), ss = parseInt(m[6]||'0',10);
-      const dt = new Date(yy, mm, dd, hh, mi, ss);
-      if (!isNaN(dt)) return dt;
-    }
+    localStorage.setItem(EXPORT_MEMO_START, s || '');
+    localStorage.setItem(EXPORT_MEMO_END,   e || '');
+    localStorage.setItem(EXPORT_MEMO_USEF,  useF ? '1' : '0');
   }catch(_){}
-  return null;
 }
-function filterByDateRange(rows, startDate, endDate){
-  if (!startDate && !endDate) return rows;
-  const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-  const end   = endDate   ? new Date(endDate   + 'T23:59:59') : null;
-  return rows.filter(r => {
-    const dt = parseAnyDate(r.timestamp);
-    if (!dt) return false;
-    if (start && dt < start) return false;
-    if (end && dt > end) return false;
-    return true;
-  });
+function loadExportPrefs(){
+  try{
+    return {
+      s: localStorage.getItem(EXPORT_MEMO_START) || '',
+      e: localStorage.getItem(EXPORT_MEMO_END) || '',
+      u: (localStorage.getItem(EXPORT_MEMO_USEF) || '1') === '1'
+    };
+  }catch(_){ return {s:'',e:'',u:true}; }
 }
-
-// ===== Modal de exportação (lazy DOM) =====
-function openExportModal(){
-  const modal = document.getElementById('exportModal');
-  if (!modal) { exportExcel(); return; }
-
-  const btnClose   = document.getElementById('exportModalClose');
-  const btnCancel  = document.getElementById('exportModalCancel');
-  const btnConfirm = document.getElementById('exportModalConfirm');
-  const startEl    = document.getElementById('exportStart');
-  const endEl      = document.getElementById('exportEnd');
-  const useSearch  = document.getElementById('exportUseSearch');
-
-  // defaults
-  const today = new Date();
-  const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
-  if (endEl && !endEl.value) endEl.value = `${y}-${m}-${d}`;
-  if (startEl && !startEl.value){
-    const dt = new Date(today.getTime() - 29*24*3600*1000);
-    const ym = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
-    startEl.value = `${ym}-${mm}-${dd}`;
-  }
-
-  modal.classList.add('show');
-  modal.style.display = 'flex';
-
-  const close = () => { modal.classList.remove('show'); modal.style.display='none'; };
-
-  if (!modal.dataset.wired){
-    if (btnClose)  btnClose.addEventListener('click', close);
-    if (btnCancel) btnCancel.addEventListener('click', close);
-    if (btnConfirm) btnConfirm.addEventListener('click', () => {
-      const base = (useSearch && useSearch.checked) 
-        ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
-        : RESULTS;
-      const ranged = filterByDateRange(base, startEl?.value || '', endEl?.value || '');
-      exportExcelWithData(ranged);
-      close();
-    });
-    modal.dataset.wired = "1";
-  }
-}
-window.openExportModal = openExportModal;
-
-// Compat: chamadas antigas
-window.exportCSV = function(){ if (typeof openExportModal==='function') openExportModal(); else if (typeof exportExcel==='function') exportExcel(); };
