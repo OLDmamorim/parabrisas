@@ -1398,9 +1398,7 @@ window.addEventListener('load', () => {
     if (f && window.processImage) window.processImage(f);
   });
 
-  btnExport?.addEventListener('click', () => {
-    if (window.exportCSV) window.openExportModal && window.openExportModal();
-  });
+  btnExport?.addEventListener('click', () => { window.openExportModal && window.openExportModal(); });
 
   btnClear?.addEventListener('click', () => {
     if (window.clearTable) window.clearTable();

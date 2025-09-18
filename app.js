@@ -1709,44 +1709,22 @@ function exportExcelWithData(dataToExport){
     showToast && showToast('Nenhum dado para exportar', 'error');
     return;
   }
-  const rows = list.map((row, index) => ({
-    "#": index + 1,
-    "Data/Hora": row.timestamp || "",
-    "Tipologia": (typeof detectGlassType === 'function' ? detectGlassType(row.eurocode) : "") || "",
-    "Veículo": row.vehicle || "",
-    "Eurocode": row.eurocode || "",
-    "Marca Vidro": row.brand || "",
-    "Matrícula": row.matricula || "",
-    "Ficheiro": row.filename || "",
-    "Origem": row.source || "",
-    "Texto OCR": row.text || ""
-  }));
+  
 
-  try {
-    const ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
-    ws['!cols'] = [
-      { wch: 4 },  { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
-      { wch: 16 }, { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 80 }
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Registos");
-    const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, filename);
-    showToast && showToast('Excel exportado com sucesso!', 'success');
-  } catch (e) {
-    console.error('Erro ao exportar Excel:', e);
-    showToast && showToast('Erro ao exportar Excel', 'error');
-  }
-}
-
+// Canonical guarded exportExcel: opens modal unless bypass flag is set
 function exportExcel(){
   if (!window.__bypassExportModal) {
     if (typeof openExportModal === 'function') { openExportModal(); }
-    return;
+    return; // export happens only after modal confirm sets bypass flag
   }
   exportExcelWithData();
 }
-    return; // só exporta após confirmação do modal
+
+// Canonical guarded exportExcel: opens modal unless bypass flag is set
+function exportExcel(){
+  if (!window.__bypassExportModal) {
+    if (typeof openExportModal === 'function') { openExportModal(); }
+    return; // export happens only after modal confirm sets bypass flag
   }
   exportExcelWithData();
 }
