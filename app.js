@@ -2055,3 +2055,57 @@ window.exportCSV = function(){ if (typeof openExportModal==='function') openExpo
     }
   });
 })();
+
+/* ==== FAIL-SAFE EXPORT (não mexe no resto) ==== */
+window.exportExcelFallback = async function () {
+  try {
+    // Carrega SheetJS se faltar
+    if (!window.XLSX) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js';
+        s.onload = res; s.onerror = rej; document.head.appendChild(s);
+      });
+    }
+    // Usa o que tens filtrado; senão, todos
+    const list = (window.FILTERED_RESULTS && FILTERED_RESULTS.length)
+      ? FILTERED_RESULTS : (window.RESULTS || []);
+
+    const rows = list.map((r, i) => ({
+      "#": i + 1,
+      "Data/Hora": r.timestamp || "",
+      "Tipologia": (window.detectGlassType ? detectGlassType(r.eurocode) : "") || "",
+      "Veículo": r.vehicle || "",
+      "Eurocode": r.eurocode || "",
+      "Marca Vidro": r.brand || "",
+      "Matrícula": r.matricula || "",
+      "Ficheiro": r.filename || "",
+      "Origem": r.source || "",
+      "Texto OCR": r.text || ""
+    }));
+
+    const ws = rows.length
+      ? XLSX.utils.json_to_sheet(rows)
+      : XLSX.utils.aoa_to_sheet([["#","Data/Hora","Tipologia","Veículo","Eurocode","Marca Vidro","Matrícula","Ficheiro","Origem","Texto OCR"]]);
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Registos");
+    XLSX.writeFile(wb, `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`);
+  } catch (e) {
+    console.error('Export falhou:', e);
+    alert('Export falhou');
+  }
+};
+
+// Garante que o botão tem sempre alvo
+if (!window.openExportModal) window.openExportModal = window.exportExcelFallback;
+window.exportCSV = window.openExportModal;
+
+// Liga o botão mesmo que o HTML não esteja certo
+document.addEventListener('DOMContentLoaded', () => {
+  const b = document.getElementById('btnExport');
+  if (b) {
+    b.onclick = () => window.openExportModal();
+    b.innerHTML = '📊 Exportar Excel';
+  }
+});
