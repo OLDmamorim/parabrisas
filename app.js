@@ -562,7 +562,6 @@ function exportExcel() {
     return;
   }
 
-  // Mapeia dados para um array de objetos com cabeçalhos legíveis
   const rows = dataToExport.map((row, index) => ({
     "#": index + 1,
     "Data/Hora": row.timestamp || "",
@@ -577,22 +576,11 @@ function exportExcel() {
   }));
 
   try {
-    // Cria worksheet e workbook
     const ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
-    // Larguras de colunas sugeridas
-    const wscols = [
-      { wch: 4 },  // #
-      { wch: 18 }, // Data/Hora
-      { wch: 12 }, // Tipologia
-      { wch: 20 }, // Veículo
-      { wch: 16 }, // Eurocode
-      { wch: 16 }, // Marca Vidro
-      { wch: 12 }, // Matrícula
-      { wch: 24 }, // Ficheiro
-      { wch: 12 }, // Origem
-      { wch: 80 }  // Texto OCR
+    ws['!cols'] = [
+      { wch: 4 },  { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
+      { wch: 16 }, { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 80 }
     ];
-    ws['!cols'] = wscols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Registos");
@@ -605,6 +593,7 @@ function exportExcel() {
     showToast && showToast('Erro ao exportar Excel', 'error');
   }
 }
+
 // =========================
 // Limpar tabela
 async function clearTable() {
