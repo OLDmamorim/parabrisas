@@ -1399,10 +1399,10 @@ window.addEventListener('load', () => {
   });
 
   btnExport?.addEventListener('click', () => {
-  if (window.openExportModal) window.openExportModal();
-  else if (window.exportExcel) window.exportExcel();
-});
-btnClear?.addEventListener('click', () => {
+    if (window.exportCSV) window.openExportModal && window.openExportModal();
+  });
+
+  btnClear?.addEventListener('click', () => {
     if (window.clearTable) window.clearTable();
   });
 }});

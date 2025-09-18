@@ -61,35 +61,6 @@ function addCustomCSS() {
 
 // =========================
 // Utils UI
-// ===== Helpers: parser de datas e filtro por intervalo
-function parseAnyDate(ts){
-  if (!ts) return null;
-  const iso = new Date(ts);
-  if (!isNaN(iso.getTime())) return iso;
-  try{
-    const m = String(ts).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[^\d]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
-    if (m){
-      const d = parseInt(m[1],10), mo = parseInt(m[2],10)-1, y = parseInt(m[3].length===2? '20'+m[3]:m[3],10);
-      const hh = parseInt(m[4]||'0',10), mm = parseInt(m[5]||'0',10), ss = parseInt(m[6]||'0',10);
-      const dt = new Date(y, mo, d, hh, mm, ss);
-      if (!isNaN(dt.getTime())) return dt;
-    }
-  }catch(_){}
-  return null;
-}
-function filterByDateRange(rows, startDate, endDate){
-  if (!startDate && !endDate) return rows;
-  const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-  const end   = endDate   ? new Date(endDate   + 'T23:59:59') : null;
-  return rows.filter(r => {
-    const dt = parseAnyDate(r.timestamp);
-    if (!dt) return false;
-    if (start && dt < start) return false;
-    if (end && dt > end) return false;
-    return true;
-  });
-}
-
 function showToast(msg, type='') {
   if (!toast) return;
   toast.textContent = msg;
@@ -1731,10 +1702,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-// Expor para uso inline no HTML
-if (typeof openExportModal === 'function') { window.openExportModal = openExportModal; }
-
-
 // Variante que aceita dados específicos (após filtros)
 function exportExcelWithData(dataToExport){
   const list = Array.isArray(dataToExport) ? dataToExport : (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS);
@@ -1772,8 +1739,37 @@ function exportExcelWithData(dataToExport){
   }
 }
 
-// Mantém compat, caso algo ainda chame exportExcel()
 function exportExcel(){ exportExcelWithData(); }
+
+
+// ===== Helpers: parser de datas e filtro por intervalo
+function parseAnyDate(ts){
+  if (!ts) return null;
+  const iso = new Date(ts);
+  if (!isNaN(iso.getTime())) return iso;
+  try{
+    const m = String(ts).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[^\d]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if (m){
+      const d = parseInt(m[1],10), mo = parseInt(m[2],10)-1, y = parseInt(m[3].length===2? '20'+m[3]:m[3],10);
+      const hh = parseInt(m[4]||'0',10), mm = parseInt(m[5]||'0',10), ss = parseInt(m[6]||'0',10);
+      const dt = new Date(y, mo, d, hh, mm, ss);
+      if (!isNaN(dt.getTime())) return dt;
+    }
+  }catch(_){}
+  return null;
+}
+function filterByDateRange(rows, startDate, endDate){
+  if (!startDate && !endDate) return rows;
+  const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+  const end   = endDate   ? new Date(endDate   + 'T23:59:59') : null;
+  return rows.filter(r => {
+    const dt = parseAnyDate(r.timestamp);
+    if (!dt) return false;
+    if (start && dt < start) return false;
+    if (end && dt > end) return false;
+    return true;
+  });
+}
 
 
 // ===== Modal de exportação (período) =====
@@ -1786,7 +1782,7 @@ const exportEnd = document.getElementById('exportEnd');
 const exportUseSearch = document.getElementById('exportUseSearch');
 
 function openExportModal(){
-  if (!exportModal) { exportExcel(); return; } // fallback se modal não existir
+  if (!exportModal) { exportExcel(); return; }
   exportModal.classList.add('show');
   exportModal.style.display = 'flex';
   const today = new Date();
@@ -1816,9 +1812,12 @@ if (exportModalConfirm) exportModalConfirm.addEventListener('click', () => {
   showToast && showToast(`A exportar ${ranged.length} registo(s)`, ranged.length ? 'success' : 'error');
 });
 
-// expor global para onclick inline
+// expor global
 window.openExportModal = openExportModal;
 
 
-// Compatibilidade: forçar antigos chamadores de exportCSV a abrir o modal
-window.exportCSV = function(){ if (typeof openExportModal==='function') openExportModal(); else if (typeof exportExcel==='function') exportExcel(); };
+// Compatibilidade: se alguém chamar exportCSV, abrimos o modal (ou Excel direto)
+window.exportCSV = function(){
+  if (typeof openExportModal === 'function') openExportModal();
+  else if (typeof exportExcel === 'function') exportExcel();
+};
