@@ -221,16 +221,7 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
     const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-          text, 
-          eurocode, 
-          filename, 
-          source, 
-          brand, 
-          vehicle: carBrand,
-          sm_loja: 'SM', // Valor padrão
-          obs: ''        // Valor padrão
-      })
+      body: JSON.stringify({ text, eurocode, filename, source, brand, vehicle: carBrand })
     });
 
     if (response.ok) {
@@ -277,8 +268,10 @@ function openEditOcrModal(row) {
         body: JSON.stringify({
           id: row.id,
           text: newText,
+          eurocode: row.eurocode || '',
+          filename: row.filename || '',
+          source: row.source || '',
           brand: newBrand
-          // Outros campos não são editados aqui
         })
       });
 
@@ -329,7 +322,7 @@ function openEditOcrModal(row) {
 window.openEditOcrModal = openEditOcrModal;
 
 // =========================
-// Normalização (inclui brand/vehicle/sm_loja/obs)
+// Normalização (inclui brand/vehicle)
 function normalizeRow(r){
   let timestamp = r.timestamp || r.datahora || r.created_at || r.createdAt || 
                   r.date || r.datetime || r.data || r.hora || r.created || 
@@ -346,6 +339,7 @@ function normalizeRow(r){
   
   if (!brand && text) {
     brand = detectBrandFromText(text) || '';
+    console.log('Reprocessando marca para registo existente:', brand);
   }
 
   return {
@@ -357,9 +351,7 @@ function normalizeRow(r){
     source:    r.source ?? r.origem ?? '',
     brand:     brand,
     vehicle:   r.vehicle ?? '',
-    matricula: r.matricula ?? '',
-    sm_loja:   r.sm_loja ?? 'SM', // Padrão para 'SM'
-    obs:       r.obs ?? ''
+    matricula: r.matricula ?? ''
   };
 }
 
@@ -421,7 +413,7 @@ function renderTable() {
       ? 'Nenhum registo encontrado para esta procura'
       : 'Nenhum registo encontrado';
     resultsBody.innerHTML =
-      `<tr><td colspan="10" style="text-align:center; padding:20px;">${message}</td></tr>`;
+      `<tr><td colspan="8" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
@@ -432,7 +424,7 @@ function renderTable() {
     return `
       <tr>
         <td>${index + 1}</td>
-        <td style="white-space: nowrap;">${row.timestamp}</td>
+        <td>${row.timestamp}</td>
         <td style="font-weight: 600; color: #16a34a;">${glassType}</td>
         <td>${row.vehicle || '—'}</td>
         <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
@@ -443,27 +435,12 @@ function renderTable() {
                  placeholder="XX-XX-XX"
                  maxlength="8"
                  style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; text-align: center; text-transform: uppercase;"
-                 onblur="updateField(${row.id}, 'matricula', this.value)"
+                 onblur="updateMatricula(${row.id}, this.value)"
                  onkeypress="if(event.key==='Enter') this.blur()"
                  oninput="formatMatriculaInput(this)">
         </td>
         <td>
-            <select style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;"
-                    onchange="updateField(${row.id}, 'sm_loja', this.value)">
-                <option value="SM" ${row.sm_loja === 'SM' ? 'selected' : ''}>SM</option>
-                <option value="LOJA" ${row.sm_loja === 'LOJA' ? 'selected' : ''}>LOJA</option>
-            </select>
-        </td>
-        <td>
-            <input type="text"
-                   value="${row.obs || ''}"
-                   placeholder="Obs..."
-                   style="width: 100%; min-width: 120px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;"
-                   onblur="updateField(${row.id}, 'obs', this.value)"
-                   onkeypress="if(event.key==='Enter') this.blur()">
-        </td>
-        <td>
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
+          <div style="display: flex; gap: 8px; align-items: center;">
             <button onclick="openEditOcrModal(RESULTS[${originalIndex}])"
                     style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
                     title="Editar texto OCR"
@@ -553,21 +530,15 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['#', 'Data/Hora', 'Tipo', 'Veículo', 'Eurocode', 'Marca', 'Matrícula', 'SM/LOJA', 'OBS', 'Ficheiro', 'Texto OCR'];
+  const headers = ['#', 'Data/Hora', 'Texto OCR', 'Eurocode', 'Ficheiro'];
   const csvContent = [
     headers.join(','),
     ...dataToExport.map((row, index) => [
       index + 1,
       `"${row.timestamp}"`,
-      `"${detectGlassType(row.eurocode)}"`,
-      `"${row.vehicle || ''}"`,
+      `"${(row.text || '').replace(/"/g, '""')}"`,
       `"${row.eurocode || ''}"`,
-      `"${row.brand || ''}"`,
-      `"${row.matricula || ''}"`,
-      `"${row.sm_loja || ''}"`,
-      `"${(row.obs || '').replace(/"/g, '""')}"`,
-      `"${row.filename || ''}"`,
-      `"${(row.text || '').replace(/"/g, '""')}"`
+      `"${row.filename || ''}"`
     ].join(','))
   ].join('\n');
 
@@ -580,6 +551,60 @@ function exportCSV() {
   showToast('CSV exportado com sucesso!', 'success');
 }
 
+
+// =========================
+// Export Excel (XLSX) via SheetJS
+function exportExcel() {
+  const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
+
+  if (!dataToExport || dataToExport.length === 0) {
+    showToast && showToast('Nenhum dado para exportar', 'error');
+    return;
+  }
+
+  // Mapeia dados para um array de objetos com cabeçalhos legíveis
+  const rows = dataToExport.map((row, index) => ({
+    "#": index + 1,
+    "Data/Hora": row.timestamp || "",
+    "Tipologia": (typeof detectGlassType === 'function' ? detectGlassType(row.eurocode) : "") || "",
+    "Veículo": row.vehicle || "",
+    "Eurocode": row.eurocode || "",
+    "Marca Vidro": row.brand || "",
+    "Matrícula": row.matricula || "",
+    "Ficheiro": row.filename || "",
+    "Origem": row.source || "",
+    "Texto OCR": row.text || ""
+  }));
+
+  try {
+    // Cria worksheet e workbook
+    const ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
+    // Larguras de colunas sugeridas
+    const wscols = [
+      { wch: 4 },  // #
+      { wch: 18 }, // Data/Hora
+      { wch: 12 }, // Tipologia
+      { wch: 20 }, // Veículo
+      { wch: 16 }, // Eurocode
+      { wch: 16 }, // Marca Vidro
+      { wch: 12 }, // Matrícula
+      { wch: 24 }, // Ficheiro
+      { wch: 12 }, // Origem
+      { wch: 80 }  // Texto OCR
+    ];
+    ws['!cols'] = wscols;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Registos");
+
+    const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    showToast && showToast('Excel exportado com sucesso!', 'success');
+  } catch (e) {
+    console.error('Erro ao exportar Excel:', e);
+    showToast && showToast('Erro ao exportar Excel', 'error');
+  }
+}
 // =========================
 // Limpar tabela
 async function clearTable() {
@@ -614,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
   if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', exportCSV);
+  if (btnExport)  btnExport.addEventListener('click', exportExcel);
   if (btnClear)   btnClear.addEventListener('click', clearTable);
 
   const isMobile = window.innerWidth <= 768;
@@ -676,25 +701,6 @@ function normBrandText(s){
 }
 
 const BRAND_PATTERNS = [
-  { canon: "AGC",                  rx: /\bA[GC]C\b|\bAG[0O]\b|\bASAH[1I]\b|\bASAH1\b/ },
-  { canon: "Pilkington",           rx: /\bP[1I]LK[1I]NGT[0O]N\b|\bPILKINGTON\b|\bPILK\b|\bP1LK1NGT0N\b/ },
-  { canon: "Saint-Gobain Sekurit", rx: /\bSEKUR[1I]T\b|\bSA[1I]NT\s*G[0O]BA[1I]N\b|\bSEKUR1T\b/ },
-  { canon: "Guardian",             rx: /\bGUARD[1I]AN\b|\bGUARDIAN\b/ },
-  { canon: "Fuyao (FYG/FUYAO)",    rx: /\bFUYA[0O]\b|\bFYG\b|\bFUYA0\b/ },
-  { canon: "XYG",                  rx: /\bXYG\b|\bXY[6G]\b/ },
-  { canon: "NordGlass",            rx: /\bN[0O]RDGLASS\b|\bNORDGLASS\b|\bN0RDGLASS\b/ },
-  { canon: "Splintex",             rx: /\bSPL[1I]NTEX\b|\bSPLINTEX\b/ },
-  { canon: "Sicursiv",             rx: /\bS[1I]CURS[1I]V\b|\bSICURSIV\b|\bS1CURS1V\b/ },
-  { canon: "Carlite",              rx: /\bCARL[1I]TE\b|\bCARLITE\b/ },
-  { canon: "PPG",                  rx: /\bPPG\b|\bPP[6G]\b/ },
-  { canon: "Mopar",                rx: /\bM[0O]PAR\b|\bMOPAR\b/ },
-  { canon: "Shatterprufe",         rx: /\bSHATTERPRUFE\b|\bSHATTERPRUF\b/ },
-  { canon: "Protec",               rx: /\bPR[0O]TEC\b|\bPROTEC\b/ },
-  { canon: "Lamilex",              rx: /\bLAM[1I][1I]LEX\b|\bLAMILEX\b/ },
-  { canon: "Vitro",                rx: /\bV[1I]TR[0O]\b|\bVITRO\b|\bV1TR0\b/ },
-  { canon: "Toyota (OEM)",         rx: /\bT[0O]Y[0O]TA\b|\bTOYOTA\b|\bT0Y0TA\b/ },
-  { canon: "Ford (Carlite)",       rx: /\bF[0O]RD\b|\bFORD\b/ },
-  { canon: "GM",                   rx: /\bGENERAL\s*M[0O]T[0O]RS\b/ },
   { canon: "AGC",                  rx: /\bA[GC]C\b|\bAG[0O]\b|\bASAH[1I]\b|\bASAH1\b/ },
   { canon: "Pilkington",           rx: /\bP[1I]LK[1I]NGT[0O]N\b|\bPILKINGTON\b|\bPILK\b|\bP1LK1NGT0N\b/ },
   { canon: "Saint-Gobain Sekurit", rx: /\bSEKUR[1I]T\b|\bSA[1I]NT\s*G[0O]BA[1I]N\b|\bSEKUR1T\b/ },
@@ -936,7 +942,7 @@ function detectVehicleAndModelFromText(rawText) {
 
 
 // =========================
-// FUNÇÕES DE IMPRESSÃO MELHORADAS
+// FUNÇÕES DE IMPRESSÃO
 // =========================
 
 // Abrir modal de impressão
@@ -944,21 +950,85 @@ function openPrintModal() {
   const modal = document.getElementById('printModal');
   if (!modal) return;
   
+  // Definir data padrão como hoje
   const today = new Date().toISOString().split('T')[0];
-  const fromInput = document.getElementById('printDateFrom');
-  const toInput = document.getElementById('printDateTo');
+  document.getElementById('printDateFrom').value = today;
+  document.getElementById('printDateTo').value = today;
   
-  if (fromInput) fromInput.value = today;
-  if (toInput) toInput.value = today;
-  
+  // Atualizar preview
   updatePrintPreview();
+  
+  // Mostrar modal
   modal.classList.add('show');
 }
 
 // Fechar modal de impressão
 function closePrintModal() {
   const modal = document.getElementById('printModal');
-  if (modal) modal.classList.remove('show');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+// Definir intervalos de datas rápidos
+function setPrintDateRange(range, buttonElement) {
+  const today = new Date();
+  const fromInput = document.getElementById('printDateFrom');
+  const toInput = document.getElementById('printDateTo');
+  
+  let fromDate, toDate;
+  
+  switch (range) {
+    case 'today':
+      fromDate = toDate = today;
+      break;
+      
+    case 'week':
+      // Início da semana (segunda-feira)
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+      fromDate = startOfWeek;
+      toDate = today;
+      break;
+      
+    case 'month':
+      // Início do mês
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      fromDate = startOfMonth;
+      toDate = today;
+      break;
+      
+    case 'all':
+      // Todos os registos (desde o primeiro registo)
+      if (RESULTS.length > 0) {
+        const oldestRecord = RESULTS[RESULTS.length - 1];
+        fromDate = new Date(oldestRecord.created_at || oldestRecord.timestamp);
+      } else {
+        fromDate = today;
+      }
+      toDate = today;
+      break;
+      
+    default:
+      fromDate = toDate = today;
+  }
+  
+  fromInput.value = fromDate.toISOString().split('T')[0];
+  toInput.value = toDate.toISOString().split('T')[0];
+  
+  // Atualizar botões ativos
+  document.querySelectorAll('.print-quick-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Se buttonElement foi passado, usar ele, senão tentar event.target
+  const targetButton = buttonElement || (typeof event !== 'undefined' ? event.target : null);
+  if (targetButton) {
+    targetButton.classList.add('active');
+  }
+  
+  // Atualizar preview
+  updatePrintPreview();
 }
 
 // Atualizar preview de impressão
@@ -975,6 +1045,7 @@ function updatePrintPreview() {
     return;
   }
   
+  // Filtrar registos por data
   const filteredRecords = getRecordsInDateRange(fromDate, toDate);
   
   if (filteredRecords.length === 0) {
@@ -982,7 +1053,7 @@ function updatePrintPreview() {
     previewElement.className = 'print-preview-count';
     printButton.disabled = true;
   } else {
-    previewElement.textContent = `${filteredRecords.length} registo${filteredRecords.length !== 1 ? 's' : ''} para impressão`;
+    previewElement.textContent = `${filteredRecords.length} registo${filteredRecords.length !== 1 ? 's' : ''} encontrado${filteredRecords.length !== 1 ? 's' : ''} para impressão`;
     previewElement.className = 'print-preview-count has-data';
     printButton.disabled = false;
   }
@@ -994,17 +1065,19 @@ function getRecordsInDateRange(fromDate, toDate) {
   const to = new Date(toDate + 'T23:59:59');
   
   return RESULTS.filter(record => {
+    // Tentar usar created_at primeiro, depois timestamp como fallback
     let recordDate;
-    const timestampStr = record.timestamp.toString();
-    if (timestampStr.includes('/')) {
-      const [datePart, timePart] = timestampStr.split(', ');
+    if (record.created_at) {
+      recordDate = new Date(record.created_at);
+    } else if (record.timestamp) {
+      // Se timestamp está no formato "DD/MM/YYYY, HH:MM:SS"
+      const [datePart, timePart] = record.timestamp.split(', ');
       const [day, month, year] = datePart.split('/');
-      recordDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart || '00:00:00'}`);
+      recordDate = new Date(`${year}-${month}-${day}T${timePart || '00:00:00'}`);
     } else {
-      recordDate = new Date(record.timestamp);
+      return false; // Sem data válida
     }
     
-    if (isNaN(recordDate.getTime())) return false;
     return recordDate >= from && recordDate <= to;
   });
 }
@@ -1026,26 +1099,33 @@ function executePrint() {
     return;
   }
   
+  // Gerar conteúdo de impressão
   const printContent = generatePrintContent(recordsToPrint, fromDate, toDate);
+  
+  // Criar janela de impressão
   const printWindow = window.open('', '_blank');
   printWindow.document.write(printContent);
   printWindow.document.close();
   
+  // Aguardar carregamento e imprimir
   printWindow.onload = function() {
     printWindow.print();
     printWindow.close();
   };
   
+  // Fechar modal
   closePrintModal();
-  showToast(`${recordsToPrint.length} registo(s) enviado(s) para impressão`, 'success');
+  
+  showToast(`${recordsToPrint.length} registo${recordsToPrint.length !== 1 ? 's' : ''} enviado${recordsToPrint.length !== 1 ? 's' : ''} para impressão`, 'success');
 }
 
-// Gerar conteúdo HTML para impressão (COM NOVAS COLUNAS)
+// Gerar conteúdo HTML para impressão
 function generatePrintContent(records, fromDate, toDate) {
-  const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('pt-PT');
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('pt-PT');
+  };
+  
   const formatDateTime = (dateStr) => {
-    if (!dateStr) return '—';
-    if (typeof dateStr === 'string' && dateStr.includes('/')) return dateStr;
     return new Date(dateStr).toLocaleString('pt-PT');
   };
   
@@ -1060,16 +1140,65 @@ function generatePrintContent(records, fromDate, toDate) {
       <meta charset="UTF-8">
       <title>ExpressGlass - Relatório de Receção</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-        .print-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px; }
-        .print-header h1 { margin: 0; font-size: 22px; }
-        .print-header .print-period { margin: 8px 0 0; font-size: 14px; color: #666; }
-        .print-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-        .print-table th, .print-table td { border: 1px solid #333; padding: 5px; text-align: left; vertical-align: top; }
-        .print-table th { background: #f0f0f0; font-weight: bold; }
-        .print-footer { margin-top: 20px; text-align: center; font-size: 10px; color: #666; }
-        .eurocode { font-weight: bold; }
-        .matricula { font-weight: bold; }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+          color: #333;
+        }
+        .print-header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #333;
+          padding-bottom: 20px;
+        }
+        .print-header h1 {
+          margin: 0;
+          font-size: 24px;
+          color: #333;
+        }
+        .print-header .print-period {
+          margin: 10px 0 0 0;
+          font-size: 14px;
+          color: #666;
+        }
+        .print-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+        .print-table th,
+        .print-table td {
+          border: 1px solid #333;
+          padding: 6px 4px;
+          text-align: left;
+          vertical-align: top;
+        }
+        .print-table th {
+          background: #f0f0f0;
+          font-weight: bold;
+          font-size: 10px;
+        }
+        .print-table tr:nth-child(even) {
+          background: #f9f9f9;
+        }
+        .print-footer {
+          margin-top: 30px;
+          text-align: center;
+          font-size: 10px;
+          color: #666;
+          border-top: 1px solid #ccc;
+          padding-top: 10px;
+        }
+        .eurocode {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+          color: #007acc;
+        }
+        .glass-type {
+          font-weight: bold;
+          color: #16a34a;
+        }
       </style>
     </head>
     <body>
@@ -1077,38 +1206,39 @@ function generatePrintContent(records, fromDate, toDate) {
         <h1>EXPRESSGLASS - Receção de Material</h1>
         <div class="print-period">${periodText}</div>
       </div>
+      
       <table class="print-table">
         <thead>
           <tr>
-            <th style="width: 25px;">#</th>
-            <th style="width: 100px;">Data/Hora</th>
-            <th style="width: 70px;">Tipo</th>
-            <th>Veículo</th>
-            <th>Eurocode</th>
-            <th>Marca</th>
-            <th style="width: 70px;">Matrícula</th>
-            <th style="width: 50px;">Origem</th>
-            <th>OBS</th>
+            <th style="width: 30px;">#</th>
+            <th style="width: 120px;">Data/Hora</th>
+            <th style="width: 80px;">Tipo</th>
+            <th style="width: 100px;">Veículo</th>
+            <th style="width: 120px;">Eurocode</th>
+            <th style="width: 80px;">Marca</th>
           </tr>
         </thead>
         <tbody>
-          ${records.map((record, index) => `
+          ${records.map((record, index) => {
+            const glassType = detectGlassType(record.eurocode);
+            return `
               <tr>
                 <td>${index + 1}</td>
-                <td>${formatDateTime(record.timestamp)}</td>
-                <td>${detectGlassType(record.eurocode)}</td>
+                <td>${formatDateTime(record.created_at)}</td>
+                <td class="glass-type">${glassType}</td>
                 <td>${record.vehicle || '—'}</td>
                 <td class="eurocode">${record.eurocode || '—'}</td>
                 <td>${record.brand || '—'}</td>
-                <td class="matricula">${record.matricula || '—'}</td>
-                <td>${record.sm_loja || '—'}</td>
-                <td>${record.obs || '—'}</td>
               </tr>
-            `).join('')}
+            `;
+          }).join('')}
         </tbody>
       </table>
+      
       <div class="print-footer">
-        Total de registos: ${records.length} | Relatório gerado em ${new Date().toLocaleString('pt-PT')}
+        <div>Total de registos: ${records.length}</div>
+        <div>Relatório gerado em ${formatDateTime(new Date().toISOString())}</div>
+        <div>ExpressGlass - Sistema de Receção de Material</div>
       </div>
     </body>
     </html>
@@ -1117,91 +1247,510 @@ function generatePrintContent(records, fromDate, toDate) {
 
 // Event listeners para o modal de impressão
 document.addEventListener('DOMContentLoaded', function() {
+  // Fechar modal
   const printModalClose = document.getElementById('printModalClose');
   const printCancel = document.getElementById('printCancel');
   const printConfirm = document.getElementById('printConfirm');
   const printModal = document.getElementById('printModal');
   
-  if (printModalClose) printModalClose.addEventListener('click', closePrintModal);
-  if (printCancel) printCancel.addEventListener('click', closePrintModal);
-  if (printConfirm) printConfirm.addEventListener('click', executePrint);
+  if (printModalClose) {
+    printModalClose.addEventListener('click', closePrintModal);
+  }
   
+  if (printCancel) {
+    printCancel.addEventListener('click', closePrintModal);
+  }
+  
+  if (printConfirm) {
+    printConfirm.addEventListener('click', executePrint);
+  }
+  
+  // Fechar modal ao clicar fora
   if (printModal) {
     printModal.addEventListener('click', (e) => {
-      if (e.target === printModal) closePrintModal();
+      if (e.target === printModal) {
+        closePrintModal();
+      }
     });
   }
   
+  // Atualizar preview quando as datas mudarem
   const printDateFrom = document.getElementById('printDateFrom');
   const printDateTo = document.getElementById('printDateTo');
   
-  if (printDateFrom) printDateFrom.addEventListener('change', updatePrintPreview);
-  if (printDateTo) printDateTo.addEventListener('change', updatePrintPreview);
+  if (printDateFrom) {
+    printDateFrom.addEventListener('change', updatePrintPreview);
+  }
+  
+  if (printDateTo) {
+    printDateTo.addEventListener('change', updatePrintPreview);
+  }
 });
 
+
+
 // =========================
-// FUNÇÕES DE ATUALIZAÇÃO DE CAMPOS
+// FUNÇÕES DE MATRÍCULA
 // =========================
 
 // Formatar input de matrícula em tempo real
 function formatMatriculaInput(input) {
   let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (value.length > 2) value = value.substring(0, 2) + '-' + value.substring(2);
-  if (value.length > 5) value = value.substring(0, 5) + '-' + value.substring(5, 7);
+  
+  // Aplicar formato XX-XX-XX
+  if (value.length > 2) {
+    value = value.substring(0, 2) + '-' + value.substring(2);
+  }
+  if (value.length > 5) {
+    value = value.substring(0, 5) + '-' + value.substring(5, 7);
+  }
+  
   input.value = value;
 }
-window.formatMatriculaInput = formatMatriculaInput;
 
 // Validar formato de matrícula
 function isValidMatricula(matricula) {
   if (!matricula || matricula.trim() === '') return true; // Facultativo
+  
   const pattern = /^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/;
   return pattern.test(matricula);
 }
 
-// Atualizar um campo específico de um registo
-async function updateField(recordId, field, value) {
+// Atualizar matrícula de um registo
+async function updateMatricula(recordId, matricula) {
   try {
-    // Validação específica para matrícula
-    if (field === 'matricula') {
-      value = value.toUpperCase().trim();
-      if (value && !isValidMatricula(value)) {
-        showToast('Formato de matrícula inválido. Use XX-XX-XX', 'error');
-        renderTable(); // Restaurar valor anterior
-        return;
-      }
+    console.log('🔧 updateMatricula chamada:', { recordId, matricula });
+    console.log('🔧 Array RESULTS tem', RESULTS.length, 'registos');
+    console.log('🔧 IDs disponíveis:', RESULTS.map(r => r.id));
+    
+    // Formatar matrícula
+    matricula = matricula.toUpperCase().trim();
+    console.log('🔧 Matrícula formatada:', matricula);
+    
+    // Validar formato se não estiver vazio
+    if (matricula && !isValidMatricula(matricula)) {
+      console.log('❌ Formato inválido:', matricula);
+      showToast('Formato de matrícula inválido. Use XX-XX-XX', 'error');
+      renderTable(); // Restaurar valor anterior
+      return;
     }
-
-    // Encontrar registo local e atualizar
+    
+    // Encontrar registo local
     const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
+    console.log('🔧 Procurando registo com ID:', recordId);
+    console.log('🔧 Índice encontrado:', recordIndex);
+    
     if (recordIndex === -1) {
+      console.log('❌ Registo não encontrado:', recordId);
+      console.log('❌ Registos disponíveis:', RESULTS);
       showToast('Registo não encontrado', 'error');
       return;
     }
-    RESULTS[recordIndex][field] = value;
-
+    
+    console.log('🔧 Registo encontrado no índice:', recordIndex);
+    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
+    
+    // Atualizar localmente primeiro
+    RESULTS[recordIndex].matricula = matricula;
+    console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
+    
     // Enviar para servidor
-    const response = await fetch(UPDATE_URL, {
+    console.log('🔧 Enviando para servidor...');
+    const response = await fetch('/.netlify/functions/update-ocr', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
       body: JSON.stringify({
         id: recordId,
-        [field]: value
+        matricula: matricula
       })
     });
-
+    
+    console.log('🔧 Resposta do servidor:', response.status);
+    
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar'}`);
+      console.log('❌ Erro do servidor:', errorData);
+      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar matrícula'}`);
     }
-
-    await response.json();
-    showToast(`Campo ${field.toUpperCase()} atualizado`, 'success');
+    
+    const result = await response.json();
+    console.log('✅ Sucesso do servidor:', result);
+    
+    // Mostrar sucesso
+    if (matricula) {
+      showToast(`Matrícula ${matricula} guardada`, 'success');
+    } else {
+      showToast('Matrícula removida', 'success');
+    }
     
   } catch (error) {
-    console.error(`Erro ao atualizar ${field}:`, error);
-    showToast(`Erro ao guardar ${field}: ${error.message}`, 'error');
-    renderTable(); // Restaurar em caso de erro
+    console.error('❌ Erro ao atualizar matrícula:', error);
+    showToast(`Erro ao guardar matrícula: ${error.message}`, 'error');
+    
+    // Restaurar valor anterior em caso de erro
+    renderTable();
   }
 }
-window.updateField = updateField;
+
+
+// =========================
+// FUNÇÕES DE IMPRESSÃO MELHORADAS
+// =========================
+
+// Abrir modal de impressão
+function openPrintModal() {
+  const modal = document.getElementById('printModal');
+  if (!modal) return;
+  
+  // Definir data de hoje como padrão
+  const today = new Date().toISOString().split('T')[0];
+  const fromInput = document.getElementById('printDateFrom');
+  const toInput = document.getElementById('printDateTo');
+  
+  if (fromInput) fromInput.value = today;
+  if (toInput) toInput.value = today;
+  
+  // Atualizar preview
+  updatePrintPreview();
+  
+  // Mostrar modal
+  modal.classList.add('show');
+}
+
+// Fechar modal de impressão
+function closePrintModal() {
+  const modal = document.getElementById('printModal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+// Atualizar preview de impressão
+function updatePrintPreview() {
+  const fromDate = document.getElementById('printDateFrom').value;
+  const toDate = document.getElementById('printDateTo').value;
+  const previewElement = document.getElementById('printPreviewCount');
+  const printButton = document.getElementById('printConfirm');
+  
+  if (!fromDate || !toDate) {
+    previewElement.textContent = 'Selecione as datas inicial e final';
+    previewElement.className = 'print-preview-count';
+    printButton.disabled = true;
+    return;
+  }
+  
+  // Filtrar registos por data
+  const filteredRecords = getRecordsInDateRange(fromDate, toDate);
+  
+  if (filteredRecords.length === 0) {
+    previewElement.textContent = 'Nenhum registo encontrado no período selecionado';
+    previewElement.className = 'print-preview-count';
+    printButton.disabled = true;
+  } else {
+    previewElement.textContent = `${filteredRecords.length} registo${filteredRecords.length !== 1 ? 's' : ''} encontrado${filteredRecords.length !== 1 ? 's' : ''} para impressão`;
+    previewElement.className = 'print-preview-count has-data';
+    printButton.disabled = false;
+  }
+}
+
+// Obter registos num intervalo de datas - VERSÃO MELHORADA
+function getRecordsInDateRange(fromDate, toDate) {
+  const from = new Date(fromDate + 'T00:00:00');
+  const to = new Date(toDate + 'T23:59:59');
+  
+  console.log('🔍 Filtrar registos entre:', from.toLocaleDateString('pt-PT'), 'e', to.toLocaleDateString('pt-PT'));
+  console.log('📊 Total de registos disponíveis:', RESULTS.length);
+  
+  const filtered = RESULTS.filter(record => {
+    // Tentar usar created_at primeiro, depois timestamp como fallback
+    let recordDate;
+    
+    if (record.created_at) {
+      recordDate = new Date(record.created_at);
+    } else if (record.timestamp) {
+      // Se timestamp está no formato "DD/MM/YYYY, HH:MM:SS"
+      const timestampStr = record.timestamp.toString();
+      if (timestampStr.includes('/')) {
+        const [datePart, timePart] = timestampStr.split(', ');
+        const [day, month, year] = datePart.split('/');
+        recordDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart || '00:00:00'}`);
+      } else {
+        // Tentar parsing direto
+        recordDate = new Date(record.timestamp);
+      }
+    } else {
+      console.log('⚠️ Registo sem data válida:', record);
+      return false; // Sem data válida
+    }
+    
+    if (isNaN(recordDate.getTime())) {
+      console.log('❌ Data inválida para registo:', record);
+      return false;
+    }
+    
+    const isInRange = recordDate >= from && recordDate <= to;
+    console.log(`📅 Registo ${record.id}: ${recordDate.toLocaleDateString('pt-PT')} - ${isInRange ? '✅ Incluído' : '❌ Excluído'}`);
+    
+    return isInRange;
+  });
+  
+  console.log('✅ Registos filtrados:', filtered.length);
+  return filtered;
+}
+
+// Executar impressão
+function executePrint() {
+  const fromDate = document.getElementById('printDateFrom').value;
+  const toDate = document.getElementById('printDateTo').value;
+  
+  if (!fromDate || !toDate) {
+    showToast('Selecione as datas para impressão', 'error');
+    return;
+  }
+  
+  const recordsToPrint = getRecordsInDateRange(fromDate, toDate);
+  
+  if (recordsToPrint.length === 0) {
+    showToast('Nenhum registo encontrado no período selecionado', 'error');
+    return;
+  }
+  
+  // Gerar conteúdo de impressão
+  const printContent = generatePrintContent(recordsToPrint, fromDate, toDate);
+  
+  // Criar janela de impressão
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  
+  // Aguardar carregamento e imprimir
+  printWindow.onload = function() {
+    printWindow.print();
+    printWindow.close();
+  };
+  
+  // Fechar modal
+  closePrintModal();
+  
+  showToast(`${recordsToPrint.length} registo${recordsToPrint.length !== 1 ? 's' : ''} enviado${recordsToPrint.length !== 1 ? 's' : ''} para impressão`, 'success');
+}
+
+// Gerar conteúdo HTML para impressão
+function generatePrintContent(records, fromDate, toDate) {
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('pt-PT');
+  };
+  
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '—';
+    
+    // Se for timestamp no formato DD/MM/YYYY, HH:MM:SS
+    if (typeof dateStr === 'string' && dateStr.includes('/')) {
+      const [datePart, timePart] = dateStr.split(', ');
+      if (datePart && timePart) {
+        const [day, month, year] = datePart.split('/');
+        const formattedDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`);
+        return formattedDate.toLocaleString('pt-PT');
+      }
+    }
+    
+    // Parsing normal para ISO dates
+    return new Date(dateStr).toLocaleString('pt-PT');
+  };
+  
+  const periodText = fromDate === toDate 
+    ? `Dia ${formatDate(fromDate)}`
+    : `Período de ${formatDate(fromDate)} a ${formatDate(toDate)}`;
+  
+  // Obter email do utilizador
+  let userEmail = 'utilizador@expressglass.pt'; // fallback
+  
+  // Tentar obter email de várias fontes
+  if (window.authManager && window.authManager.user && window.authManager.user.email) {
+    userEmail = window.authManager.user.email;
+  } else if (localStorage.getItem('user')) {
+    try {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      if (userData && userData.email) {
+        userEmail = userData.email;
+      }
+    } catch (e) {
+      console.log('Erro ao obter email do localStorage:', e);
+    }
+  }
+  
+  console.log('Email do utilizador para impressão:', userEmail);
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="pt">
+    <head>
+      <meta charset="UTF-8">
+      <title>ExpressGlass - Relatório de Receção</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+          color: #333;
+        }
+        .print-header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #333;
+          padding-bottom: 20px;
+        }
+        .print-header h1 {
+          margin: 0;
+          font-size: 24px;
+          color: #333;
+        }
+        .print-header .print-period {
+          margin: 10px 0 0 0;
+          font-size: 14px;
+          color: #666;
+        }
+        .print-header .print-user {
+          margin: 5px 0 0 0;
+          font-size: 12px;
+          color: #888;
+          font-style: italic;
+        }
+        .print-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+        .print-table th,
+        .print-table td {
+          border: 1px solid #333;
+          padding: 6px 4px;
+          text-align: left;
+          vertical-align: top;
+        }
+        .print-table th {
+          background: #f0f0f0;
+          font-weight: bold;
+          font-size: 10px;
+        }
+        .print-table tr:nth-child(even) {
+          background: #f9f9f9;
+        }
+        .print-footer {
+          margin-top: 30px;
+          text-align: center;
+          font-size: 10px;
+          color: #666;
+          border-top: 1px solid #ccc;
+          padding-top: 10px;
+        }
+        .eurocode {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+          color: #007acc;
+        }
+        .glass-type {
+          font-weight: bold;
+          color: #16a34a;
+        }
+        .matricula {
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+          color: #059669;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>EXPRESSGLASS - Receção de Material</h1>
+        <div class="print-period">${periodText}</div>
+        <div class="print-user">Utilizador: ${userEmail}</div>
+      </div>
+      
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 30px;">#</th>
+            <th style="width: 120px;">Data/Hora</th>
+            <th style="width: 80px;">Tipo</th>
+            <th style="width: 100px;">Veículo</th>
+            <th style="width: 120px;">Eurocode</th>
+            <th style="width: 80px;">Marca</th>
+            <th style="width: 80px;">Matrícula</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${records.map((record, index) => {
+            const glassType = detectGlassType(record.eurocode);
+            const recordDateTime = record.created_at || record.timestamp;
+            console.log('Formatando data para impressão:', recordDateTime);
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${formatDateTime(recordDateTime)}</td>
+                <td class="glass-type">${glassType}</td>
+                <td>${record.vehicle || '—'}</td>
+                <td class="eurocode">${record.eurocode || '—'}</td>
+                <td>${record.brand || '—'}</td>
+                <td class="matricula">${record.matricula || '—'}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+      
+      <div class="print-footer">
+        <div>Total de registos: ${records.length}</div>
+        <div>Relatório gerado em ${formatDateTime(new Date().toISOString())}</div>
+        <div>ExpressGlass - Sistema de Receção de Material</div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Event listeners para o modal de impressão
+document.addEventListener('DOMContentLoaded', function() {
+  // Fechar modal
+  const printModalClose = document.getElementById('printModalClose');
+  const printCancel = document.getElementById('printCancel');
+  const printConfirm = document.getElementById('printConfirm');
+  const printModal = document.getElementById('printModal');
+  
+  if (printModalClose) {
+    printModalClose.addEventListener('click', closePrintModal);
+  }
+  
+  if (printCancel) {
+    printCancel.addEventListener('click', closePrintModal);
+  }
+  
+  if (printConfirm) {
+    printConfirm.addEventListener('click', executePrint);
+  }
+  
+  // Fechar modal ao clicar fora
+  if (printModal) {
+    printModal.addEventListener('click', (e) => {
+      if (e.target === printModal) {
+        closePrintModal();
+      }
+    });
+  }
+  
+  // Atualizar preview quando as datas mudarem
+  const printDateFrom = document.getElementById('printDateFrom');
+  const printDateTo = document.getElementById('printDateTo');
+  
+  if (printDateFrom) {
+    printDateFrom.addEventListener('change', updatePrintPreview);
+  }
+  
+  if (printDateTo) {
+    printDateTo.addEventListener('change', updatePrintPreview);
+  }
+});
+
