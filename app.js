@@ -8,6 +8,50 @@ const SAVE_URL     = '/.netlify/functions/save-ocr';
 const UPDATE_URL   = '/.netlify/functions/update-ocr';
 const DELETE_URL   = '/.netlify/functions/delete-ocr';
 
+// ===== Auth token helper (auto) =====
+const TOKEN_KEY = 'eg_auth_token';
+
+function getSavedToken() {
+  try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(_){
+    return '';
+  }
+}
+
+function saveToken(token) {
+  try { localStorage.setItem(TOKEN_KEY, token || ''); } catch(_){}
+}
+
+async function promptForToken(message='Cola aqui o token de autenticação') {
+  const t = window.prompt(message, getSavedToken() || '');
+  if (t && t.trim()) { saveToken(t.trim()); return t.trim(); }
+  return null;
+}
+
+async function authorizedFetch(url, options={}) {
+  const opts = Object.assign({ headers: {} }, options);
+  opts.headers = Object.assign({}, opts.headers);
+  let token = getSavedToken();
+  if (token) {
+    // enviar em vários cabeçalhos para maximizar compatibilidade
+    opts.headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+    opts.headers['x-api-key'] = token;
+  }
+
+  // tenta pedido
+  let res = await fetch(url, opts);
+  if (res.status === 401 || res.status === 403) {
+    // pedir token e repetir uma vez
+    token = await promptForToken('Token necessário. Cola aqui o token (ex.: Bearer xxxxx ou só o token)');
+    if (token) {
+      opts.headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+      opts.headers['x-api-key'] = token;
+      res = await fetch(url, opts);
+    }
+  }
+  return res;
+}
+
+
 // ---- Seletores ----
 const fileInput  = document.getElementById('fileInput');
 const btnUpload  = document.getElementById('btnUpload');
@@ -378,7 +422,7 @@ async function runOCR(imageBase64) {
 async function loadResults() {
   try {
     setStatus(desktopStatus, 'A carregar dados...');
-    const response = await authorizedFetch(LIST_URL);
+    const response = await fetch(LIST_URL);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
@@ -1702,8 +1746,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+// Atalho: window.setAuthToken('...') para definir token manualmente
+window.setAuthToken = function(t){
+  if (!t) return;
+  saveToken(t);
+  alert('Token guardado.');
+};
+
+
 // ===== Excel Export (SheetJS) =====
-function exportExcelWithData(dataToExport, opts){
+function exportExcelWithData(dataToExport){
   const list = Array.isArray(dataToExport) ? dataToExport : (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS);
   const rows = list.map((row, index) => ({
     "#": index + 1,
@@ -1731,7 +1783,7 @@ function exportExcelWithData(dataToExport, opts){
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Registos");
-    const filename = (opts && opts.filename) ? opts.filename : `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, filename);
     if (typeof showToast === 'function') showToast('Excel exportado com sucesso!', 'success');
   } catch (e) {
@@ -1770,27 +1822,6 @@ function filterByDateRange(rows, startDate, endDate){
   });
 }
 
-// ===== Memória de seleção do export =====
-const EXPORT_MEMO_START = 'export_start_ymd';
-const EXPORT_MEMO_END   = 'export_end_ymd';
-const EXPORT_MEMO_USEF  = 'export_use_search';
-function saveExportPrefs(s, e, useF){
-  try{
-    localStorage.setItem(EXPORT_MEMO_START, s || '');
-    localStorage.setItem(EXPORT_MEMO_END,   e || '');
-    localStorage.setItem(EXPORT_MEMO_USEF,  useF ? '1' : '0');
-  }catch(_){}
-}
-function loadExportPrefs(){
-  try{
-    return {
-      s: localStorage.getItem(EXPORT_MEMO_START) || '',
-      e: localStorage.getItem(EXPORT_MEMO_END) || '',
-      u: (localStorage.getItem(EXPORT_MEMO_USEF) || '1') === '1'
-    };
-  }catch(_){ return {s:'',e:'',u:true}; }
-}
-
 // ===== Modal de exportação (lazy DOM) =====
 function openExportModal(){
   const modal = document.getElementById('exportModal');
@@ -1803,11 +1834,7 @@ function openExportModal(){
   const endEl      = document.getElementById('exportEnd');
   const useSearch  = document.getElementById('exportUseSearch');
 
-  const memo = loadExportPrefs();
-  if (startEl && memo.s) startEl.value = memo.s;
-  if (endEl && memo.e) endEl.value = memo.e;
-  if (useSearch) useSearch.checked = memo.u;
-
+  // defaults
   const today = new Date();
   const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
   if (endEl && !endEl.value) endEl.value = `${y}-${m}-${d}`;
@@ -1816,19 +1843,6 @@ function openExportModal(){
     const ym = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
     startEl.value = `${ym}-${mm}-${dd}`;
   }
-
-  // Presets
-  const pHoje  = document.getElementById('exportPresetHoje');
-  const p7     = document.getElementById('exportPreset7');
-  const pMes   = document.getElementById('exportPresetMes');
-  const pTodos = document.getElementById('exportPresetTodos');
-  function fmtYMD(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
-  function firstDayOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
-  function setDates(s, e){ if (startEl) startEl.value = s || ''; if (endEl) endEl.value = e || ''; }
-  if (pHoje)  pHoje.onclick  = () => { const t=new Date(); const ymd=fmtYMD(t); setDates(ymd, ymd); };
-  if (p7)     p7.onclick     = () => { const t=new Date(); const s=new Date(t.getTime()-6*24*3600*1000); setDates(fmtYMD(s), fmtYMD(t)); };
-  if (pMes)   pMes.onclick   = () => { const t=new Date(); setDates(fmtYMD(firstDayOfMonth(t)), fmtYMD(t)); };
-  if (pTodos) pTodos.onclick = () => { setDates('', ''); };
 
   modal.classList.add('show');
   modal.style.display = 'flex';
@@ -1839,14 +1853,11 @@ function openExportModal(){
     if (btnClose)  btnClose.addEventListener('click', close);
     if (btnCancel) btnCancel.addEventListener('click', close);
     if (btnConfirm) btnConfirm.addEventListener('click', () => {
-      const sVal = startEl?.value || '';
-      const eVal = endEl?.value || '';
-      const useF = !!(useSearch && useSearch.checked);
-      saveExportPrefs(sVal, eVal, useF);
-      const base = useF ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS) : RESULTS;
-      const ranged = filterByDateRange(base, sVal, eVal);
-      const fname = 'expressglass_' + (sVal||'todos') + '_a_' + (eVal||'todos') + '.xlsx';
-      exportExcelWithData(ranged, { filename: fname });
+      const base = (useSearch && useSearch.checked) 
+        ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
+        : RESULTS;
+      const ranged = filterByDateRange(base, startEl?.value || '', endEl?.value || '');
+      exportExcelWithData(ranged);
       close();
     });
     modal.dataset.wired = "1";
@@ -1856,10 +1867,3 @@ window.openExportModal = openExportModal;
 
 // Compat: chamadas antigas
 window.exportCSV = function(){ if (typeof openExportModal==='function') openExportModal(); else if (typeof exportExcel==='function') exportExcel(); };
-
-async function authorizedFetch(url, options={}) {
-  // Auth desativada: pedido direto, sem prompts, sem headers de token
-  const opts = Object.assign({ headers: {} }, options);
-  return fetch(url, opts);
-}
-
