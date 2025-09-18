@@ -2,12 +2,55 @@
 // =========================
 
 // ---- Endpoints ----
-const BASE = (typeof window !== 'undefined' && window.location) ? window.location.origin : '';
-const OCR_ENDPOINT = `${BASE}/.netlify/functions/ocr-proxy`;
-const LIST_URL     = `${BASE}/.netlify/functions/list-ocr`;
-const SAVE_URL     = `${BASE}/.netlify/functions/save-ocr`;
-const UPDATE_URL   = `${BASE}/.netlify/functions/update-ocr`;
-const DELETE_URL   = `${BASE}/.netlify/functions/delete-ocr`;
+const OCR_ENDPOINT = '/.netlify/functions/ocr-proxy';
+const LIST_URL     = '/.netlify/functions/list-ocr';
+const SAVE_URL     = '/.netlify/functions/save-ocr';
+const UPDATE_URL   = '/.netlify/functions/update-ocr';
+const DELETE_URL   = '/.netlify/functions/delete-ocr';
+
+// ===== Auth token helper (auto) =====
+const TOKEN_KEY = 'eg_auth_token';
+
+function getSavedToken() {
+  try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(_){
+    return '';
+  }
+}
+
+function saveToken(token) {
+  try { localStorage.setItem(TOKEN_KEY, token || ''); } catch(_){}
+}
+
+async function promptForToken(message='Cola aqui o token de autenticação') {
+  const t = window.prompt(message, getSavedToken() || '');
+  if (t && t.trim()) { saveToken(t.trim()); return t.trim(); }
+  return null;
+}
+
+async function authorizedFetch(url, options={}) {
+  const opts = Object.assign({ headers: {} }, options);
+  opts.headers = Object.assign({}, opts.headers);
+  let token = getSavedToken();
+  if (token) {
+    // enviar em vários cabeçalhos para maximizar compatibilidade
+    opts.headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+    opts.headers['x-api-key'] = token;
+  }
+
+  // tenta pedido
+  let res = await fetch(url, opts);
+  if (res.status === 401 || res.status === 403) {
+    // pedir token e repetir uma vez
+    token = await promptForToken('Token necessário. Cola aqui o token (ex.: Bearer xxxxx ou só o token)');
+    if (token) {
+      opts.headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+      opts.headers['x-api-key'] = token;
+      res = await fetch(url, opts);
+    }
+  }
+  return res;
+}
+
 
 // ---- Seletores ----
 const fileInput  = document.getElementById('fileInput');
@@ -586,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
   if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', openExportModal);
+  if (btnExport)  btnExport.addEventListener('click', exportCSV);
   if (btnClear)   btnClear.addEventListener('click', clearTable);
 
   const isMobile = window.innerWidth <= 768;
@@ -1525,8 +1568,6 @@ function generatePrintContent(records, fromDate, toDate) {
         userEmail = userData.email;
       }
     } catch (e) {
-    console.error('loadResults error:', e);
-    setStatus && setStatus(desktopStatus, 'Falha ao carregar dados', 'error');
       console.log('Erro ao obter email do localStorage:', e);
     }
   }
@@ -1705,16 +1746,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-// ===== Global error surface =====
-window.addEventListener('error', (e) => {
-  try { setStatus && setStatus(desktopStatus, 'Erro de JavaScript: ' + (e.message||''), 'error'); } catch(_){}
-  console.error('JS Error:', e);
-});
-
-
-// ===== Forçar label do botão Exportar para Excel (quando HTML antigo em cache)
-function forceExportLabel(){
-  const b = document.getElementById('btnExport');
-  if (b) b.innerHTML = '📊 Exportar Excel';
-}
-document.addEventListener('DOMContentLoaded', forceExportLabel);
+// Atalho: window.setAuthToken('...') para definir token manualmente
+window.setAuthToken = function(t){
+  if (!t) return;
+  saveToken(t);
+  alert('Token guardado.');
+};
