@@ -1752,35 +1752,3 @@ window.setAuthToken = function(t){
   saveToken(t);
   alert('Token guardado.');
 };
-
-
-// ===== Helpers: datas utilitárias =====
-function fmtYMD(d){
-  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
-function firstDayOfMonth(d){
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-// ===== Memória de seleção do export =====
-const EXPORT_MEMO_START = 'export_start_ymd';
-const EXPORT_MEMO_END   = 'export_end_ymd';
-const EXPORT_MEMO_USEF  = 'export_use_search';
-
-function saveExportPrefs(s, e, useF){
-  try{
-    localStorage.setItem(EXPORT_MEMO_START, s || '');
-    localStorage.setItem(EXPORT_MEMO_END,   e || '');
-    localStorage.setItem(EXPORT_MEMO_USEF,  useF ? '1' : '0');
-  }catch(_){}
-}
-function loadExportPrefs(){
-  try{
-    return {
-      s: localStorage.getItem(EXPORT_MEMO_START) || '',
-      e: localStorage.getItem(EXPORT_MEMO_END) || '',
-      u: (localStorage.getItem(EXPORT_MEMO_USEF) || '1') === '1'
-    };
-  }catch(_){ return {s:'',e:'',u:true}; }
-}
