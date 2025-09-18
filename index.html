@@ -890,7 +890,7 @@ table {
 
   <!-- App original (mantém-se igual) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="app.js?v=xlsx-modal-live"></script>
+  <script src="app.js?v=xlsx-modal-filtros-v2"></script>
 
   <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
   <script>
@@ -1434,6 +1434,17 @@ window.addEventListener('load', () => {
         <button id="exportModalClose" class="export-close" title="Fechar">×</button>
       </div>
       <div class="export-modal-body">
+        <!-- Botões de filtro rápido -->
+        <div class="export-field">
+          <label>Período de exportação</label>
+          <div class="export-quick-buttons">
+            <button id="exportToday" class="export-quick-btn active" data-period="today">Hoje</button>
+            <button id="exportWeek" class="export-quick-btn" data-period="week">Esta Semana</button>
+            <button id="exportAll" class="export-quick-btn" data-period="all">Tudo</button>
+          </div>
+        </div>
+        
+        <!-- Campos de data (preenchidos automaticamente) -->
         <div class="export-field">
           <label for="exportStart">Data início</label>
           <input id="exportStart" type="date" />
@@ -1442,6 +1453,7 @@ window.addEventListener('load', () => {
           <label for="exportEnd">Data fim</label>
           <input id="exportEnd" type="date" />
         </div>
+        
         <div class="export-field inline">
           <label class="inline-label">
             <input id="exportUseSearch" type="checkbox" checked />
@@ -1470,6 +1482,10 @@ window.addEventListener('load', () => {
     .export-field.inline{ display:flex; align-items:center; }
     .export-field label{ font-weight:600; font-size:14px; color: var(--muted,#a3aed0) }
     .export-field input[type="date"]{ background: rgba(255,255,255,.06); border:1px solid var(--cardBorder,#1f2937); color: var(--text,#e5e7eb); border-radius:10px; padding:10px 12px; font-size:14px; }
+    .export-quick-buttons{ display:flex; gap:8px; margin-top:8px; }
+    .export-quick-btn{ background: rgba(255,255,255,.08); color: var(--muted,#a3aed0); border:1px solid var(--cardBorder,#1f2937); padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition: all 0.2s ease; }
+    .export-quick-btn:hover{ background: rgba(255,255,255,.12); color: var(--text,#e5e7eb); }
+    .export-quick-btn.active{ background: var(--accent,#22d3ee); color: #0f172a; border-color: var(--accent,#22d3ee); }
     .export-modal-footer{ display:flex; gap:10px; justify-content:flex-end; padding:16px 20px; border-top:1px solid var(--cardBorder,#1f2937); }
     .btn-secondary{ background:#6b7280; color:white; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; }
     .btn-primary{ background:#06b6d4; color:white; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight:700; }
