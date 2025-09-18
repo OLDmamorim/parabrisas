@@ -1767,13 +1767,13 @@ function exportExcelWithData(dataToExport){
     "Eurocode": row.eurocode || "",
     "Marca Vidro": row.brand || "",
     "Matrícula": row.matricula || "",
-    "Loja": row.loja || "LOJA",
-    "Observações": row.observacoes || ""
+    "SM/LOJA": row.loja || "LOJA",
+    "OBS": row.observacoes || ""
   }));
   try {
     let ws;
     if (rows.length === 0) {
-      const headers = ["#", "Data/Hora", "Tipologia", "Veículo", "Eurocode", "Marca Vidro", "Matrícula", "Loja", "Observações"];
+      const headers = ["#", "Data/Hora", "Tipologia", "Veículo", "Eurocode", "Marca Vidro", "Matrícula", "SM/LOJA", "OBS"];
       ws = XLSX.utils.aoa_to_sheet([headers]);
     } else {
       ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
