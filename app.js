@@ -1739,7 +1739,13 @@ function exportExcelWithData(dataToExport){
   }
 }
 
-function exportExcel(){ exportExcelWithData(); }
+function exportExcel(){
+  if (!window.__bypassExportModal) {
+    if (typeof openExportModal === 'function') { openExportModal(); }
+    return; // só exporta após confirmação do modal
+  }
+  exportExcelWithData();
+}
 
 
 // ===== Helpers: parser de datas e filtro por intervalo
@@ -1807,7 +1813,9 @@ if (exportModalConfirm) exportModalConfirm.addEventListener('click', () => {
     ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
     : RESULTS;
   const ranged = filterByDateRange(base, exportStart?.value || '', exportEnd?.value || '');
+  window.__bypassExportModal = true;
   exportExcelWithData(ranged);
+  window.__bypassExportModal = false;
   closeExportModal();
   showToast && showToast(`A exportar ${ranged.length} registo(s)`, ranged.length ? 'success' : 'error');
 });
