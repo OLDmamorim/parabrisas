@@ -1,5 +1,7 @@
 // APP.JS (BD + Validação de Eurocode + CSS Forçado para Texto Pequeno)
 // =========================
+// VERSÃO: 19/09/2025 00:27 - PERSISTÊNCIA NA BASE DE DADOS IMPLEMENTADA
+// =========================
 
 // ---- Endpoints ----
 const OCR_ENDPOINT = '/.netlify/functions/ocr-proxy';
@@ -2019,45 +2021,145 @@ function saveEditedRecord() {
 window.openEditRecordModal = openEditRecordModal;
 
 // ===== Funções para atualizar campos inline =====
-async function updateLoja(id, value) {
-  console.log('Atualizando loja:', id, value);
-  
-  // Encontrar e atualizar o registo local
-  const rowIndex = RESULTS.findIndex(r => r.id === id);
-  if (rowIndex !== -1) {
-    RESULTS[rowIndex].loja = value;
+async function updateLoja(recordId, loja) {
+  try {
+    console.log('🔧 updateLoja chamada:', { recordId, loja });
     
-    // Atualizar também nos resultados filtrados se existirem
-    const filteredIndex = FILTERED_RESULTS.findIndex(r => r.id === id);
-    if (filteredIndex !== -1) {
-      FILTERED_RESULTS[filteredIndex].loja = value;
+    // Encontrar registo local
+    const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
+    console.log('🔧 Procurando registo com ID:', recordId);
+    console.log('🔧 Índice encontrado:', recordIndex);
+    
+    if (recordIndex === -1) {
+      console.log('❌ Registo não encontrado:', recordId);
+      showToast('Registo não encontrado', 'error');
+      return;
     }
     
-    console.log('Loja atualizada localmente para:', value);
+    console.log('🔧 Registo encontrado no índice:', recordIndex);
+    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
     
-    // Aqui podes adicionar chamada à API se necessário
-    // await updateRecordInAPI(id, { loja: value });
+    // Atualizar localmente primeiro
+    RESULTS[recordIndex].loja = loja;
+    console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
+    
+    // Enviar para servidor (enviar registo completo)
+    console.log('🔧 Enviando para servidor...');
+    const fullRecord = RESULTS[recordIndex];
+    const response = await fetch('/.netlify/functions/update-ocr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        id: recordId,
+        matricula: fullRecord.matricula || '',
+        loja: loja,
+        observacoes: fullRecord.observacoes || '',
+        eurocode: fullRecord.eurocode || '',
+        vehicle: fullRecord.vehicle || '',
+        brand: fullRecord.brand || '',
+        timestamp: fullRecord.timestamp || '',
+        text: fullRecord.text || '',
+        filename: fullRecord.filename || '',
+        source: fullRecord.source || ''
+      })
+    });
+    
+    console.log('🔧 Resposta do servidor:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.log('❌ Erro do servidor:', errorData);
+      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar loja'}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Sucesso do servidor:', result);
+    
+    // Mostrar sucesso
+    showToast(`Loja ${loja} guardada`, 'success');
+    
+  } catch (error) {
+    console.error('❌ Erro ao atualizar loja:', error);
+    showToast(`Erro ao guardar loja: ${error.message}`, 'error');
+    
+    // Restaurar valor anterior em caso de erro
+    renderTable();
   }
 }
 
-async function updateObservacoes(id, value) {
-  console.log('Atualizando observações:', id, value);
-  
-  // Encontrar e atualizar o registo local
-  const rowIndex = RESULTS.findIndex(r => r.id === id);
-  if (rowIndex !== -1) {
-    RESULTS[rowIndex].observacoes = value;
+async function updateObservacoes(recordId, observacoes) {
+  try {
+    console.log('🔧 updateObservacoes chamada:', { recordId, observacoes });
     
-    // Atualizar também nos resultados filtrados se existirem
-    const filteredIndex = FILTERED_RESULTS.findIndex(r => r.id === id);
-    if (filteredIndex !== -1) {
-      FILTERED_RESULTS[filteredIndex].observacoes = value;
+    // Encontrar registo local
+    const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
+    console.log('🔧 Procurando registo com ID:', recordId);
+    console.log('🔧 Índice encontrado:', recordIndex);
+    
+    if (recordIndex === -1) {
+      console.log('❌ Registo não encontrado:', recordId);
+      showToast('Registo não encontrado', 'error');
+      return;
     }
     
-    console.log('Observações atualizadas localmente para:', value);
+    console.log('🔧 Registo encontrado no índice:', recordIndex);
+    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
     
-    // Aqui podes adicionar chamada à API se necessário
-    // await updateRecordInAPI(id, { observacoes: value });
+    // Atualizar localmente primeiro
+    RESULTS[recordIndex].observacoes = observacoes;
+    console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
+    
+    // Enviar para servidor (enviar registo completo)
+    console.log('🔧 Enviando para servidor...');
+    const fullRecord = RESULTS[recordIndex];
+    const response = await fetch('/.netlify/functions/update-ocr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        id: recordId,
+        matricula: fullRecord.matricula || '',
+        loja: fullRecord.loja || 'LOJA',
+        observacoes: observacoes,
+        eurocode: fullRecord.eurocode || '',
+        vehicle: fullRecord.vehicle || '',
+        brand: fullRecord.brand || '',
+        timestamp: fullRecord.timestamp || '',
+        text: fullRecord.text || '',
+        filename: fullRecord.filename || '',
+        source: fullRecord.source || ''
+      })
+    });
+    
+    console.log('🔧 Resposta do servidor:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.log('❌ Erro do servidor:', errorData);
+      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar observações'}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Sucesso do servidor:', result);
+    
+    // Mostrar sucesso
+    if (observacoes.trim()) {
+      showToast('Observações guardadas', 'success');
+    } else {
+      showToast('Observações removidas', 'success');
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro ao atualizar observações:', error);
+    showToast(`Erro ao guardar observações: ${error.message}`, 'error');
+    
+    // Restaurar valor anterior em caso de erro
+    renderTable();
   }
 }
 
