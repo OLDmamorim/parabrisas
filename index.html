@@ -1425,5 +1425,84 @@ window.addEventListener('load', () => {
 </style>
 
 <script src="auth.js"></script>
+
+  <!-- ===== MODAL EXPORTAÇÃO ===== -->
+  <div id="exportModal" class="export-modal" style="display:none;">
+    <div class="export-modal-content">
+      <div class="export-modal-header">
+        <h3>📤 Exportar para Excel</h3>
+        <button id="exportModalClose" class="export-close" title="Fechar">×</button>
+      </div>
+      <div class="export-modal-body">
+        <div class="export-field">
+          <label for="exportStart">Data início</label>
+          <input id="exportStart" type="date" />
+        </div>
+        <div class="export-field">
+          <label for="exportEnd">Data fim</label>
+          <input id="exportEnd" type="date" />
+        </div>
+        <div class="export-field inline">
+          <label class="inline-label">
+            <input id="exportUseSearch" type="checkbox" checked />
+            Usar também o filtro de pesquisa atual (Eurocode)
+          </label>
+        </div>
+      </div>
+      <div class="export-modal-footer">
+        <button id="exportModalCancel" class="btn-secondary">Cancelar</button>
+        <button id="exportModalConfirm" class="btn-primary">Exportar</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* ===== Estilos simples do modal de exportação (segue look & feel) ===== */
+    .export-modal{
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1200; backdrop-filter: blur(6px);
+      padding: 16px;
+    }
+    .export-modal.show{ display:flex }
+    .export-modal-content{
+      width: 100%; max-width: 520px;
+      background: var(--card, #0f172a);
+      color: var(--text, #e5e7eb);
+      border: 1px solid var(--cardBorder, #1f2937);
+      border-radius: 16px; box-shadow: var(--shadowLarge, 0 20px 40px rgba(0,0,0,.35));
+      display: flex; flex-direction: column; overflow: hidden;
+      animation: modalSlideIn .25s ease;
+    }
+    @keyframes modalSlideIn{ from{ transform: translateY(10px); opacity:.6 } to{ transform:none; opacity:1 } }
+    .export-modal-header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--cardBorder, #1f2937);
+    }
+    .export-modal-header h3{ margin:0; font-size: 18px; color: var(--accent, #22d3ee) }
+    .export-close{
+      background: none; border: 0; color: var(--muted,#a3aed0);
+      font-size: 24px; cursor:pointer; line-height:1; border-radius:8px; padding: 2px 6px;
+    }
+    .export-close:hover{ color:#fff; background: rgba(255,255,255,.08) }
+    .export-modal-body{ padding: 16px 20px; display:grid; gap:12px }
+    .export-field{ display:grid; gap:6px }
+    .export-field.inline{ display:flex; align-items:center; }
+    .export-field label{ font-weight:600; font-size: 14px; color: var(--muted,#a3aed0) }
+    .export-field input[type="date"]{
+      background: rgba(255,255,255,.06); border:1px solid var(--cardBorder,#1f2937);
+      color: var(--text,#e5e7eb); border-radius: 10px; padding: 10px 12px; font-size: 14px;
+    }
+    .export-modal-footer{
+      display:flex; gap:10px; justify-content:flex-end; padding: 16px 20px;
+      border-top: 1px solid var(--cardBorder,#1f2937);
+    }
+    .export-modal-footer .btn-primary, .export-modal-footer .btn-secondary{
+      padding: 10px 14px; border-radius: 10px; border: 1px solid var(--cardBorder,#1f2937);
+      cursor:pointer; font-weight:700;
+    }
+  </style>
+
 </body>
 </html>
