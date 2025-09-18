@@ -457,7 +457,7 @@ function renderTable() {
       ? 'Nenhum registo encontrado para esta procura'
       : 'Nenhum registo encontrado';
     resultsBody.innerHTML =
-      `<tr><td colspan="8" style="text-align:center; padding:20px;">${message}</td></tr>`;
+      `<tr><td colspan="10" style="text-align:center; padding:20px;">${message}</td></tr>`;
     return;
   }
 
@@ -483,11 +483,13 @@ function renderTable() {
                  onkeypress="if(event.key==='Enter') this.blur()"
                  oninput="formatMatriculaInput(this)">
         </td>
+        <td style="font-weight: 600; color: #0066cc;">${row.loja || 'LOJA'}</td>
+        <td style="font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${row.observacoes || ''}">${row.observacoes || '—'}</td>
         <td>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <button onclick="openEditOcrModal(RESULTS[${originalIndex}])"
+            <button onclick="openEditRecordModal(${originalIndex})"
                     style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
-                    title="Editar texto OCR"
+                    title="Editar registo"
                     onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
                     onmouseout="this.style.background='none'; this.style.color='#666'">
               ✏️ Editar
@@ -817,11 +819,11 @@ const VEHICLE_PATTERNS = [
   { canon: "Jeep",          rx: /\bJEEP\b/ },
   { canon: "Škoda",         rx: /\bSKODA\b/ },
   { canon: "Opel",          rx: /\bOPEL\b|\bVAUXHALL\b|\bOP\b/ },
-  { canon: "Peugeot",       rx: /\bPEUGEOT\b|\bPG\b/ },
-  { canon: "Citroën",       rx: /\bCITRO[ËE]N\b|\bCITROEN\b|\bCT/ },
+  { canon: "Peugeot",       rx: /\bPEUGEOT\b/ },
+  { canon: "Citroën",       rx: /\bCITRO[ËE]N\b|\bCITROEN\b/ },
   { canon: "Renault",       rx: /\bRENAULT\b|\bRN\b/ },
   { canon: "Dacia",         rx: /\bDACIA\b/ },
-  { canon: "Fiat",          rx: /\bFIAT\b|\bFT\b/ },
+  { canon: "Fiat",          rx: /\bFIAT\b/ },
   { canon: "Alfa Romeo",    rx: /\bALFA\s*ROMEO\b/ },
   { canon: "Lancia",        rx: /\bLANCIA\b/ },
   { canon: "Ford",          rx: /\bFORD\b/ },
@@ -1764,19 +1766,21 @@ function exportExcelWithData(dataToExport){
     "Veículo": row.vehicle || "",
     "Eurocode": row.eurocode || "",
     "Marca Vidro": row.brand || "",
-    "Matrícula": row.matricula || ""
+    "Matrícula": row.matricula || "",
+    "Loja": row.loja || "LOJA",
+    "Observações": row.observacoes || ""
   }));
   try {
     let ws;
     if (rows.length === 0) {
-      const headers = ["#", "Data/Hora", "Tipologia", "Veículo", "Eurocode", "Marca Vidro", "Matrícula", "Ficheiro", "Origem", "Texto OCR"];
+      const headers = ["#", "Data/Hora", "Tipologia", "Veículo", "Eurocode", "Marca Vidro", "Matrícula", "Loja", "Observações"];
       ws = XLSX.utils.aoa_to_sheet([headers]);
     } else {
       ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
     }
     ws['!cols'] = [
       { wch: 4 },  { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
-      { wch: 16 }, { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 80 }
+      { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 30 }
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Registos");
@@ -1909,3 +1913,93 @@ window.openExportModal = openExportModal;
 
 // Compat: chamadas antigas
 window.exportCSV = function(){ if (typeof openExportModal==='function') openExportModal(); else if (typeof exportExcel==='function') exportExcel(); };
+
+// ===== Modal de Edição de Registo =====
+let currentEditingRowIndex = null;
+
+function openEditRecordModal(rowIndex) {
+  console.log('Abrindo modal de edição para linha:', rowIndex);
+  currentEditingRowIndex = rowIndex;
+  
+  const modal = document.getElementById('editRecordModal');
+  const lojaSelect = document.getElementById('editLoja');
+  const observacoesTextarea = document.getElementById('editObservacoes');
+  
+  if (!modal || !lojaSelect || !observacoesTextarea) {
+    console.error('Elementos do modal não encontrados');
+    return;
+  }
+  
+  // Preencher com dados atuais se existirem
+  const currentData = RESULTS[rowIndex] || {};
+  lojaSelect.value = currentData.loja || 'LOJA';
+  observacoesTextarea.value = currentData.observacoes || '';
+  
+  modal.classList.add('show');
+  modal.style.display = 'flex';
+  
+  // Event listeners (só adicionar uma vez)
+  if (!modal.dataset.wired) {
+    const closeBtn = document.getElementById('editRecordClose');
+    const cancelBtn = document.getElementById('editRecordCancel');
+    const saveBtn = document.getElementById('editRecordSave');
+    
+    const closeModal = () => {
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      currentEditingRowIndex = null;
+    };
+    
+    if (closeBtn) closeBtn.onclick = closeModal;
+    if (cancelBtn) cancelBtn.onclick = closeModal;
+    if (saveBtn) saveBtn.onclick = saveEditedRecord;
+    
+    // Fechar ao clicar fora
+    modal.onclick = (e) => {
+      if (e.target === modal) closeModal();
+    };
+    
+    modal.dataset.wired = '1';
+  }
+}
+
+function saveEditedRecord() {
+  if (currentEditingRowIndex === null) return;
+  
+  const lojaSelect = document.getElementById('editLoja');
+  const observacoesTextarea = document.getElementById('editObservacoes');
+  
+  if (!lojaSelect || !observacoesTextarea) return;
+  
+  // Atualizar dados
+  if (!RESULTS[currentEditingRowIndex]) {
+    RESULTS[currentEditingRowIndex] = {};
+  }
+  
+  RESULTS[currentEditingRowIndex].loja = lojaSelect.value;
+  RESULTS[currentEditingRowIndex].observacoes = observacoesTextarea.value;
+  
+  console.log('Dados atualizados:', {
+    loja: lojaSelect.value,
+    observacoes: observacoesTextarea.value
+  });
+  
+  // Atualizar tabela
+  renderTable();
+  
+  // Fechar modal
+  const modal = document.getElementById('editRecordModal');
+  if (modal) {
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+  }
+  
+  currentEditingRowIndex = null;
+  
+  // Mostrar mensagem de sucesso
+  if (typeof showToast === 'function') {
+    showToast('Registo atualizado com sucesso!', 'success');
+  }
+}
+
+window.openEditRecordModal = openEditRecordModal;
