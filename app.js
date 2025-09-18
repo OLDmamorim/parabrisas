@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
   if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', openExportModal);
+  if (btnExport)  btnExport.addEventListener('click', exportCSV);
   if (btnClear)   btnClear.addEventListener('click', clearTable);
 
   const isMobile = window.innerWidth <= 768;
@@ -1524,6 +1524,8 @@ function generatePrintContent(records, fromDate, toDate) {
         userEmail = userData.email;
       }
     } catch (e) {
+    console.error('loadResults error:', e);
+    setStatus && setStatus(desktopStatus, 'Falha ao carregar dados', 'error');
       console.log('Erro ao obter email do localStorage:', e);
     }
   }
@@ -1702,176 +1704,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-// Variante que aceita dados específicos (após filtros)
-
-function exportExcelWithData(dataToExport){
-  const list = Array.isArray(dataToExport) ? dataToExport : (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS);
-
-  // Mapa dos dados
-  const rows = list.map((row, index) => ({
-    "#": index + 1,
-    "Data/Hora": row.timestamp || "",
-    "Tipologia": (typeof detectGlassType === 'function' ? detectGlassType(row.eurocode) : "") || "",
-    "Veículo": row.vehicle || "",
-    "Eurocode": row.eurocode || "",
-    "Marca Vidro": row.brand || "",
-    "Matrícula": row.matricula || "",
-    "Ficheiro": row.filename || "",
-    "Origem": row.source || "",
-    "Texto OCR": row.text || ""
-  }));
-
-  try {
-    let ws;
-    if (rows.length === 0) {
-      // Criar folha com cabeçalhos, sem linhas
-      const headers = ["#", "Data/Hora", "Tipologia", "Veículo", "Eurocode", "Marca Vidro", "Matrícula", "Ficheiro", "Origem", "Texto OCR"];
-      ws = XLSX.utils.aoa_to_sheet([headers]);
-    } else {
-      ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
-    }
-
-    ws['!cols'] = [
-      { wch: 4 },  { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
-      { wch: 16 }, { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 80 }
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Registos");
-    const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, filename);
-
-    if (typeof showToast === 'function') {
-      if (rows.length === 0) showToast('Sem linhas nesse período — ficheiro criado só com cabeçalhos.', 'warning');
-      else showToast('Excel exportado com sucesso!', 'success');
-    }
-  } catch (e) {
-    console.error('Erro ao exportar Excel:', e);
-    if (typeof showToast === 'function') showToast('Erro ao exportar Excel', 'error');
-    else alert('Erro ao exportar Excel');
-  }
-}
-
-
-// Canonical guarded exportExcel: opens modal unless bypass flag is set
-function exportExcel(){
-  if (!window.__bypassExportModal) {
-    if (typeof openExportModal === 'function') { openExportModal(); }
-    return; // export happens only after modal confirm sets bypass flag
-  }
-  exportExcelWithData();
-}
-
-
-// ===== Helpers: parser de datas e filtro por intervalo
-function parseAnyDate(ts){
-  if (!ts) return null;
-  const iso = new Date(ts);
-  if (!isNaN(iso.getTime())) return iso;
-  try{
-    const m = String(ts).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[^\d]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
-    if (m){
-      const d = parseInt(m[1],10), mo = parseInt(m[2],10)-1, y = parseInt(m[3].length===2? '20'+m[3]:m[3],10);
-      const hh = parseInt(m[4]||'0',10), mm = parseInt(m[5]||'0',10), ss = parseInt(m[6]||'0',10);
-      const dt = new Date(y, mo, d, hh, mm, ss);
-      if (!isNaN(dt.getTime())) return dt;
-    }
-  }catch(_){}
-  return null;
-}
-function filterByDateRange(rows, startDate, endDate){
-  if (!startDate && !endDate) return rows;
-  const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-  const end   = endDate   ? new Date(endDate   + 'T23:59:59') : null;
-  return rows.filter(r => {
-    const dt = parseAnyDate(r.timestamp);
-    if (!dt) return false;
-    if (start && dt < start) return false;
-    if (end && dt > end) return false;
-    return true;
-  });
-}
-
-
-// ===== Modal de exportação (período) =====
-// (lazy modal refs moved into openExportModal)
-  exportModal.classList.add('show');
-  exportModal.style.display = 'flex';
-  const today = new Date();
-  const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
-  if (exportEnd && !exportEnd.value) exportEnd.value = `${y}-${m}-${d}`;
-  if (exportStart && !exportStart.value){
-    const dt = new Date(today.getTime() - 29*24*3600*1000);
-    const ym = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
-    exportStart.value = `${ym}-${mm}-${dd}`;
-  }
-}
-function closeExportModal(){
-  if (!exportModal) return;
-  exportModal.classList.remove('show');
-  exportModal.style.display = 'none';
-}
-
-// expor global
-window.openExportModal = openExportModal;
-
-
-// Compatibilidade: se alguém chamar exportCSV, abrimos o modal (ou Excel direto)
-window.exportCSV = function(){
-  if (typeof openExportModal === 'function') openExportModal();
-  else if (typeof exportExcel === 'function') exportExcel();
-};
-
-
-// ===== Modal de exportação (lazy DOM lookup) =====
-function openExportModal(){
-  const modal = document.getElementById('exportModal');
-  if (!modal) {
-    // fallback: se modal não existir no DOM, exporta tudo (para não "ficar parado")
-    window.__bypassExportModal = true;
-    try { exportExcelWithData(); } finally { window.__bypassExportModal = false; }
-    return;
-  }
-
-  // Lazy refs
-  const btnClose   = document.getElementById('exportModalClose');
-  const btnCancel  = document.getElementById('exportModalCancel');
-  const btnConfirm = document.getElementById('exportModalConfirm');
-  const startEl    = document.getElementById('exportStart');
-  const endEl      = document.getElementById('exportEnd');
-  const useSearch  = document.getElementById('exportUseSearch');
-
-  // Defaults de datas
-  const today = new Date();
-  const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
-  if (endEl && !endEl.value) endEl.value = `${y}-${m}-${d}`;
-  if (startEl && !startEl.value){
-    const dt = new Date(today.getTime() - 29*24*3600*1000);
-    const ym = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
-    startEl.value = `${ym}-${mm}-${dd}`;
-  }
-
-  // Abrir
-  modal.classList.add('show');
-  modal.style.display = 'flex';
-
-  // Wiring de eventos apenas uma vez
-  if (!modal.dataset.wired){
-    if (btnClose)  btnClose.addEventListener('click', () => { modal.classList.remove('show'); modal.style.display='none'; });
-    if (btnCancel) btnCancel.addEventListener('click', () => { modal.classList.remove('show'); modal.style.display='none'; });
-    if (btnConfirm) btnConfirm.addEventListener('click', () => {
-      const base = (useSearch && useSearch.checked) 
-        ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
-        : RESULTS;
-      const ranged = filterByDateRange(base, startEl?.value || '', endEl?.value || '');
-      window.__bypassExportModal = true;
-      try { exportExcelWithData(ranged); } finally { window.__bypassExportModal = false; }
-      modal.classList.remove('show'); modal.style.display='none';
-      showToast && showToast(`A exportar ${ranged.length} registo(s)`, ranged.length ? 'success' : 'error');
-    });
-    modal.dataset.wired = "1";
-  }
-}
-// expõe global
-window.openExportModal = openExportModal;
-
+// ===== Global error surface =====
+window.addEventListener('error', (e) => {
+  try { setStatus && setStatus(desktopStatus, 'Erro de JavaScript: ' + (e.message||''), 'error'); } catch(_){}
+  console.error('JS Error:', e);
+});
