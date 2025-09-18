@@ -1742,6 +1742,10 @@ function exportExcelWithData(dataToExport){
 function exportExcel(){
   if (!window.__bypassExportModal) {
     if (typeof openExportModal === 'function') { openExportModal(); }
+    return;
+  }
+  exportExcelWithData();
+}
     return; // só exporta após confirmação do modal
   }
   exportExcelWithData();
@@ -1779,16 +1783,7 @@ function filterByDateRange(rows, startDate, endDate){
 
 
 // ===== Modal de exportação (período) =====
-const exportModal = document.getElementById('exportModal');
-const exportModalClose = document.getElementById('exportModalClose');
-const exportModalCancel = document.getElementById('exportModalCancel');
-const exportModalConfirm = document.getElementById('exportModalConfirm');
-const exportStart = document.getElementById('exportStart');
-const exportEnd = document.getElementById('exportEnd');
-const exportUseSearch = document.getElementById('exportUseSearch');
-
-function openExportModal(){
-  if (!exportModal) { exportExcel(); return; }
+// (lazy modal refs moved into openExportModal)
   exportModal.classList.add('show');
   exportModal.style.display = 'flex';
   const today = new Date();
@@ -1829,3 +1824,57 @@ window.exportCSV = function(){
   if (typeof openExportModal === 'function') openExportModal();
   else if (typeof exportExcel === 'function') exportExcel();
 };
+
+
+// ===== Modal de exportação (lazy DOM lookup) =====
+function openExportModal(){
+  const modal = document.getElementById('exportModal');
+  if (!modal) {
+    // fallback: se modal não existir no DOM, exporta tudo (para não "ficar parado")
+    window.__bypassExportModal = true;
+    try { exportExcelWithData(); } finally { window.__bypassExportModal = false; }
+    return;
+  }
+
+  // Lazy refs
+  const btnClose   = document.getElementById('exportModalClose');
+  const btnCancel  = document.getElementById('exportModalCancel');
+  const btnConfirm = document.getElementById('exportModalConfirm');
+  const startEl    = document.getElementById('exportStart');
+  const endEl      = document.getElementById('exportEnd');
+  const useSearch  = document.getElementById('exportUseSearch');
+
+  // Defaults de datas
+  const today = new Date();
+  const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
+  if (endEl && !endEl.value) endEl.value = `${y}-${m}-${d}`;
+  if (startEl && !startEl.value){
+    const dt = new Date(today.getTime() - 29*24*3600*1000);
+    const ym = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
+    startEl.value = `${ym}-${mm}-${dd}`;
+  }
+
+  // Abrir
+  modal.classList.add('show');
+  modal.style.display = 'flex';
+
+  // Wiring de eventos apenas uma vez
+  if (!modal.dataset.wired){
+    if (btnClose)  btnClose.addEventListener('click', () => { modal.classList.remove('show'); modal.style.display='none'; });
+    if (btnCancel) btnCancel.addEventListener('click', () => { modal.classList.remove('show'); modal.style.display='none'; });
+    if (btnConfirm) btnConfirm.addEventListener('click', () => {
+      const base = (useSearch && useSearch.checked) 
+        ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
+        : RESULTS;
+      const ranged = filterByDateRange(base, startEl?.value || '', endEl?.value || '');
+      window.__bypassExportModal = true;
+      try { exportExcelWithData(ranged); } finally { window.__bypassExportModal = false; }
+      modal.classList.remove('show'); modal.style.display='none';
+      showToast && showToast(`A exportar ${ranged.length} registo(s)`, ranged.length ? 'success' : 'error');
+    });
+    modal.dataset.wired = "1";
+  }
+}
+// expõe global
+window.openExportModal = openExportModal;
+
