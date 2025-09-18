@@ -1703,22 +1703,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // Variante que aceita dados específicos (após filtros)
+
 function exportExcelWithData(dataToExport){
   const list = Array.isArray(dataToExport) ? dataToExport : (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS);
-  if (!list || list.length === 0) {
-    showToast && showToast('Nenhum dado para exportar', 'error');
-    return;
-  }
-  
 
-// Canonical guarded exportExcel: opens modal unless bypass flag is set
-function exportExcel(){
-  if (!window.__bypassExportModal) {
-    if (typeof openExportModal === 'function') { openExportModal(); }
-    return; // export happens only after modal confirm sets bypass flag
+  // Mapa dos dados
+  const rows = list.map((row, index) => ({
+    "#": index + 1,
+    "Data/Hora": row.timestamp || "",
+    "Tipologia": (typeof detectGlassType === 'function' ? detectGlassType(row.eurocode) : "") || "",
+    "Veículo": row.vehicle || "",
+    "Eurocode": row.eurocode || "",
+    "Marca Vidro": row.brand || "",
+    "Matrícula": row.matricula || "",
+    "Ficheiro": row.filename || "",
+    "Origem": row.source || "",
+    "Texto OCR": row.text || ""
+  }));
+
+  try {
+    let ws;
+    if (rows.length === 0) {
+      // Criar folha com cabeçalhos, sem linhas
+      const headers = ["#", "Data/Hora", "Tipologia", "Veículo", "Eurocode", "Marca Vidro", "Matrícula", "Ficheiro", "Origem", "Texto OCR"];
+      ws = XLSX.utils.aoa_to_sheet([headers]);
+    } else {
+      ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
+    }
+
+    ws['!cols'] = [
+      { wch: 4 },  { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
+      { wch: 16 }, { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 80 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Registos");
+    const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, filename);
+
+    if (typeof showToast === 'function') {
+      if (rows.length === 0) showToast('Sem linhas nesse período — ficheiro criado só com cabeçalhos.', 'warning');
+      else showToast('Excel exportado com sucesso!', 'success');
+    }
+  } catch (e) {
+    console.error('Erro ao exportar Excel:', e);
+    if (typeof showToast === 'function') showToast('Erro ao exportar Excel', 'error');
+    else alert('Erro ao exportar Excel');
   }
-  exportExcelWithData();
 }
+
 
 // Canonical guarded exportExcel: opens modal unless bypass flag is set
 function exportExcel(){
@@ -1778,20 +1811,6 @@ function closeExportModal(){
   exportModal.classList.remove('show');
   exportModal.style.display = 'none';
 }
-
-if (exportModalClose) exportModalClose.addEventListener('click', closeExportModal);
-if (exportModalCancel) exportModalCancel.addEventListener('click', closeExportModal);
-if (exportModalConfirm) exportModalConfirm.addEventListener('click', () => {
-  const base = (exportUseSearch && exportUseSearch.checked) 
-    ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
-    : RESULTS;
-  const ranged = filterByDateRange(base, exportStart?.value || '', exportEnd?.value || '');
-  window.__bypassExportModal = true;
-  exportExcelWithData(ranged);
-  window.__bypassExportModal = false;
-  closeExportModal();
-  showToast && showToast(`A exportar ${ranged.length} registo(s)`, ranged.length ? 'success' : 'error');
-});
 
 // expor global
 window.openExportModal = openExportModal;
