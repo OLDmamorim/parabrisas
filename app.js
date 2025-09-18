@@ -446,6 +446,7 @@ async function loadResults() {
 // =========================
 // Render
 function renderTable() {
+  console.log('renderTable chamada - versão com campos editáveis v7');
   if (!resultsBody) return;
 
   const dataToShow = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
@@ -483,8 +484,21 @@ function renderTable() {
                  onkeypress="if(event.key==='Enter') this.blur()"
                  oninput="formatMatriculaInput(this)">
         </td>
-        <td style="font-weight: 600; color: #0066cc;">${row.loja || 'LOJA'}</td>
-        <td style="font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${row.observacoes || ''}">${row.observacoes || '—'}</td>
+        <td>
+          <select onchange="updateLoja(${row.id}, this.value)" 
+                  style="width: 70px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; font-weight: 600; color: #0066cc; background: white;">
+            <option value="LOJA" ${(row.loja || 'LOJA') === 'LOJA' ? 'selected' : ''}>LOJA</option>
+            <option value="SM" ${row.loja === 'SM' ? 'selected' : ''}>SM</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" 
+                 value="${row.observacoes || ''}" 
+                 placeholder="Observações..."
+                 style="width: 180px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px;"
+                 onblur="updateObservacoes(${row.id}, this.value)"
+                 onkeypress="if(event.key==='Enter') this.blur()">
+        </td>
         <td>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button onclick="openEditRecordModal(${originalIndex})"
@@ -2003,3 +2017,49 @@ function saveEditedRecord() {
 }
 
 window.openEditRecordModal = openEditRecordModal;
+
+// ===== Funções para atualizar campos inline =====
+async function updateLoja(id, value) {
+  console.log('Atualizando loja:', id, value);
+  
+  // Encontrar e atualizar o registo local
+  const rowIndex = RESULTS.findIndex(r => r.id === id);
+  if (rowIndex !== -1) {
+    RESULTS[rowIndex].loja = value;
+    
+    // Atualizar também nos resultados filtrados se existirem
+    const filteredIndex = FILTERED_RESULTS.findIndex(r => r.id === id);
+    if (filteredIndex !== -1) {
+      FILTERED_RESULTS[filteredIndex].loja = value;
+    }
+    
+    console.log('Loja atualizada localmente para:', value);
+    
+    // Aqui podes adicionar chamada à API se necessário
+    // await updateRecordInAPI(id, { loja: value });
+  }
+}
+
+async function updateObservacoes(id, value) {
+  console.log('Atualizando observações:', id, value);
+  
+  // Encontrar e atualizar o registo local
+  const rowIndex = RESULTS.findIndex(r => r.id === id);
+  if (rowIndex !== -1) {
+    RESULTS[rowIndex].observacoes = value;
+    
+    // Atualizar também nos resultados filtrados se existirem
+    const filteredIndex = FILTERED_RESULTS.findIndex(r => r.id === id);
+    if (filteredIndex !== -1) {
+      FILTERED_RESULTS[filteredIndex].observacoes = value;
+    }
+    
+    console.log('Observações atualizadas localmente para:', value);
+    
+    // Aqui podes adicionar chamada à API se necessário
+    // await updateRecordInAPI(id, { observacoes: value });
+  }
+}
+
+window.updateLoja = updateLoja;
+window.updateObservacoes = updateObservacoes;
