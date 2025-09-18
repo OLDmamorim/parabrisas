@@ -804,6 +804,8 @@ table {
     <th style="width:180px">Eurocode</th>
     <th style="width:160px">Marca</th>
     <th style="width:100px">Matrícula</th>
+    <th style="width:80px">Loja</th>
+    <th style="width:200px">Observações</th>
     <th style="width:140px">Ações</th>
   </tr>
 </thead>
@@ -885,12 +887,39 @@ table {
     </div>
   </div>
 
+  <!-- MODAL DE EDIÇÃO DE REGISTO -->
+  <div id="editRecordModal" class="edit-record-modal" style="display:none;">
+    <div class="edit-record-content">
+      <div class="edit-record-header">
+        <h3>✏️ Editar Registo</h3>
+        <button class="edit-record-close" id="editRecordClose">&times;</button>
+      </div>
+      <div class="edit-record-body">
+        <div class="edit-record-field">
+          <label for="editLoja">Loja</label>
+          <select id="editLoja" class="edit-record-select">
+            <option value="LOJA">LOJA</option>
+            <option value="SM">SM</option>
+          </select>
+        </div>
+        <div class="edit-record-field">
+          <label for="editObservacoes">Observações</label>
+          <textarea id="editObservacoes" class="edit-record-textarea" placeholder="Adicionar observações..."></textarea>
+        </div>
+      </div>
+      <div class="edit-record-footer">
+        <button id="editRecordCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="editRecordSave" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- App original (mantém-se igual) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="app.js?v=xlsx-modal-filtros-v3"></script>
+  <script src="app.js?v=xlsx-modal-filtros-v5"></script>
 
   <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
   <script>
@@ -1490,6 +1519,21 @@ window.addEventListener('load', () => {
     .btn-secondary{ background:#6b7280; color:white; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; }
     .btn-primary{ background:#06b6d4; color:white; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight:700; }
     .btn-primary:hover{ filter:brightness(1.05); }
+    
+    /* Modal de Edição de Registo */
+    .edit-record-modal{ position: fixed; inset:0; background: rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:1300; backdrop-filter: blur(6px); padding:16px; }
+    .edit-record-modal.show{ display:flex }
+    .edit-record-content{ width:100%; max-width:420px; background: var(--card,#0f172a); color:var(--text,#e5e7eb); border:1px solid var(--cardBorder,#1f2937); border-radius:16px; box-shadow: var(--shadowLarge,0 20px 40px rgba(0,0,0,.35)); display:flex; flex-direction:column; overflow:hidden; }
+    .edit-record-header{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--cardBorder,#1f2937); }
+    .edit-record-header h3{ margin:0; font-size:18px; color: var(--accent,#22d3ee) }
+    .edit-record-close{ background:none; border:0; color: var(--muted,#a3aed0); font-size:24px; cursor:pointer; line-height:1; border-radius:8px; padding:2px 6px; }
+    .edit-record-close:hover{ color:#fff; background: rgba(255,255,255,.08) }
+    .edit-record-body{ padding:16px 20px; display:grid; gap:16px }
+    .edit-record-field{ display:grid; gap:8px }
+    .edit-record-field label{ font-weight:600; font-size:14px; color: var(--muted,#a3aed0) }
+    .edit-record-select{ background: rgba(255,255,255,.06); border:1px solid var(--cardBorder,#1f2937); color: var(--text,#e5e7eb); border-radius:10px; padding:10px 12px; font-size:14px; }
+    .edit-record-textarea{ background: rgba(255,255,255,.06); border:1px solid var(--cardBorder,#1f2937); color: var(--text,#e5e7eb); border-radius:10px; padding:10px 12px; font-size:14px; min-height:80px; resize:vertical; font-family: inherit; }
+    .edit-record-footer{ display:flex; gap:10px; justify-content:flex-end; padding:16px 20px; border-top:1px solid var(--cardBorder,#1f2937); }
   </style>
 
 </body>
