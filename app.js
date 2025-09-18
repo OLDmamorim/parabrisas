@@ -2,11 +2,12 @@
 // =========================
 
 // ---- Endpoints ----
-const OCR_ENDPOINT = '/.netlify/functions/ocr-proxy';
-const LIST_URL     = '/.netlify/functions/list-ocr';
-const SAVE_URL     = '/.netlify/functions/save-ocr';
-const UPDATE_URL   = '/.netlify/functions/update-ocr';
-const DELETE_URL   = '/.netlify/functions/delete-ocr';
+const BASE = (typeof window !== 'undefined' && window.location) ? window.location.origin : '';
+const OCR_ENDPOINT = `${BASE}/.netlify/functions/ocr-proxy`;
+const LIST_URL     = `${BASE}/.netlify/functions/list-ocr`;
+const SAVE_URL     = `${BASE}/.netlify/functions/save-ocr`;
+const UPDATE_URL   = `${BASE}/.netlify/functions/update-ocr`;
+const DELETE_URL   = `${BASE}/.netlify/functions/delete-ocr`;
 
 // ---- Seletores ----
 const fileInput  = document.getElementById('fileInput');
@@ -585,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
   if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnExport)  btnExport.addEventListener('click', exportCSV);
+  if (btnExport)  btnExport.addEventListener('click', openExportModal);
   if (btnClear)   btnClear.addEventListener('click', clearTable);
 
   const isMobile = window.innerWidth <= 768;
@@ -1709,3 +1710,11 @@ window.addEventListener('error', (e) => {
   try { setStatus && setStatus(desktopStatus, 'Erro de JavaScript: ' + (e.message||''), 'error'); } catch(_){}
   console.error('JS Error:', e);
 });
+
+
+// ===== Forçar label do botão Exportar para Excel (quando HTML antigo em cache)
+function forceExportLabel(){
+  const b = document.getElementById('btnExport');
+  if (b) b.innerHTML = '📊 Exportar Excel';
+}
+document.addEventListener('DOMContentLoaded', forceExportLabel);

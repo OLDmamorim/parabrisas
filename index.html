@@ -788,7 +788,7 @@ table {
       <button id="btnUpload" class="btn" onclick="document.getElementById('fileInput').click()">📁 Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden
        onchange="if(this.files&&this.files[0]){ window.processImage && window.processImage(this.files[0]); }" />
-      <button id="btnExport" class="btn" onclick="window.exportCSV && window.exportCSV()">📊 Exportar CSV</button>
+      <button id="btnExport" class="btn" onclick="openExportModal()">📊 Exportar Excel</button>
       <button id="btnPrint" class="btn" onclick="openPrintModal()">🖨️ Imprimir</button>
       <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
     </div>
@@ -889,7 +889,7 @@ table {
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- App original (mantém-se igual) -->
-  <script src="app.js"></script>
+  <script src="app.js?v=export-modal-dbfix"></script>
 
   <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
   <script>
