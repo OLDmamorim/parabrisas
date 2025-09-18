@@ -61,13 +61,11 @@ function addCustomCSS() {
 
 // =========================
 // Utils UI
-// ===== Helpers: parse de timestamp pt-PT/ISO e filtro por datas
+// ===== Helpers: parser de datas e filtro por intervalo
 function parseAnyDate(ts){
   if (!ts) return null;
-  // Tentar ISO direto
   const iso = new Date(ts);
   if (!isNaN(iso.getTime())) return iso;
-  // Tentar formato pt-PT "dd/mm/aaaa, hh:mm:ss" ou parecido
   try{
     const m = String(ts).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[^\d]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
     if (m){
@@ -79,7 +77,6 @@ function parseAnyDate(ts){
   }catch(_){}
   return null;
 }
-
 function filterByDateRange(rows, startDate, endDate){
   if (!startDate && !endDate) return rows;
   const start = startDate ? new Date(startDate + 'T00:00:00') : null;
@@ -583,49 +580,6 @@ function exportCSV() {
   showToast('CSV exportado com sucesso!', 'success');
 }
 
-
-// =========================
-// Export Excel (XLSX) via SheetJS
-function exportExcel() {
-  const dataToExport = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
-
-  if (!dataToExport || dataToExport.length === 0) {
-    showToast && showToast('Nenhum dado para exportar', 'error');
-    return;
-  }
-
-  const rows = dataToExport.map((row, index) => ({
-    "#": index + 1,
-    "Data/Hora": row.timestamp || "",
-    "Tipologia": (typeof detectGlassType === 'function' ? detectGlassType(row.eurocode) : "") || "",
-    "Veículo": row.vehicle || "",
-    "Eurocode": row.eurocode || "",
-    "Marca Vidro": row.brand || "",
-    "Matrícula": row.matricula || "",
-    "Ficheiro": row.filename || "",
-    "Origem": row.source || "",
-    "Texto OCR": row.text || ""
-  }));
-
-  try {
-    const ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
-    ws['!cols'] = [
-      { wch: 4 },  { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 16 },
-      { wch: 16 }, { wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 80 }
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Registos");
-
-    const filename = `expressglass_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, filename);
-    showToast && showToast('Excel exportado com sucesso!', 'success');
-  } catch (e) {
-    console.error('Erro ao exportar Excel:', e);
-    showToast && showToast('Erro ao exportar Excel', 'error');
-  }
-}
-
 // =========================
 // Limpar tabela
 async function clearTable() {
@@ -677,51 +631,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (desktopView) desktopView.style.display = 'block';
     if (viewBadge) viewBadge.textContent = 'Desktop';
   }
-});
-
-
-// ===== Modal de exportação (período) =====
-const exportModal = document.getElementById('exportModal');
-const exportModalClose = document.getElementById('exportModalClose');
-const exportModalCancel = document.getElementById('exportModalCancel');
-const exportModalConfirm = document.getElementById('exportModalConfirm');
-const exportStart = document.getElementById('exportStart');
-const exportEnd = document.getElementById('exportEnd');
-const exportUseSearch = document.getElementById('exportUseSearch');
-
-function openExportModal(){
-  if (!exportModal) { exportExcel(); return; } // fallback
-  exportModal.classList.add('show');
-  exportModal.style.display = 'flex';
-  // Sugere hoje como fim
-  const today = new Date(); const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
-  if (exportEnd && !exportEnd.value) exportEnd.value = `${y}-${m}-${d}`;
-  // Se houver registos, sugere início = 30 dias atrás
-  if (exportStart && !exportStart.value){
-    const dt = new Date(today.getTime() - 29*24*3600*1000);
-    const ym = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
-    exportStart.value = `${ym}-${mm}-${dd}`;
-  }
-}
-function closeExportModal(){
-  if (!exportModal) return;
-  exportModal.classList.remove('show');
-  exportModal.style.display = 'none';
-}
-
-// Ligações de UI
-if (exportModalClose) exportModalClose.addEventListener('click', closeExportModal);
-if (exportModalCancel) exportModalCancel.addEventListener('click', closeExportModal);
-if (exportModalConfirm) exportModalConfirm.addEventListener('click', () => {
-  // Base de dados: aplica (opcionalmente) a pesquisa atual e depois a janela temporal
-  const base = (exportUseSearch && exportUseSearch.checked) 
-    ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
-    : RESULTS;
-  const ranged = filterByDateRange(base, exportStart?.value || '', exportEnd?.value || '');
-  // Exporta apenas 'ranged'
-  exportExcelWithData(ranged);
-  closeExportModal();
-  showToast && showToast(`A exportar ${ranged.length} registo(s)`, ranged.length ? 'success' : 'error');
 });
 
 // =========================
@@ -1822,6 +1731,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+// Expor para uso inline no HTML
+if (typeof openExportModal === 'function') { window.openExportModal = openExportModal; }
+
+
 // Variante que aceita dados específicos (após filtros)
 function exportExcelWithData(dataToExport){
   const list = Array.isArray(dataToExport) ? dataToExport : (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS);
@@ -1859,5 +1772,53 @@ function exportExcelWithData(dataToExport){
   }
 }
 
-// Mantém compat para chamadas antigas
+// Mantém compat, caso algo ainda chame exportExcel()
 function exportExcel(){ exportExcelWithData(); }
+
+
+// ===== Modal de exportação (período) =====
+const exportModal = document.getElementById('exportModal');
+const exportModalClose = document.getElementById('exportModalClose');
+const exportModalCancel = document.getElementById('exportModalCancel');
+const exportModalConfirm = document.getElementById('exportModalConfirm');
+const exportStart = document.getElementById('exportStart');
+const exportEnd = document.getElementById('exportEnd');
+const exportUseSearch = document.getElementById('exportUseSearch');
+
+function openExportModal(){
+  if (!exportModal) { exportExcel(); return; } // fallback se modal não existir
+  exportModal.classList.add('show');
+  exportModal.style.display = 'flex';
+  const today = new Date();
+  const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
+  if (exportEnd && !exportEnd.value) exportEnd.value = `${y}-${m}-${d}`;
+  if (exportStart && !exportStart.value){
+    const dt = new Date(today.getTime() - 29*24*3600*1000);
+    const ym = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
+    exportStart.value = `${ym}-${mm}-${dd}`;
+  }
+}
+function closeExportModal(){
+  if (!exportModal) return;
+  exportModal.classList.remove('show');
+  exportModal.style.display = 'none';
+}
+
+if (exportModalClose) exportModalClose.addEventListener('click', closeExportModal);
+if (exportModalCancel) exportModalCancel.addEventListener('click', closeExportModal);
+if (exportModalConfirm) exportModalConfirm.addEventListener('click', () => {
+  const base = (exportUseSearch && exportUseSearch.checked) 
+    ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
+    : RESULTS;
+  const ranged = filterByDateRange(base, exportStart?.value || '', exportEnd?.value || '');
+  exportExcelWithData(ranged);
+  closeExportModal();
+  showToast && showToast(`A exportar ${ranged.length} registo(s)`, ranged.length ? 'success' : 'error');
+});
+
+// expor global para onclick inline
+window.openExportModal = openExportModal;
+
+
+// Compatibilidade: forçar antigos chamadores de exportCSV a abrir o modal
+window.exportCSV = function(){ if (typeof openExportModal==='function') openExportModal(); else if (typeof exportExcel==='function') exportExcel(); };
