@@ -1764,10 +1764,7 @@ function exportExcelWithData(dataToExport){
     "Veículo": row.vehicle || "",
     "Eurocode": row.eurocode || "",
     "Marca Vidro": row.brand || "",
-    "Matrícula": row.matricula || "",
-    "Ficheiro": row.filename || "",
-    "Origem": row.source || "",
-    "Texto OCR": row.text || ""
+    "Matrícula": row.matricula || ""
   }));
   try {
     let ws;
@@ -1856,8 +1853,14 @@ function openExportModal(){
     
     if (period === 'today') {
       // Hoje: data início e fim são hoje
-      if (startEl) startEl.value = todayStr;
-      if (endEl) endEl.value = todayStr;
+      if (startEl) {
+        startEl.value = todayStr;
+        console.log('Data início definida para:', startEl.value);
+      }
+      if (endEl) {
+        endEl.value = todayStr;
+        console.log('Data fim definida para:', endEl.value);
+      }
       if (btnToday) btnToday.classList.add('active');
     } else if (period === 'week') {
       // Esta semana: segunda-feira até hoje
@@ -1877,33 +1880,30 @@ function openExportModal(){
     }
   }
 
-  // Definir período padrão como "hoje"
-  setPeriod('today');
-
   modal.classList.add('show');
   modal.style.display = 'flex';
 
   const close = () => { modal.classList.remove('show'); modal.style.display='none'; };
 
-  if (!modal.dataset.wired){
-    if (btnClose)  btnClose.addEventListener('click', close);
-    if (btnCancel) btnCancel.addEventListener('click', close);
-    if (btnConfirm) btnConfirm.addEventListener('click', () => {
-      const base = (useSearch && useSearch.checked) 
-        ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
-        : RESULTS;
-      const ranged = filterByDateRange(base, startEl?.value || '', endEl?.value || '');
-      exportExcelWithData(ranged);
-      close();
-    });
-    
-    // Event listeners para os botões de filtro rápido
-    if (btnToday) btnToday.addEventListener('click', () => setPeriod('today'));
-    if (btnWeek) btnWeek.addEventListener('click', () => setPeriod('week'));
-    if (btnAll) btnAll.addEventListener('click', () => setPeriod('all'));
-    
-    modal.dataset.wired = "1";
-  }
+  // Sempre adicionar os event listeners (remover verificação de wired)
+  if (btnClose) btnClose.onclick = close;
+  if (btnCancel) btnCancel.onclick = close;
+  if (btnConfirm) btnConfirm.onclick = () => {
+    const base = (useSearch && useSearch.checked) 
+      ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
+      : RESULTS;
+    const ranged = filterByDateRange(base, startEl?.value || '', endEl?.value || '');
+    exportExcelWithData(ranged);
+    close();
+  };
+  
+  // Event listeners para os botões de filtro rápido - sempre adicionar
+  if (btnToday) btnToday.onclick = () => setPeriod('today');
+  if (btnWeek) btnWeek.onclick = () => setPeriod('week');
+  if (btnAll) btnAll.onclick = () => setPeriod('all');
+  
+  // Definir período padrão como "hoje" DEPOIS de adicionar os listeners
+  setPeriod('today');
 }
 window.openExportModal = openExportModal;
 
