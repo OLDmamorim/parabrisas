@@ -1822,8 +1822,9 @@ function filterByDateRange(rows, startDate, endDate){
   });
 }
 
-// ===== Modal de exportação (lazy DOM) =====
+// ===== Modal de exportação (lazy DOM) - VERSÃO ATUALIZADA COM FILTROS =====
 function openExportModal(){
+  console.log('Modal de exportação - versão com filtros rápidos carregada');
   const modal = document.getElementById('exportModal');
   if (!modal) { exportExcel(); return; }
 
@@ -1833,16 +1834,51 @@ function openExportModal(){
   const startEl    = document.getElementById('exportStart');
   const endEl      = document.getElementById('exportEnd');
   const useSearch  = document.getElementById('exportUseSearch');
+  
+  // Botões de filtro rápido
+  const btnToday   = document.getElementById('exportToday');
+  const btnWeek    = document.getElementById('exportWeek');
+  const btnAll     = document.getElementById('exportAll');
+  
+  console.log('Botões encontrados:', { btnToday: !!btnToday, btnWeek: !!btnWeek, btnAll: !!btnAll });
 
-  // defaults
-  const today = new Date();
-  const y=today.getFullYear(), m=String(today.getMonth()+1).padStart(2,'0'), d=String(today.getDate()).padStart(2,'0');
-  if (endEl && !endEl.value) endEl.value = `${y}-${m}-${d}`;
-  if (startEl && !startEl.value){
-    const dt = new Date(today.getTime() - 29*24*3600*1000);
-    const ym = dt.getFullYear(), mm = String(dt.getMonth()+1).padStart(2,'0'), dd = String(dt.getDate()).padStart(2,'0');
-    startEl.value = `${ym}-${mm}-${dd}`;
+  // Função para definir período
+  function setPeriod(period) {
+    console.log('setPeriod chamado com:', period);
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+    
+    // Remover classe active de todos os botões
+    document.querySelectorAll('.export-quick-btn').forEach(btn => btn.classList.remove('active'));
+    
+    if (period === 'today') {
+      // Hoje: data início e fim são hoje
+      if (startEl) startEl.value = todayStr;
+      if (endEl) endEl.value = todayStr;
+      if (btnToday) btnToday.classList.add('active');
+    } else if (period === 'week') {
+      // Esta semana: segunda-feira até hoje
+      const dayOfWeek = today.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Se domingo (0), volta 6 dias
+      const monday = new Date(today.getTime() + mondayOffset * 24 * 60 * 60 * 1000);
+      const mondayStr = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+      
+      if (startEl) startEl.value = mondayStr;
+      if (endEl) endEl.value = todayStr;
+      if (btnWeek) btnWeek.classList.add('active');
+    } else if (period === 'all') {
+      // Tudo: limpar datas para exportar tudo
+      if (startEl) startEl.value = '';
+      if (endEl) endEl.value = '';
+      if (btnAll) btnAll.classList.add('active');
+    }
   }
+
+  // Definir período padrão como "hoje"
+  setPeriod('today');
 
   modal.classList.add('show');
   modal.style.display = 'flex';
@@ -1860,6 +1896,12 @@ function openExportModal(){
       exportExcelWithData(ranged);
       close();
     });
+    
+    // Event listeners para os botões de filtro rápido
+    if (btnToday) btnToday.addEventListener('click', () => setPeriod('today'));
+    if (btnWeek) btnWeek.addEventListener('click', () => setPeriod('week'));
+    if (btnAll) btnAll.addEventListener('click', () => setPeriod('all'));
+    
     modal.dataset.wired = "1";
   }
 }
