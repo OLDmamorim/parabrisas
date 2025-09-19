@@ -60,8 +60,6 @@ export const handler = async (event) => {
     const newSource   = payload.source ?? currentRecord.source;
     const newVehicle  = payload.vehicle ?? currentRecord.vehicle;
     const newMatricula = payload.matricula ?? currentRecord.matricula;
-    const newLoja = payload.loja ?? currentRecord.loja ?? 'LOJA';
-    const newObservacoes = payload.observacoes ?? currentRecord.observacoes ?? '';
 
     // Brand: se o cliente enviou, usa; senão, se o texto mudou, recalcula; senão mantém
     let newBrand = payload.brand;
@@ -80,9 +78,7 @@ export const handler = async (event) => {
           vehicle = ${newVehicle || ''},
           filename = ${newFilename},
           source = ${newSource},
-          matricula = ${newMatricula || null},
-          loja = ${newLoja || 'LOJA'},
-          observacoes = ${newObservacoes || ''}
+          matricula = ${newMatricula || null}
         WHERE id = ${id} AND user_id = ${user.id}
         RETURNING id, ts AS updated_at
       `;
