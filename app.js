@@ -471,8 +471,8 @@ function renderTable() {
         <td style="font-size: 11px;">${row.timestamp}</td>
         <td style="font-weight: bold; color: #16a34a;">${glassType}</td>
         <td style="font-weight: bold;">${row.vehicle || '—'}</td>
-        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #007acc;">${row.eurocode || '—'}</td>
-        <td style="font-weight: bold; color: #dc2626;">${row.brand || '—'}</td>
+        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #eab308;">${row.eurocode || '—'}</td>
+        <td style="font-weight: bold; color: #16a34a;">${row.brand || '—'}</td>
         <td>
           <input type="text" 
                  value="${row.matricula || ''}"
@@ -1420,4 +1420,4 @@ function saveEditedRecord() {
 
 window.openEditRecordModal = openEditRecordModal;
 window.updateLoja = updateLoja;
-window.updateObservacoes = updateObservacoes;
+window.updateObservacoes =  updateObservacoes;
