@@ -101,555 +101,592 @@ table {
   display: none !important;
 }
 
-#logoutBtn {
-  background: rgba(239, 68, 68, 0.9) !important;
-  color: white !important;
+#userInfo button {
+  background: none !important;
+  color: rgba(255, 255, 255, 0.8) !important;
   border: none !important;
-  padding: 8px 12px !important;
-  border-radius: 20px !important;
-  font-size: 11px !important;
+  padding: 8px 15px !important;
+  border-radius: 4px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.2s ease !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 9999 !important;
 }
 
-#logoutBtn:hover {
-  background: rgba(220, 38, 38, 0.95) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4) !important;
+#userInfo button:hover {
+  color: rgba(255, 255, 255, 1) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
 }
 
-/* ===== MOBILE STYLES ===== */
+#userInfo button::before {
+  content: none !important;
+}
+
+/* Mobile: mesmo estilo, só ajustar posição */
 @media (max-width: 768px) {
-  /* Esconder a versão mobile original */
-  #mobileView.card.mobile-only {
-    display: none !important;
-  }
-
-  /* Nova versão mobile moderna */
-  .modern-mobile {
-    display: flex !important;
-    flex-direction: column;
-    min-height: calc(100vh - 120px);
-    padding: 0;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    margin: 0;
-    width: 100%;
-  }
-
-  .modern-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px 20px 20px;
-  }
-
-  .modern-circle {
-    width: 180px;
-    height: 180px;
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-    margin-bottom: 40px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-  }
-
-  .modern-circle:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 25px 50px rgba(0,0,0,0.2);
-  }
-
-  .modern-circle:active {
-    transform: translateY(-2px);
-  }
-
-  .modern-circle.processing {
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .modern-circle.processing:hover {
-    transform: none;
-  }
-
-  .modern-camera-icon {
-    font-size: 50px;
-    margin-bottom: 8px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-    transition: all 0.3s ease;
-  }
-
-  .modern-camera-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #4a5568;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-  }
-
-  .modern-circle.processing .modern-camera-label {
-    color: #22c55e;
-    font-weight: 700;
-  }
-
-  /* ANIMAÇÃO CORRIGIDA - Anel verde que roda ao redor do círculo */
-  .modern-progress-ring {
-    position: absolute;
-    top: -8px;
-    left: -8px;
-    width: 196px;
-    height: 196px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .modern-circle.processing .modern-progress-ring {
-    opacity: 1;
-  }
-
-  .modern-progress-ring circle {
-    fill: none;
-    stroke: #22c55e;
-    stroke-width: 4;
-    stroke-linecap: round;
-    stroke-dasharray: 580;
-    stroke-dashoffset: 580;
-    transform-origin: center;
-  }
-
-  /* Animação de processamento - anel verde rotativo */
-  .modern-circle.processing .modern-progress-ring circle {
-    animation: modernProcessingRing 1.5s linear infinite;
-    stroke-dasharray: 200 580;
-    stroke-dashoffset: 0;
-  }
-
-  @keyframes modernProcessingRing {
-    0% { 
-      transform: rotate(0deg);
-      stroke-dashoffset: 0;
-    }
-    50% {
-      stroke-dashoffset: -100;
-    }
-    100% { 
-      transform: rotate(360deg);
-      stroke-dashoffset: -200;
-    }
-  }
-
-  .modern-bottom-card {
-    background: white;
-    border-radius: 25px 25px 0 0;
-    width: 100%;
-    min-height: 280px;
-    box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
-    padding: 25px 20px;
-    margin-top: auto;
-  }
-
-  .modern-captures-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    gap: 10px;
-  }
-
-  .modern-captures-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #2d3748;
-  }
-
-  .modern-captures-icon {
-    font-size: 20px;
-  }
-
-  .modern-capture-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .modern-capture-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 15px;
-    background: #f7fafc;
-    border-radius: 10px;
-    border-left: 4px solid #22d3ee;
-    transition: all 0.2s ease;
-  }
-
-  .modern-capture-item:hover {
-    background: #edf2f7;
-    transform: translateX(3px);
-  }
-
-  .modern-capture-code {
-    font-weight: 600;
-    color: #2d3748;
-    font-size: 13px;
-    letter-spacing: 0.3px;
-  }
-
-  .modern-capture-check {
-    color: #22d3ee;
-    font-size: 16px;
-  }
-
-  .modern-empty-state {
-    text-align: center;
-    padding: 30px 20px;
-    color: #a0aec0;
-  }
-
-  .modern-empty-icon {
-    font-size: 40px;
-    margin-bottom: 12px;
-    opacity: 0.5;
-  }
-
-  /* Botão de Entrada Manual */
-  .modern-manual-btn {
-    background: #16a34a;
-    color: white;
-    border: none;
-    border-radius: 15px;
-    padding: 12px 24px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-    margin-top: 20px;
-  }
-
-  .modern-manual-btn:hover {
-    background: #15803d;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
-  }
-
-  .modern-manual-btn:active {
-    transform: translateY(0);
-  }
-
-  .modern-manual-icon {
-    font-size: 16px;
-  }
-
-  .modern-manual-label {
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .modern-empty-text {
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .modern-status {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255,255,255,0.95);
-    padding: 10px 18px;
-    border-radius: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
-    font-weight: 600;
-    color: #2d3748;
-    font-size: 14px;
-    opacity: 0;
-    transition: all 0.3s ease;
-    z-index: 1000;
-  }
-
-  .modern-status.show {
-    opacity: 1;
-  }
-
-  .modern-status.success {
-    background: rgba(72, 187, 120, 0.95);
-    color: white;
-  }
-
-  .modern-status.error {
-    background: rgba(245, 101, 101, 0.95);
-    color: white;
-  }
-
-  .modern-status.processing {
-    background: rgba(34, 197, 94, 0.95);
-    color: white;
-  }
-
-  /* Modal de Seleção de Eurocode */
-  .modern-eurocode-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    padding: 20px;
-  }
-
-  .modern-eurocode-modal.show {
-    display: flex;
-  }
-
-  .modern-modal-content {
-    background: white;
-    border-radius: 20px;
-    width: 100%;
-    max-width: 400px;
-    max-height: 80vh;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    animation: modalSlideUp 0.3s ease;
-  }
-
-  @keyframes modalSlideUp {
-    from {
-      transform: translateY(50px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  .modern-modal-header {
-    padding: 25px 25px 20px;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .modern-modal-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #2d3748;
-    margin: 0;
-  }
-
-  .modern-modal-icon {
-    font-size: 24px;
-  }
-
-  .modern-modal-body {
-    padding: 20px 25px;
-    max-height: 50vh;
-    overflow-y: auto;
-  }
-
-  .modern-ocr-section {
-    margin-bottom: 25px;
-  }
-
-  .modern-ocr-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #4a5568;
-    margin-bottom: 8px;
-    display: block;
-  }
-
-  .modern-ocr-text {
-    background: #f7fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 12px;
-    line-height: 1.4;
-    color: #2d3748;
-    max-height: 100px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  .modern-eurocodes-section {
-    margin-bottom: 20px;
-  }
-
-  .modern-eurocodes-label {
-    font-size: 16px;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 15px;
-    display: block;
-  }
-
-  .modern-eurocode-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .modern-eurocode-button {
-    background: #3182ce;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    letter-spacing: 0.5px;
-  }
-
-  .modern-eurocode-button:hover {
-    background: #2c5aa0;
-    transform: translateY(-1px);
-  }
-
-  .modern-eurocode-button:active {
-    transform: translateY(0);
-  }
-
-  .modern-modal-footer {
-    padding: 20px 25px 25px;
-    border-top: 1px solid #e2e8f0;
-    display: flex;
-    gap: 12px;
-  }
-
-  .modern-modal-btn {
-    flex: 1;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-  }
-
-  .modern-btn-secondary {
-    background: #6b7280;
-    color: white;
-  }
-
-  .modern-btn-secondary:hover {
-    background: #4b5563;
-  }
-
-  .modern-btn-danger {
-    background: #ef4444;
-    color: white;
-  }
-
-  .modern-btn-danger:hover {
-    background: #dc2626;
-  }
-
-  .modern-btn-primary {
-    background: #16a34a;
-    color: white;
-  }
-
-  .modern-btn-primary:hover {
-    background: #15803d;
-  }
-
-  /* Campos do Modal de Entrada Manual */
-  .modern-field {
-    margin-bottom: 20px;
-  }
-
-  .modern-field-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #4a5568;
-    margin-bottom: 8px;
-    display: block;
-  }
-
-  .modern-field-input,
-  .modern-field-select {
-    width: 100%;
-    background: #f7fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 14px;
-    color: #2d3748;
-    transition: all 0.2s ease;
-    box-sizing: border-box;
-  }
-
-  .modern-field-input:focus,
-  .modern-field-select:focus {
-    outline: none;
-    border-color: #16a34a;
-    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
-  }
-
-  .modern-field-input::placeholder {
-    color: #a0aec0;
-  }
-}
-
-/* Desktop mantém-se igual - sem alterações */
-@media (min-width: 769px) {
-  .mobile-only {
-    display: none !important;
+  .card {
+    width: 96vw !important;
+    margin: 16px 2vw !important;
   }
   
-  .desktop-only {
-    display: block !important;
+  #userInfo {
+    top: 20px !important;
+    right: 15px !important;
+    z-index: 10000 !important;
+  }
+  
+  #userInfo button {
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    background: rgba(255,255,255,0.9) !important;
+    color: #333 !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
   }
 }
 </style>
 
-<script src="auth.js"></script>
+  <style>
+    /* ===== MODIFICAÇÃO DO LOGÓTIPO ===== */
+    .brand .title {
+      display: none; /* Esconder o texto original */
+    }
+    
+    .brand .subtitle {
+      display: none; /* Esconder o subtítulo original */
+    }
+    
+    .brand {
+      width: 100%;
+      padding: 0;
+      position: relative;
+    }
+    
+    .logo-container {
+      background: white;
+      border-radius: 15px;
+      padding: 15px 20px;
+      margin: 0; /* Sem margens - ponta a ponta */
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .brand .logo {
+      max-width: 100%;
+      height: auto;
+      max-height: 60px;
+    }
+    
+    .brand .subtitle-new {
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 700;
+      font-family: 'Segoe UI', 'Roboto', 'Arial Black', sans-serif;
+      margin: 20px 20px 0;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: linear-gradient(45deg, #ffffff, #f0f8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+    }
+    
+    .brand .subtitle-new::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(45deg, #ffffff, #f0f8ff);
+      border-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    /* Esconder o badge Mobile */
+    .view-badge {
+      display: none !important;
+    }
+    
+    @media (max-width: 768px) {
+      .logo-container {
+        margin: 0; /* Ponta a ponta em mobile também */
+        padding: 12px 15px;
+        border-radius: 12px;
+      }
+      
+      .brand .logo {
+        max-height: 50px;
+      }
+      
+      .brand .subtitle-new {
+        font-size: 18px;
+        margin: 15px 15px 0;
+        letter-spacing: 0.3px;
+      }
+      
+      .brand .subtitle-new::after {
+        width: 40px;
+        height: 2px;
+        bottom: -6px;
+      }
+    }
 
+    /* ===== APENAS MODIFICAÇÕES PARA MOBILE ===== */
+    @media (max-width: 768px) {
+      /* Esconder a versão mobile original */
+      #mobileView.card.mobile-only {
+        display: none !important;
+      }
+
+      /* Nova versão mobile moderna */
+      .modern-mobile {
+        display: flex !important;
+        flex-direction: column;
+        min-height: calc(100vh - 120px);
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        margin: 0;
+        width: 100%;
+      }
+
+      .modern-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px 20px;
+      }
+
+      .modern-circle {
+        width: 180px;
+        height: 180px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        margin-bottom: 40px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .modern-circle:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      }
+
+      .modern-circle:active {
+        transform: translateY(-2px);
+      }
+
+      .modern-circle.processing {
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .modern-circle.processing:hover {
+        transform: none;
+      }
+
+      .modern-camera-icon {
+        font-size: 50px;
+        margin-bottom: 8px;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        transition: all 0.3s ease;
+      }
+
+      .modern-camera-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+      }
+
+      .modern-circle.processing .modern-camera-label {
+        color: #22c55e;
+        font-weight: 700;
+      }
+
+      /* ANIMAÇÃO CORRIGIDA - Anel verde que roda ao redor do círculo */
+      .modern-progress-ring {
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        width: 196px;
+        height: 196px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .modern-circle.processing .modern-progress-ring {
+        opacity: 1;
+      }
+
+      .modern-progress-ring circle {
+        fill: none;
+        stroke: #22c55e;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 580;
+        stroke-dashoffset: 580;
+        transform-origin: center;
+      }
+
+      /* Animação de processamento - anel verde rotativo */
+      .modern-circle.processing .modern-progress-ring circle {
+        animation: modernProcessingRing 1.5s linear infinite;
+        stroke-dasharray: 200 580;
+        stroke-dashoffset: 0;
+      }
+
+      @keyframes modernProcessingRing {
+        0% { 
+          transform: rotate(0deg);
+          stroke-dashoffset: 0;
+        }
+        50% {
+          stroke-dashoffset: -100;
+        }
+        100% { 
+          transform: rotate(360deg);
+          stroke-dashoffset: -200;
+        }
+      }
+
+      .modern-bottom-card {
+        background: white;
+        border-radius: 25px 25px 0 0;
+        width: 100%;
+        min-height: 280px;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        padding: 25px 20px;
+        margin-top: auto;
+      }
+
+      .modern-captures-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 10px;
+      }
+
+      .modern-captures-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2d3748;
+      }
+
+      .modern-captures-icon {
+        font-size: 20px;
+      }
+
+      .modern-capture-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .modern-capture-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 15px;
+        background: #f7fafc;
+        border-radius: 10px;
+        border-left: 4px solid #22d3ee;
+        transition: all 0.2s ease;
+      }
+
+      .modern-capture-item:hover {
+        background: #edf2f7;
+        transform: translateX(3px);
+      }
+
+      .modern-capture-code {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 13px;
+        letter-spacing: 0.3px;
+      }
+
+      .modern-capture-check {
+        color: #22d3ee;
+        font-size: 16px;
+      }
+
+      .modern-empty-state {
+        text-align: center;
+        padding: 30px 20px;
+        color: #a0aec0;
+      }
+
+      .modern-empty-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+        opacity: 0.5;
+      }
+
+      .modern-empty-text {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .modern-status {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.95);
+        padding: 10px 18px;
+        border-radius: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 14px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 1000;
+      }
+
+      .modern-status.show {
+        opacity: 1;
+      }
+
+      .modern-status.success {
+        background: rgba(72, 187, 120, 0.95);
+        color: white;
+      }
+
+      .modern-status.error {
+        background: rgba(245, 101, 101, 0.95);
+        color: white;
+      }
+
+      .modern-status.processing {
+        background: rgba(34, 197, 94, 0.95);
+        color: white;
+      }
+
+      /* Modal de Seleção de Eurocode */
+      .modern-eurocode-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 20px;
+      }
+
+      .modern-eurocode-modal.show {
+        display: flex;
+      }
+
+      .modern-modal-content {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 400px;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        animation: modalSlideUp 0.3s ease;
+      }
+
+      @keyframes modalSlideUp {
+        from {
+          transform: translateY(50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .modern-modal-header {
+        padding: 25px 25px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .modern-modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+      }
+
+      .modern-modal-icon {
+        font-size: 24px;
+      }
+
+      .modern-modal-body {
+        padding: 20px 25px;
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      .modern-ocr-section {
+        margin-bottom: 25px;
+      }
+
+      .modern-ocr-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .modern-ocr-text {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #2d3748;
+        max-height: 100px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .modern-eurocodes-section {
+        margin-bottom: 20px;
+      }
+
+      .modern-eurocodes-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 15px;
+        display: block;
+      }
+
+      .modern-eurocode-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .modern-eurocode-button {
+        background: #3182ce;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        letter-spacing: 0.5px;
+      }
+
+      .modern-eurocode-button:hover {
+        background: #2c5aa0;
+        transform: translateY(-1px);
+      }
+
+      .modern-eurocode-button:active {
+        transform: translateY(0);
+      }
+
+      .modern-modal-footer {
+        padding: 20px 25px 25px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 12px;
+      }
+
+      .modern-modal-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+      }
+
+      .modern-btn-secondary {
+        background: #6b7280;
+        color: white;
+      }
+
+      .modern-btn-secondary:hover {
+        background: #4b5563;
+      }
+
+      .modern-btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .modern-btn-danger:hover {
+        background: #dc2626;
+      }
+    }
+
+    /* Desktop mantém-se igual - sem alterações */
+    @media (min-width: 769px) {
+      .modern-mobile {
+        display: none !important;
+      }
+      .modern-eurocode-modal {
+        display: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <!-- HEADER -->
   <header class="header">
-    <div class="logo">
-      <img src="logo.png" alt="EXPRESSGLASS" />
-    </div>
-    <h1>RECEÇÃO MATERIAL</h1>
-    <div id="userInfo" class="user-info">
-      <div>
-        <span id="userName"></span>
-        <span id="userEmail"></span>
+    <div class="brand">
+      <div class="logo-container">
+        <img src="expressglass-logo.png" class="logo" alt="ExpressGlass - Vidros para Viaturas" />
       </div>
-      <button id="logoutBtn">SAIR</button>
+      <h1 class="title">EXPRESSGLASS</h1>
+      <div style="background: rgba(255,255,255,0.1); padding: 8px 16px; margin: 15px 20px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+        <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: 0.1em; margin: 0; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.4); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">RECEÇÃO MATERIAL</h2>
+      </div>
     </div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- MOBILE VIEW ORIGINAL -->
+  <!-- MOBILE VIEW ORIGINAL (escondida) -->
   <main id="mobileView" class="card mobile-only">
     <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
@@ -659,10 +696,6 @@ table {
         <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
           <span class="emoji">📷</span>
           <span class="mode-label">Eurocode</span>
-        </button>
-        <button id="btnManualEntry" class="btn-square mode-btn" aria-label="Entrada manual" style="width:100%; background: #16a34a;">
-          <span class="emoji">✏️</span>
-          <span class="mode-label">Entrada manual</span>
         </button>
       </div>
     </div>
@@ -701,12 +734,6 @@ table {
         <div class="modern-camera-icon">📷</div>
         <div class="modern-camera-label">Eurocode</div>
       </div>
-      
-      <!-- Manual Entry Button -->
-      <button id="modernManualEntry" class="modern-manual-btn">
-        <span class="modern-manual-icon">✏️</span>
-        <span class="modern-manual-label">Entrada manual</span>
-      </button>
     </div>
 
     <!-- Bottom Card -->
@@ -722,79 +749,32 @@ table {
     </div>
   </main>
 
-  <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
-  <div id="modernEurocodeModal" class="modern-eurocode-modal">
-    <div class="modern-modal-content">
-      <div class="modern-modal-header">
-        <span class="modern-modal-icon">🔍</span>
-        <h3 class="modern-modal-title">Selecionar Eurocode</h3>
-      </div>
+ <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
+<div id="modernEurocodeModal" class="modern-eurocode-modal">
+  <div class="modern-modal-content">
+    <div class="modern-modal-header">
+      <span class="modern-modal-icon">🔍</span>
+      <h3 class="modern-modal-title">Selecionar Eurocode</h3>
+    </div>
 
-      <div class="modern-modal-body">
-        <!-- Só a lista de eurocodes -->
-        <div class="modern-eurocodes-section">
-          <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
-          <div id="modernEurocodeList" class="modern-eurocode-list"></div>
-        </div>
+    <div class="modern-modal-body">
+      <!-- Só a lista de eurocodes -->
+      <div class="modern-eurocodes-section">
+        <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
+        <div id="modernEurocodeList" class="modern-eurocode-list"></div>
       </div>
+    </div>
+
+    <div class="modern-modal-footer">
+      <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
+      <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
+    </div>
+  </div>
+</div>
 
       <div class="modern-modal-footer">
         <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
         <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL DE ENTRADA MANUAL (MOBILE) -->
-  <div id="manualEntryModal" class="modern-eurocode-modal">
-    <div class="modern-modal-content">
-      <div class="modern-modal-header">
-        <span class="modern-modal-icon">✏️</span>
-        <h3 class="modern-modal-title">Entrada Manual</h3>
-      </div>
-
-      <div class="modern-modal-body">
-        <div class="modern-field">
-          <label class="modern-field-label">Eurocode</label>
-          <input id="manualEurocode" type="text" class="modern-field-input" placeholder="Ex: 4912AGNCM1H" />
-        </div>
-        
-        <div class="modern-field">
-          <label class="modern-field-label">Marca do Carro</label>
-          <select id="manualCarBrand" class="modern-field-select">
-            <option value="">Selecionar marca...</option>
-            <option value="BMW">BMW</option>
-            <option value="Mercedes-Benz">Mercedes-Benz</option>
-            <option value="Audi">Audi</option>
-            <option value="Volkswagen">Volkswagen</option>
-            <option value="Seat">Seat</option>
-            <option value="Škoda">Škoda</option>
-            <option value="Opel">Opel</option>
-            <option value="Peugeot">Peugeot</option>
-            <option value="Citroën">Citroën</option>
-            <option value="Renault">Renault</option>
-            <option value="Dacia">Dacia</option>
-            <option value="Fiat">Fiat</option>
-            <option value="Alfa Romeo">Alfa Romeo</option>
-            <option value="Ford">Ford</option>
-            <option value="Toyota">Toyota</option>
-            <option value="Honda">Honda</option>
-            <option value="Nissan">Nissan</option>
-            <option value="Mazda">Mazda</option>
-            <option value="Hyundai">Hyundai</option>
-            <option value="Kia">Kia</option>
-            <option value="Volvo">Volvo</option>
-            <option value="Tesla">Tesla</option>
-            <option value="MAN">MAN</option>
-            <option value="Scania">Scania</option>
-            <option value="DAF">DAF</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="modern-modal-footer">
-        <button id="manualEntryCancel" class="modern-modal-btn modern-btn-secondary">Cancelar</button>
-        <button id="manualEntrySave" class="modern-modal-btn modern-btn-primary">Guardar</button>
       </div>
     </div>
   </div>
@@ -816,240 +796,420 @@ table {
     <div class="table-wrap">
       <table id="resultsTable">
         <thead>
-          <tr>
-            <th style="width:60px">#</th>
-            <th style="width:220px">Data/Hora</th>
-            <th style="width:120px">Tipo</th>
-            <th style="width:160px">Veículo</th>
-            <th style="width:180px">Eurocode</th>
-            <th style="width:160px">Marca</th>
-            <th style="width:120px">Matrícula</th>
-            <th style="width:100px">SM/LOJA</th>
-            <th style="width:200px">OBS</th>
-            <th style="width:140px">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody">
-          <!-- Dados serão inseridos aqui -->
-        </tbody>
+  <tr>
+    <th style="width:60px">#</th>
+    <th style="width:220px">Data/Hora</th>
+    <th style="width:120px">Tipo</th>
+    <th style="width:160px">Veículo</th>
+    <th style="width:180px">Eurocode</th>
+    <th style="width:160px">Marca</th>
+    <th style="width:100px">Matrícula</th>
+    <th style="width:90px">SM/LOJA</th>
+    <th style="width:200px">OBS</th>
+    <th style="width:140px">Ações</th>
+  </tr>
+</thead>
+        <tbody id="resultsBody"></tbody>
       </table>
     </div>
 
     <div id="desktopStatus" class="status"></div>
-
-    <!-- Pesquisa -->
-    <div class="search-container">
-      <input id="searchInput" type="text" placeholder="Procurar Eurocode..." />
-      <button id="clearSearch" class="clear-search" title="Limpar pesquisa">✕</button>
-    </div>
   </section>
 
-  <!-- Scripts para interface moderna mobile -->
+  <!-- MODAL DE AJUDA -->
+  <div id="helpModal" class="help-modal">
+    <div class="help-content">
+      <button class="help-close" id="helpClose">&times;</button>
+      <h3>💡 Como usar</h3>
+      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO OCR -->
+  <div id="editOcrModal" class="edit-ocr-modal">
+    <div class="edit-ocr-content">
+      <div class="edit-ocr-header">
+        <h3>✏️ Editar texto lido (OCR)</h3>
+        <button class="edit-ocr-close" id="editOcrClose">&times;</button>
+      </div>
+      <div class="edit-ocr-body">
+        <textarea id="editOcrTextarea" class="edit-ocr-textarea" placeholder="Texto do OCR..."></textarea>
+      </div>
+      <div class="edit-ocr-footer">
+        <button id="editOcrCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="editOcrSave" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE IMPRESSÃO -->
+  <div id="printModal" class="print-modal">
+    <div class="print-modal-content">
+      <div class="print-modal-header">
+        <h3>🖨️ Imprimir Registos</h3>
+        <button class="print-modal-close" id="printModalClose">&times;</button>
+      </div>
+      <div class="print-modal-body">
+        <div class="print-date-section">
+          <h4>📅 Selecionar Período</h4>
+          <div class="print-date-inputs">
+            <div class="print-date-group">
+              <label for="printDateFrom">Data Inicial:</label>
+              <input type="date" id="printDateFrom" class="print-date-input">
+            </div>
+            <div class="print-date-group">
+              <label for="printDateTo">Data Final:</label>
+              <input type="date" id="printDateTo" class="print-date-input">
+            </div>
+          </div>
+          <div class="print-quick-buttons">
+            <button onclick="setPrintDateRange('today', this)" class="print-quick-btn">Hoje</button>
+            <button onclick="setPrintDateRange('week', this)" class="print-quick-btn">Esta Semana</button>
+            <button onclick="setPrintDateRange('month', this)" class="print-quick-btn">Este Mês</button>
+            <button onclick="setPrintDateRange('all', this)" class="print-quick-btn">Todos</button>
+          </div>
+        </div>
+        <div class="print-preview-section">
+          <h4>📋 Pré-visualização</h4>
+          <div id="printPreviewCount" class="print-preview-count">
+            Selecione um período para ver os registos
+          </div>
+        </div>
+      </div>
+      <div class="print-modal-footer">
+        <button id="printCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="printConfirm" class="btn btn-primary">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO DE REGISTO -->
+  <div id="editRecordModal" class="edit-record-modal" style="display:none;">
+    <div class="edit-record-content">
+      <div class="edit-record-header">
+        <h3>✏️ Editar Registo</h3>
+        <button class="edit-record-close" id="editRecordClose">&times;</button>
+      </div>
+      <div class="edit-record-body">
+        <div class="edit-record-field">
+          <label for="editLoja">SM/LOJA</label>
+          <select id="editLoja" class="edit-record-select">
+            <option value="LOJA">LOJA</option>
+            <option value="SM">SM</option>
+          </select>
+        </div>
+        <div class="edit-record-field">
+          <label for="editObservacoes">OBS</label>
+          <textarea id="editObservacoes" class="edit-record-textarea" placeholder="Adicionar observações..."></textarea>
+        </div>
+      </div>
+      <div class="edit-record-footer">
+        <button id="editRecordCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="editRecordSave" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- App original (mantém-se igual) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="app.js?v=20250919-003100-debug-visual"></script>
+
+  <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
   <script>
-    // Variáveis globais para interface moderna
-    let modernStatus, modernCameraButton, modernCapturesList, modernEurocodeModal, modernEurocodeList;
-    let modernOcrText, modernBtnNoEurocode, modernBtnCancel;
+    // DOM Elements for modern mobile
+    const modernCameraButton = document.getElementById('modernCameraButton');
+    const modernCapturesList = document.getElementById('modernCapturesList');
+    const modernStatus = document.getElementById('modernStatus');
+    const modernEurocodeModal = document.getElementById('modernEurocodeModal');
+    const modernOcrText = document.getElementById('modernOcrText');
+    const modernEurocodeList = document.getElementById('modernEurocodeList');
+    const modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
+    const modernBtnCancel = document.getElementById('modernBtnCancel');
+
     let isProcessing = false;
+    let processingTimeout = null;
 
-    // Inicializar elementos
-    document.addEventListener('DOMContentLoaded', () => {
-      modernStatus = document.getElementById('modernStatus');
-      modernCameraButton = document.getElementById('modernCameraButton');
-      modernCapturesList = document.getElementById('modernCapturesList');
-      modernEurocodeModal = document.getElementById('modernEurocodeModal');
-      modernEurocodeList = document.getElementById('modernEurocodeList');
-      modernOcrText = document.getElementById('modernOcrText');
-      modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
-      modernBtnCancel = document.getElementById('modernBtnCancel');
-    });
-
-    // Mostrar status moderno
-    function showModernStatus(message, type = 'info') {
+    // Show modern status message
+    function showModernStatus(message, type = '') {
       if (!modernStatus) return;
-      
       modernStatus.textContent = message;
       modernStatus.className = `modern-status show ${type}`;
-      
       setTimeout(() => {
-        modernStatus.classList.remove('show');
+        modernStatus.className = 'modern-status';
       }, 3000);
     }
 
-    // Parar processamento
-    function stopProcessing() {
-      isProcessing = false;
-      if (modernCameraButton) {
-        modernCameraButton.classList.remove('processing');
-      }
-    }
-
-    // Iniciar processamento
+    // Start processing animation
     function startProcessing() {
+      if (isProcessing) return;
       isProcessing = true;
+      
+      console.log('Iniciando processamento...');
+      
       if (modernCameraButton) {
         modernCameraButton.classList.add('processing');
-      }
-    }
-
-    // Renderizar capturas modernas
-    async function renderModernCaptures() {
-      if (!modernCapturesList) return;
-
-      try {
-        const response = await fetch('/.netlify/functions/get-rows');
-        if (!response.ok) throw new Error('Erro na API');
-        
-        const data = await response.json();
-        const captures = data.slice(0, 10); // Últimas 10
-
-        if (captures.length === 0) {
-          modernCapturesList.innerHTML = `
-            <div class="modern-empty-state">
-              <div class="modern-empty-icon">📋</div>
-              <div class="modern-empty-text">Ainda não há capturas</div>
-            </div>
-          `;
-          return;
+        const label = modernCameraButton.querySelector('.modern-camera-label');
+        if (label) {
+          label.textContent = 'A processar...';
         }
+      }
+      
+      showModernStatus('A processar imagem...', 'processing');
+      
+      // Timeout aumentado para 45 segundos
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+      
+      processingTimeout = setTimeout(() => {
+        if (isProcessing) {
+          console.log('Timeout de processamento atingido');
+          stopProcessing();
+          showModernStatus('Timeout - tente novamente', 'error');
+        }
+      }, 45000); // 45 segundos
+    }
 
-        modernCapturesList.innerHTML = captures.map(capture => `
-          <div class="modern-capture-item">
-            <div class="modern-capture-code">${capture.eurocode || 'Sem Eurocode'}</div>
-            <div class="modern-capture-check">✓</div>
-          </div>
-        `).join('');
-      } catch (error) {
-        console.error('Erro ao carregar capturas:', error);
-        modernCapturesList.innerHTML = `
-          <div class="modern-empty-state">
-            <div class="modern-empty-icon">⚠️</div>
-            <div class="modern-empty-text">Erro ao carregar</div>
-          </div>
-        `;
+    // Stop processing animation
+    function stopProcessing() {
+      if (!isProcessing) return;
+      isProcessing = false;
+      
+      console.log('Parando processamento...');
+      
+      if (modernCameraButton) {
+        modernCameraButton.classList.remove('processing');
+        const label = modernCameraButton.querySelector('.modern-camera-label');
+        if (label) {
+          label.textContent = 'Eurocode';
+        }
+      }
+      
+      // Limpar timeout
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+        processingTimeout = null;
       }
     }
 
-    // Mostrar modal de eurocode moderno
+    // Show modern eurocode modal
     function showModernEurocodeModal(ocrText, eurocodes) {
-      if (!modernEurocodeModal || !modernEurocodeList) return;
-
-      // Parar animação
+      console.log('Mostrando modal de eurocode...');
+      
+      // CORREÇÃO: Para a animação imediatamente quando o modal aparece
       stopProcessing();
+      
+      if (!modernEurocodeModal) return;
+      
+      // Set OCR text
+      if (modernOcrText) {
+        modernOcrText.textContent = ocrText;
+      }
 
-      // Preencher lista de eurocodes
-      if (eurocodes && eurocodes.length > 0) {
+      // Set eurocode buttons
+      if (modernEurocodeList) {
         modernEurocodeList.innerHTML = eurocodes.map(code => `
-          <button class="modern-eurocode-button" onclick="selectModernEurocode('${code}', '${ocrText}')">
+          <button class="modern-eurocode-button" data-eurocode="${code}">
             ${code}
           </button>
         `).join('');
-      } else {
-        modernEurocodeList.innerHTML = '<p style="color: #a0aec0; text-align: center; padding: 20px;">Nenhum Eurocode encontrado</p>';
+
+        // Add click handlers to eurocode buttons
+        modernEurocodeList.querySelectorAll('.modern-eurocode-button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const selectedCode = btn.dataset.eurocode;
+            hideModernEurocodeModal();
+            showModernStatus(`Eurocode ${selectedCode} selecionado!`, 'success');
+            
+            // CORREÇÃO: Garantir que a animação para após seleção
+            stopProcessing();
+            
+            // Usar a função original para guardar o eurocode
+            if (window.saveEurocode) {
+              window.saveEurocode(selectedCode, ocrText);
+            }
+            
+            // Atualizar lista de capturas
+            setTimeout(renderModernCaptures, 500);
+          });
+        });
       }
 
-      // Mostrar modal
-      modernEurocodeModal.style.display = 'flex';
       modernEurocodeModal.classList.add('show');
     }
 
-    // Esconder modal de eurocode moderno
+    // Hide modern eurocode modal
     function hideModernEurocodeModal() {
       if (modernEurocodeModal) {
-        modernEurocodeModal.style.display = 'none';
         modernEurocodeModal.classList.remove('show');
       }
+      // CORREÇÃO: Garantir que para a animação quando esconde o modal
+      stopProcessing();
     }
 
-    // Selecionar eurocode moderno
-    async function selectModernEurocode(eurocode, ocrText) {
-      hideModernEurocodeModal();
-      showModernStatus('A guardar...', 'processing');
-
-      try {
-        // Usar a função original para salvar
-        if (window.saveValidatedResult) {
-          await window.saveValidatedResult(ocrText, eurocode);
-          showModernStatus('Guardado com sucesso!', 'success');
-          setTimeout(renderModernCaptures, 500);
-        }
-      } catch (error) {
-        console.error('Erro ao guardar:', error);
-        showModernStatus('Erro ao guardar', 'error');
+    // Render modern captures list from real data
+    function renderModernCaptures() {
+      if (!modernCapturesList) return;
+      
+      // Get real data from the original system
+      const tbody = document.getElementById('resultsBody');
+      if (!tbody) {
+        modernCapturesList.innerHTML = `
+          <div class="modern-empty-state">
+            <div class="modern-empty-icon">📷</div>
+            <div class="modern-empty-text">Ainda não há capturas</div>
+          </div>
+        `;
+        return;
       }
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const captures = [];
+      
+      for (const tr of rows) {
+        const vehicleTd = tr.querySelector('td:nth-child(4)'); // Vehicle column
+        const eurocodeTd = tr.querySelector('td:nth-child(5)'); // Eurocode column
+        
+        if (vehicleTd && eurocodeTd) {
+          const vehicle = (vehicleTd.innerText || vehicleTd.textContent || '').trim();
+          const eurocode = (eurocodeTd.innerText || eurocodeTd.textContent || '').trim();
+          
+          if (vehicle && eurocode && vehicle !== '—' && eurocode !== '—') {
+            captures.push({
+              vehicle: vehicle,
+              eurocode: eurocode
+            });
+          }
+        }
+        if (captures.length >= 5) break; // Limit to 5 most recent
+      }
+
+      if (captures.length === 0) {
+        modernCapturesList.innerHTML = `
+          <div class="modern-empty-state">
+            <div class="modern-empty-icon">📷</div>
+            <div class="modern-empty-text">Ainda não há capturas</div>
+          </div>
+        `;
+        return;
+      }
+
+      modernCapturesList.innerHTML = captures.map(capture => `
+        <div class="modern-capture-item">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="modern-capture-code" style="font-weight: 600; color: #2563eb; font-size: 13px;">${capture.vehicle}</span>
+            <span style="font-weight: 700; color: #007acc; font-size: 12px; letter-spacing: 0.5px;">${capture.eurocode}</span>
+          </div>
+          <span class="modern-capture-check">✓</span>
+        </div>
+      `).join('');
     }
 
-    // Interceptar eventos de sucesso
+    // Modern camera button click
+    if (modernCameraButton) {
+      modernCameraButton.addEventListener('click', () => {
+        if (isProcessing) {
+          console.log('Clique ignorado - já está a processar');
+          return; // Prevenir cliques durante processamento
+        }
+        
+        console.log('Clique no botão da câmara moderna');
+        startProcessing(); // Iniciar animação
+        
+        // Simular clique no botão da versão clássica (que funciona)
+        const classicCameraBtn = document.getElementById('btnCamera');
+        if (classicCameraBtn) {
+          classicCameraBtn.click();
+        }
+      });
+    }
+
+    // CORREÇÃO PRINCIPAL: Interceptar TODOS os eventos de sucesso
     function interceptSuccessEvents() {
-      // Observar mudanças na tabela para detectar novos registos
+      // Observar mudanças na tabela de resultados (indica sucesso)
       const tbody = document.getElementById('resultsBody');
       if (tbody) {
         let lastRowCount = tbody.children.length;
         
-        new MutationObserver(() => {
+        new MutationObserver((mutations) => {
           const currentRowCount = tbody.children.length;
           if (currentRowCount > lastRowCount) {
-            // Nova linha adicionada
-            showModernStatus('Guardado com sucesso!', 'success');
-            stopProcessing();
-            setTimeout(renderModernCaptures, 500);
+            // Nova linha adicionada = sucesso
+            console.log('Nova captura detectada, parando animação...');
+            setTimeout(() => {
+              stopProcessing();
+              renderModernCaptures();
+            }, 500);
           }
           lastRowCount = currentRowCount;
         }).observe(tbody, { childList: true });
       }
-    }
 
-    // Event listener para câmara moderna
-    if (modernCameraButton) {
-      modernCameraButton.addEventListener('click', () => {
-        if (isProcessing) return;
-        
-        const fileInput = document.getElementById('cameraInput');
-        if (fileInput) {
-          fileInput.click();
+      // Observar mensagens de sucesso
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('sucesso') || 
+                    text.toLowerCase().includes('guardado') ||
+                    text.toLowerCase().includes('adicionado')) {
+                  console.log('Sucesso detectado:', text);
+                  setTimeout(() => {
+                    stopProcessing();
+                    renderModernCaptures();
+                  }, 500);
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
         }
       });
     }
 
-    // Event listener para input de câmara
-    const cameraInput = document.getElementById('cameraInput');
-    if (cameraInput) {
-      cameraInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files[0]) {
-          startProcessing();
-          showModernStatus('A processar imagem...', 'processing');
-          
-          if (window.processImage) {
-            window.processImage(e.target.files[0]);
-          }
-        }
-      });
-    }
-
-    // Interceptar modal clássico
+    // Interceptar o modal da versão clássica e mostrar na versão moderna
     function interceptClassicModal() {
+      // Observar mudanças no DOM para detectar quando o modal clássico aparece
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-          if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-            const modal = mutation.target;
-            if (modal.id === 'eurocodeModal' && modal.style.display === 'flex') {
-              // Modal clássico apareceu, extrair dados
-              const ocrTextEl = modal.querySelector('#ocrText');
-              const eurocodeListEl = modal.querySelector('#eurocodeList');
-              
-              if (ocrTextEl && eurocodeListEl) {
-                const ocrText = ocrTextEl.textContent || ocrTextEl.value || '';
-                const eurocodes = Array.from(eurocodeListEl.querySelectorAll('button')).map(btn => 
-                  btn.textContent.trim()
-                ).filter(Boolean);
-                
-                // Esconder modal clássico
-                modal.style.display = 'none';
-                modal.classList.remove('show');
-                
-                // Mostrar modal moderno (que já para a animação)
-                showModernEurocodeModal(ocrText, eurocodes);
+          if (mutation.type === 'childList') {
+            // Procurar por modais de validação de eurocode
+            const modals = document.querySelectorAll('[id*="modal"], [class*="modal"]');
+            modals.forEach((modal) => {
+              if (modal.style.display === 'block' || modal.classList.contains('show')) {
+                const modalText = modal.textContent || modal.innerText || '';
+                if (modalText.includes('Selecionar Eurocode') || modalText.includes('Eurocode')) {
+                  console.log('Modal clássico detectado, interceptando...');
+                  
+                  // Extrair dados do modal clássico
+                  const ocrTextEl = modal.querySelector('[id*="ocr"], [class*="ocr"]');
+                  const eurocodeButtons = modal.querySelectorAll('button[data-eurocode], button[onclick*="eurocode"]');
+                  
+                  if (ocrTextEl || eurocodeButtons.length > 0) {
+                    const ocrText = ocrTextEl ? (ocrTextEl.textContent || ocrTextEl.innerText || '') : '';
+                    const eurocodes = Array.from(eurocodeButtons).map(btn => 
+                      btn.dataset.eurocode || btn.textContent.trim()
+                    ).filter(Boolean);
+                    
+                    // Esconder modal clássico
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    
+                    // Mostrar modal moderno (que já para a animação)
+                    showModernEurocodeModal(ocrText, eurocodes);
+                  }
+                }
               }
-            }
+            });
           }
         });
       });
@@ -1238,24 +1398,62 @@ table {
   (function(){
     const tbody = document.getElementById('resultsBody');
     function fixCol3(){
-      if(!tbody) return;
-      const rows = tbody.querySelectorAll('tr');
-      rows.forEach(row => {
-        const col3 = row.querySelector('td:nth-child(3)');
-        if(col3){
-          col3.style.fontSize = '14px';
-          col3.style.fontWeight = 'bold';
-        }
+      document.querySelectorAll('#resultsTable tbody tr td:nth-child(3)').forEach(td=>{
+        td.style.setProperty('font-size','14px','important');
+        td.style.setProperty('line-height','1.35','important');
+        td.style.setProperty('white-space','pre-wrap','important');
+        td.style.setProperty('word-break','break-word','important');
+        td.style.setProperty('letter-spacing','0','important');
       });
     }
-    if(tbody){
-      new MutationObserver(fixCol3).observe(tbody, {childList:true, subtree:true});
-      fixCol3();
+    fixCol3();
+    if (tbody){
+      new MutationObserver(fixCol3)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
     }
+    window.addEventListener('resize', fixCol3);
   })();
   </script>
+<script>
+window.addEventListener('load', () => {
+  const fileInput = document.getElementById('fileInput');
+  const btnUpload = document.getElementById('btnUpload');
+  const btnExport = document.getElementById('btnExport');
+  const btnClear  = document.getElementById('btnClear');
 
-  <script src="app.js"></script>
+  btnUpload?.addEventListener('click', () => fileInput?.click());
+  fileInput?.addEventListener('change', (e) => {
+    const f = e.target.files?.[0];
+    if (f && window.processImage) window.processImage(f);
+  });
+
+  btnExport?.addEventListener('click', () => {
+    if (window.exportCSV) window.exportCSV();
+  });
+
+  btnClear?.addEventListener('click', () => {
+    if (window.clearTable) window.clearTable();
+  });
+}});
+</script>
+
+<!-- BOTÃO SAIR MOBILE -->
+<div id="mobileSairBtn" style="display: none;">
+  <button onclick="authManager.logout()" style="position: fixed; bottom: 20px; right: 15px; z-index: 10000; background: rgba(255,255,255,0.9); color: #333; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 8px 16px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;">Sair</button>
+</div>
+
+<style>
+@media (max-width: 768px) {
+  #mobileSairBtn {
+    display: block !important;
+  }
+  #userInfo {
+    display: none !important;
+  }
+}
+</style>
+
+<script src="auth.js"></script>
 
   <!-- ===== MODAL EXPORTAÇÃO PARA EXCEL ===== -->
   <div id="exportModal" class="export-modal" style="display:none;">
