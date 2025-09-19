@@ -38,6 +38,8 @@ export const handler = async (event) => {
           filename,
           source,
           matricula,
+          loja,
+          observacoes,
           user_id
         FROM ocr_results
         WHERE user_id = ${user.id}
@@ -66,7 +68,9 @@ export const handler = async (event) => {
           ...r, 
           eurocode: null, 
           brand: null, 
-          vehicle: null 
+          vehicle: null,
+          loja: 'LOJA',
+          observacoes: ''
         }));
         return ok({ ok: true, rows, note: 'Some columns missing, returned as null' });
       }
@@ -78,4 +82,3 @@ export const handler = async (event) => {
     return err(statusCode, String(e?.message || e));
   }
 };
-
