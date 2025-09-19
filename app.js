@@ -2035,7 +2035,7 @@ async function updateLoja(recordId, loja) {
       showToast('❌ Token não encontrado!', 'error');
       return;
     }
-    showToast(`✅ Token OK: ${token.substring(0, 10)}...`, 'info');
+    const authHeader = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
     
     // Encontrar registo local
     const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
