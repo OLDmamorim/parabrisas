@@ -824,7 +824,7 @@ function normVehicleText(s){
 const VEHICLE_PATTERNS = [
   { canon:"BMW", rx:/\bBMW\b|\bBM\b/ },
   { canon: "Mercedes-Benz", rx: /\bMERCEDES(?:[-\s]?BENZ)?\b|\bMERCEDES\b|\bMB\b/ },
-  { canon: "Audi",          rx: /\bAUDI\b/ },
+  { canon: "Audi",          rx: /\bAUDI\b|\bAD\b/ },
   { canon: "Volkswagen",    rx: /\bVOLKSWAGEN\b|\bVW\b/ },
   { canon: "Seat",          rx: /\bSEAT\b/ },
   { canon: "Jeep",          rx: /\bJEEP\b/ },
