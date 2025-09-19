@@ -453,6 +453,49 @@ table {
         font-weight: 500;
       }
 
+      /* Botão de Entrada Manual */
+      .modern-manual-btn {
+        background: #16a34a !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 15px !important;
+        padding: 12px 24px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
+        margin-top: 20px !important;
+        width: auto !important;
+        height: auto !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        position: relative !important;
+        z-index: 10 !important;
+      }
+
+      .modern-manual-btn:hover {
+        background: #15803d;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+      }
+
+      .modern-manual-btn:active {
+        transform: translateY(0);
+      }
+
+      .modern-manual-icon {
+        font-size: 16px;
+      }
+
+      .modern-manual-label {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
       .modern-status {
         position: fixed;
         top: 20px;
@@ -658,6 +701,52 @@ table {
       .modern-btn-danger:hover {
         background: #dc2626;
       }
+
+      .modern-btn-primary {
+        background: #16a34a;
+        color: white;
+      }
+
+      .modern-btn-primary:hover {
+        background: #15803d;
+      }
+
+      /* Campos do Modal de Entrada Manual */
+      .modern-field {
+        margin-bottom: 20px;
+      }
+
+      .modern-field-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .modern-field-input,
+      .modern-field-select {
+        width: 100%;
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 14px;
+        color: #2d3748;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+      }
+
+      .modern-field-input:focus,
+      .modern-field-select:focus {
+        outline: none;
+        border-color: #16a34a;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+      }
+
+      .modern-field-input::placeholder {
+        color: #a0aec0;
+      }
     }
 
     /* Desktop mantém-se igual - sem alterações */
@@ -738,6 +827,12 @@ table {
         <div class="modern-camera-icon">📷</div>
         <div class="modern-camera-label">Eurocode</div>
       </div>
+      
+      <!-- Manual Entry Button -->
+      <button id="modernManualEntry" class="modern-manual-btn">
+        <span class="modern-manual-icon">✏️</span>
+        <span class="modern-manual-label">Entrada manual</span>
+      </button>
     </div>
 
     <!-- Bottom Card -->
@@ -776,12 +871,59 @@ table {
   </div>
 </div>
 
-      <div class="modern-modal-footer">
-        <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
-        <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
+<!-- MODAL DE ENTRADA MANUAL (MOBILE) -->
+<div id="manualEntryModal" class="modern-eurocode-modal">
+  <div class="modern-modal-content">
+    <div class="modern-modal-header">
+      <span class="modern-modal-icon">✏️</span>
+      <h3 class="modern-modal-title">Entrada Manual</h3>
+    </div>
+
+    <div class="modern-modal-body">
+      <div class="modern-field">
+        <label class="modern-field-label">Eurocode</label>
+        <input id="manualEurocode" type="text" class="modern-field-input" placeholder="Ex: 4912AGNCM1H" />
+      </div>
+      
+      <div class="modern-field">
+        <label class="modern-field-label">Marca do Carro</label>
+        <select id="manualCarBrand" class="modern-field-select">
+          <option value="">Selecionar marca...</option>
+          <option value="BMW">BMW</option>
+          <option value="Mercedes-Benz">Mercedes-Benz</option>
+          <option value="Audi">Audi</option>
+          <option value="Volkswagen">Volkswagen</option>
+          <option value="Seat">Seat</option>
+          <option value="Škoda">Škoda</option>
+          <option value="Opel">Opel</option>
+          <option value="Peugeot">Peugeot</option>
+          <option value="Citroën">Citroën</option>
+          <option value="Renault">Renault</option>
+          <option value="Dacia">Dacia</option>
+          <option value="Fiat">Fiat</option>
+          <option value="Alfa Romeo">Alfa Romeo</option>
+          <option value="Ford">Ford</option>
+          <option value="Toyota">Toyota</option>
+          <option value="Honda">Honda</option>
+          <option value="Nissan">Nissan</option>
+          <option value="Mazda">Mazda</option>
+          <option value="Hyundai">Hyundai</option>
+          <option value="Kia">Kia</option>
+          <option value="Volvo">Volvo</option>
+          <option value="Tesla">Tesla</option>
+          <option value="MAN">MAN</option>
+          <option value="Scania">Scania</option>
+          <option value="DAF">DAF</option>
+        </select>
       </div>
     </div>
+
+    <div class="modern-modal-footer">
+      <button id="manualEntryCancel" class="modern-modal-btn modern-btn-secondary">Cancelar</button>
+      <button id="manualEntrySave" class="modern-modal-btn modern-btn-primary">Guardar</button>
+    </div>
   </div>
+</div>
 
   <!-- DESKTOP VIEW (mantém-se 100% igual ao original) -->
   <section id="desktopView" class="card desktop-only">
@@ -1131,6 +1273,25 @@ table {
         const classicCameraBtn = document.getElementById('btnCamera');
         if (classicCameraBtn) {
           classicCameraBtn.click();
+        }
+      });
+    }
+
+    // Manual entry button clicks
+    const btnManualEntry = document.getElementById('btnManualEntry');
+    if (btnManualEntry) {
+      btnManualEntry.addEventListener('click', () => {
+        if (window.openManualEntryModal) {
+          window.openManualEntryModal();
+        }
+      });
+    }
+
+    const modernManualEntry = document.getElementById('modernManualEntry');
+    if (modernManualEntry) {
+      modernManualEntry.addEventListener('click', () => {
+        if (window.openManualEntryModal) {
+          window.openManualEntryModal();
         }
       });
     }
