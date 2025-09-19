@@ -471,7 +471,7 @@ function renderTable() {
         <td style="font-size: 11px;">${row.timestamp}</td>
         <td style="font-weight: bold; color: #16a34a;">${glassType}</td>
         <td style="font-weight: bold;">${row.vehicle || '—'}</td>
-        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #fde047;">${row.eurocode || '—'}</td>
+        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #eab308;">${row.eurocode || '—'}</td>
         <td style="font-weight: bold; color: #16a34a;">${row.brand || '—'}</td>
         <td>
           <input type="text" 
@@ -671,6 +671,13 @@ function detectGlassType(eurocode) {
   if (!eurocode || typeof eurocode !== 'string') return '—';
   
   const code = eurocode.trim().toUpperCase();
+  
+  // Nova lógica: Verificar se após os 4 primeiros números há AS, AK, BS, BK
+  const frisosMatch = code.match(/^\d{4}(AS|AK|BS|BK)/);
+  if (frisosMatch) {
+    return 'Frisos/molas';
+  }
+  
   const match = code.match(/[A-Z]/);
   if (!match) return '—';
   
@@ -1420,4 +1427,4 @@ function saveEditedRecord() {
 
 window.openEditRecordModal = openEditRecordModal;
 window.updateLoja = updateLoja;
-window.updateObservacoes =  updateObservacoes;
+window.updateObservacoes = updateObservacoes;
