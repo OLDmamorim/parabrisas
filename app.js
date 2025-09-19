@@ -1,6 +1,7 @@
 // APP.JS (BD + Validação de Eurocode + CSS Forçado para Texto Pequeno)
 // =========================
 // VERSÃO: 19/09/2025 00:27 - PERSISTÊNCIA NA BASE DE DADOS IMPLEMENTADA
+// CORREÇÃO: Problema da loja SM não ser gravada na BD - RESOLVIDO
 // =========================
 
 // ---- Endpoints ----
@@ -456,52 +457,44 @@ function renderTable() {
   const dataToShow = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
 
   if (dataToShow.length === 0) {
-    const searchField = document.getElementById('searchField');
-    const isSearching = searchField && searchField.value.trim();
-    const message = isSearching
-      ? 'Nenhum registo encontrado para esta procura'
-      : 'Nenhum registo encontrado';
-    resultsBody.innerHTML =
-      `<tr><td colspan="10" style="text-align:center; padding:20px;">${message}</td></tr>`;
+    resultsBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">Nenhum registo encontrado</td></tr>';
     return;
   }
 
   resultsBody.innerHTML = dataToShow.map((row, index) => {
     const originalIndex = RESULTS.findIndex(r => r.id === row.id);
     const glassType = detectGlassType(row.eurocode);
-
+    
     return `
       <tr>
         <td>${index + 1}</td>
-        <td>${row.timestamp}</td>
-        <td style="font-weight: 600; color: #16a34a;">${glassType}</td>
-        <td>${row.vehicle || '—'}</td>
-        <td style="font-weight: bold; color: #007acc;">${row.eurocode}</td>
-        <td>${row.brand || '—'}</td>
+        <td style="font-size: 11px;">${row.timestamp}</td>
+        <td style="font-weight: bold; color: #16a34a;">${glassType}</td>
+        <td style="font-weight: bold;">${row.vehicle || '—'}</td>
+        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #007acc;">${row.eurocode || '—'}</td>
+        <td style="font-weight: bold; color: #dc2626;">${row.brand || '—'}</td>
         <td>
           <input type="text" 
-                 value="${row.matricula || ''}" 
+                 value="${row.matricula || ''}"
                  placeholder="XX-XX-XX"
-                 maxlength="8"
-                 style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; text-align: center; text-transform: uppercase;"
+                 style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-family: 'Courier New', monospace; font-weight: bold;"
+                 oninput="formatMatriculaInput(this)"
                  onblur="updateMatricula(${row.id}, this.value)"
-                 onkeypress="if(event.key==='Enter') this.blur()"
-                 oninput="formatMatriculaInput(this)">
+                 onkeypress="if(event.key==='Enter') this.blur()">
         </td>
         <td>
           <select onchange="updateLoja(${row.id}, this.value)" 
-                  style="width: 70px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; font-weight: 600; color: #0066cc; background: white;">
-            <option value="LOJA" ${(row.loja || 'LOJA') === 'LOJA' ? 'selected' : ''}>LOJA</option>
+                  style="width: 60px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-weight: bold;">
+            <option value="LOJA" ${row.loja === 'LOJA' ? 'selected' : ''}>LOJA</option>
             <option value="SM" ${row.loja === 'SM' ? 'selected' : ''}>SM</option>
           </select>
         </td>
         <td>
-          <input type="text" 
-                 value="${row.observacoes || ''}" 
+          <textarea value="${row.observacoes || ''}"
                  placeholder="Observações..."
                  style="width: 180px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px;"
                  onblur="updateObservacoes(${row.id}, this.value)"
-                 onkeypress="if(event.key==='Enter') this.blur()">
+                 onkeypress="if(event.key==='Enter') this.blur()">${row.observacoes || ''}</textarea>
         </td>
         <td>
           <div style="display: flex; gap: 8px; align-items: center;">
@@ -909,395 +902,16 @@ function guessVehicleFromToken(t) {
   if (t.includes("DAF")) return "DAF";
   const simple = [
     "BMW","AUDI","SEAT","FIAT","LANCIA","FORD","TOYOTA","HONDA","NISSAN","MAZDA",
-    "MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR","MINI",
-    "PORSCHE","SMART","TESLA"
+    "MITSUBISHI","SUBARU","SUZUKI","HYUNDAI","KIA","VOLVO","SAAB","JAGUAR",
+    "MINI","PORSCHE","SMART","TESLA"
   ];
-  if (simple.includes(t)) return t[0] + t.slice(1).toLowerCase();
-  return null;
+  return simple.includes(t) ? t.charAt(0) + t.slice(1).toLowerCase() : null;
 }
 
 function detectVehicleAndModelFromText(rawText) {
-  const text = normVehicleText(rawText);
-  const tokens = text.split(/\s+/);
-  let brand = null;
-  let brandIdx = -1;
-  for (let i = 0; i < tokens.length && !brand; i++) {
-    for (const { canon, rx } of VEHICLE_PATTERNS) {
-      if (rx.test(tokens[i])) { brand = canon; brandIdx = i; break; }
-    }
-  }
-  if (!brand) return { full: '' };
-  const BAD = new Set([
-    'LOT','MATERIAL','NO','NR','HU','NORDGLASS','SEKURIT','PILKINGTON','AGC','ASAHI',
-    'XYG','FYG','GESTGLASS','BARCODE','FORNECEDOR','XINYI','PB1-U44','PB1','XUG'
-  ]);
-  const DOOR_OR_TRIM = /^(?:\dP|\dD|SW|TOURER|VAN|COMBI|ESTATE|COUPE|CABRIO)$/;
-  const isGoodModel = (s) =>
-    !!s && !BAD.has(s) && !DOOR_OR_TRIM.test(s) && s.length <= 12 && !/^\d{2,4}$/.test(s);
-  const titleCase = (w) => /^[A-Z]{3,}$/.test(w) ? w[0] + w.slice(1).toLowerCase() : w;
-  let models = [];
-  for (let j = brandIdx + 1; j < Math.min(brandIdx + 5, tokens.length); j++) {
-    const tok = tokens[j].replace(/[^\w\-]/g, '');
-    if (isGoodModel(tok)) {
-      models.push(titleCase(tok));
-      if (j + 1 < tokens.length) {
-        const nxt = tokens[j + 1].replace(/[^\w\-]/g, '');
-        if (isGoodModel(nxt) && /^[A-Z\-]+$/.test(nxt)) models.push(titleCase(nxt));
-      }
-      break;
-    }
-  }
-  return { full: brand + (models.length ? ' ' + models.join(' ') : '') };
+  const brand = detectVehicleFromText(rawText);
+  return { brand, full: brand };
 }
-
-
-// =========================
-// FUNÇÕES DE IMPRESSÃO
-// =========================
-
-// Abrir modal de impressão
-function openPrintModal() {
-  const modal = document.getElementById('printModal');
-  if (!modal) return;
-  
-  // Definir data padrão como hoje
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('printDateFrom').value = today;
-  document.getElementById('printDateTo').value = today;
-  
-  // Atualizar preview
-  updatePrintPreview();
-  
-  // Mostrar modal
-  modal.classList.add('show');
-}
-
-// Fechar modal de impressão
-function closePrintModal() {
-  const modal = document.getElementById('printModal');
-  if (modal) {
-    modal.classList.remove('show');
-  }
-}
-
-// Definir intervalos de datas rápidos
-function setPrintDateRange(range, buttonElement) {
-  const today = new Date();
-  const fromInput = document.getElementById('printDateFrom');
-  const toInput = document.getElementById('printDateTo');
-  
-  let fromDate, toDate;
-  
-  switch (range) {
-    case 'today':
-      fromDate = toDate = today;
-      break;
-      
-    case 'week':
-      // Início da semana (segunda-feira)
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay() + 1);
-      fromDate = startOfWeek;
-      toDate = today;
-      break;
-      
-    case 'month':
-      // Início do mês
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      fromDate = startOfMonth;
-      toDate = today;
-      break;
-      
-    case 'all':
-      // Todos os registos (desde o primeiro registo)
-      if (RESULTS.length > 0) {
-        const oldestRecord = RESULTS[RESULTS.length - 1];
-        fromDate = new Date(oldestRecord.created_at || oldestRecord.timestamp);
-      } else {
-        fromDate = today;
-      }
-      toDate = today;
-      break;
-      
-    default:
-      fromDate = toDate = today;
-  }
-  
-  fromInput.value = fromDate.toISOString().split('T')[0];
-  toInput.value = toDate.toISOString().split('T')[0];
-  
-  // Atualizar botões ativos
-  document.querySelectorAll('.print-quick-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  
-  // Se buttonElement foi passado, usar ele, senão tentar event.target
-  const targetButton = buttonElement || (typeof event !== 'undefined' ? event.target : null);
-  if (targetButton) {
-    targetButton.classList.add('active');
-  }
-  
-  // Atualizar preview
-  updatePrintPreview();
-}
-
-// Atualizar preview de impressão
-function updatePrintPreview() {
-  const fromDate = document.getElementById('printDateFrom').value;
-  const toDate = document.getElementById('printDateTo').value;
-  const previewElement = document.getElementById('printPreviewCount');
-  const printButton = document.getElementById('printConfirm');
-  
-  if (!fromDate || !toDate) {
-    previewElement.textContent = 'Selecione as datas inicial e final';
-    previewElement.className = 'print-preview-count';
-    printButton.disabled = true;
-    return;
-  }
-  
-  // Filtrar registos por data
-  const filteredRecords = getRecordsInDateRange(fromDate, toDate);
-  
-  if (filteredRecords.length === 0) {
-    previewElement.textContent = 'Nenhum registo encontrado no período selecionado';
-    previewElement.className = 'print-preview-count';
-    printButton.disabled = true;
-  } else {
-    previewElement.textContent = `${filteredRecords.length} registo${filteredRecords.length !== 1 ? 's' : ''} encontrado${filteredRecords.length !== 1 ? 's' : ''} para impressão`;
-    previewElement.className = 'print-preview-count has-data';
-    printButton.disabled = false;
-  }
-}
-
-// Obter registos num intervalo de datas
-function getRecordsInDateRange(fromDate, toDate) {
-  const from = new Date(fromDate + 'T00:00:00');
-  const to = new Date(toDate + 'T23:59:59');
-  
-  return RESULTS.filter(record => {
-    // Tentar usar created_at primeiro, depois timestamp como fallback
-    let recordDate;
-    if (record.created_at) {
-      recordDate = new Date(record.created_at);
-    } else if (record.timestamp) {
-      // Se timestamp está no formato "DD/MM/YYYY, HH:MM:SS"
-      const [datePart, timePart] = record.timestamp.split(', ');
-      const [day, month, year] = datePart.split('/');
-      recordDate = new Date(`${year}-${month}-${day}T${timePart || '00:00:00'}`);
-    } else {
-      return false; // Sem data válida
-    }
-    
-    return recordDate >= from && recordDate <= to;
-  });
-}
-
-// Executar impressão
-function executePrint() {
-  const fromDate = document.getElementById('printDateFrom').value;
-  const toDate = document.getElementById('printDateTo').value;
-  
-  if (!fromDate || !toDate) {
-    showToast('Selecione as datas para impressão', 'error');
-    return;
-  }
-  
-  const recordsToPrint = getRecordsInDateRange(fromDate, toDate);
-  
-  if (recordsToPrint.length === 0) {
-    showToast('Nenhum registo encontrado no período selecionado', 'error');
-    return;
-  }
-  
-  // Gerar conteúdo de impressão
-  const printContent = generatePrintContent(recordsToPrint, fromDate, toDate);
-  
-  // Criar janela de impressão
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-  
-  // Aguardar carregamento e imprimir
-  printWindow.onload = function() {
-    printWindow.print();
-    printWindow.close();
-  };
-  
-  // Fechar modal
-  closePrintModal();
-  
-  showToast(`${recordsToPrint.length} registo${recordsToPrint.length !== 1 ? 's' : ''} enviado${recordsToPrint.length !== 1 ? 's' : ''} para impressão`, 'success');
-}
-
-// Gerar conteúdo HTML para impressão
-function generatePrintContent(records, fromDate, toDate) {
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('pt-PT');
-  };
-  
-  const formatDateTime = (dateStr) => {
-    return new Date(dateStr).toLocaleString('pt-PT');
-  };
-  
-  const periodText = fromDate === toDate 
-    ? `Dia ${formatDate(fromDate)}`
-    : `Período de ${formatDate(fromDate)} a ${formatDate(toDate)}`;
-  
-  return `
-    <!DOCTYPE html>
-    <html lang="pt">
-    <head>
-      <meta charset="UTF-8">
-      <title>ExpressGlass - Relatório de Receção</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 20px;
-          color: #333;
-        }
-        .print-header {
-          text-align: center;
-          margin-bottom: 30px;
-          border-bottom: 2px solid #333;
-          padding-bottom: 20px;
-        }
-        .print-header h1 {
-          margin: 0;
-          font-size: 24px;
-          color: #333;
-        }
-        .print-header .print-period {
-          margin: 10px 0 0 0;
-          font-size: 14px;
-          color: #666;
-        }
-        .print-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11px;
-        }
-        .print-table th,
-        .print-table td {
-          border: 1px solid #333;
-          padding: 6px 4px;
-          text-align: left;
-          vertical-align: top;
-        }
-        .print-table th {
-          background: #f0f0f0;
-          font-weight: bold;
-          font-size: 10px;
-        }
-        .print-table tr:nth-child(even) {
-          background: #f9f9f9;
-        }
-        .print-footer {
-          margin-top: 30px;
-          text-align: center;
-          font-size: 10px;
-          color: #666;
-          border-top: 1px solid #ccc;
-          padding-top: 10px;
-        }
-        .eurocode {
-          font-family: 'Courier New', monospace;
-          font-weight: bold;
-          color: #007acc;
-        }
-        .glass-type {
-          font-weight: bold;
-          color: #16a34a;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="print-header">
-        <h1>EXPRESSGLASS - Receção de Material</h1>
-        <div class="print-period">${periodText}</div>
-      </div>
-      
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th style="width: 30px;">#</th>
-            <th style="width: 120px;">Data/Hora</th>
-            <th style="width: 80px;">Tipo</th>
-            <th style="width: 100px;">Veículo</th>
-            <th style="width: 120px;">Eurocode</th>
-            <th style="width: 80px;">Marca</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${records.map((record, index) => {
-            const glassType = detectGlassType(record.eurocode);
-            return `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${formatDateTime(record.created_at)}</td>
-                <td class="glass-type">${glassType}</td>
-                <td>${record.vehicle || '—'}</td>
-                <td class="eurocode">${record.eurocode || '—'}</td>
-                <td>${record.brand || '—'}</td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-      
-      <div class="print-footer">
-        <div>Total de registos: ${records.length}</div>
-        <div>Relatório gerado em ${formatDateTime(new Date().toISOString())}</div>
-        <div>ExpressGlass - Sistema de Receção de Material</div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-// Event listeners para o modal de impressão
-document.addEventListener('DOMContentLoaded', function() {
-  // Fechar modal
-  const printModalClose = document.getElementById('printModalClose');
-  const printCancel = document.getElementById('printCancel');
-  const printConfirm = document.getElementById('printConfirm');
-  const printModal = document.getElementById('printModal');
-  
-  if (printModalClose) {
-    printModalClose.addEventListener('click', closePrintModal);
-  }
-  
-  if (printCancel) {
-    printCancel.addEventListener('click', closePrintModal);
-  }
-  
-  if (printConfirm) {
-    printConfirm.addEventListener('click', executePrint);
-  }
-  
-  // Fechar modal ao clicar fora
-  if (printModal) {
-    printModal.addEventListener('click', (e) => {
-      if (e.target === printModal) {
-        closePrintModal();
-      }
-    });
-  }
-  
-  // Atualizar preview quando as datas mudarem
-  const printDateFrom = document.getElementById('printDateFrom');
-  const printDateTo = document.getElementById('printDateTo');
-  
-  if (printDateFrom) {
-    printDateFrom.addEventListener('change', updatePrintPreview);
-  }
-  
-  if (printDateTo) {
-    printDateTo.addEventListener('change', updatePrintPreview);
-  }
-});
-
-
 
 // =========================
 // FUNÇÕES DE MATRÍCULA
@@ -1405,366 +1019,158 @@ async function updateMatricula(recordId, matricula) {
   }
 }
 
-
-// =========================
-// FUNÇÕES DE IMPRESSÃO MELHORADAS
-// =========================
-
-// Abrir modal de impressão
-function openPrintModal() {
-  const modal = document.getElementById('printModal');
-  if (!modal) return;
-  
-  // Definir data de hoje como padrão
-  const today = new Date().toISOString().split('T')[0];
-  const fromInput = document.getElementById('printDateFrom');
-  const toInput = document.getElementById('printDateTo');
-  
-  if (fromInput) fromInput.value = today;
-  if (toInput) toInput.value = today;
-  
-  // Atualizar preview
-  updatePrintPreview();
-  
-  // Mostrar modal
-  modal.classList.add('show');
-}
-
-// Fechar modal de impressão
-function closePrintModal() {
-  const modal = document.getElementById('printModal');
-  if (modal) {
-    modal.classList.remove('show');
-  }
-}
-
-// Atualizar preview de impressão
-function updatePrintPreview() {
-  const fromDate = document.getElementById('printDateFrom').value;
-  const toDate = document.getElementById('printDateTo').value;
-  const previewElement = document.getElementById('printPreviewCount');
-  const printButton = document.getElementById('printConfirm');
-  
-  if (!fromDate || !toDate) {
-    previewElement.textContent = 'Selecione as datas inicial e final';
-    previewElement.className = 'print-preview-count';
-    printButton.disabled = true;
-    return;
-  }
-  
-  // Filtrar registos por data
-  const filteredRecords = getRecordsInDateRange(fromDate, toDate);
-  
-  if (filteredRecords.length === 0) {
-    previewElement.textContent = 'Nenhum registo encontrado no período selecionado';
-    previewElement.className = 'print-preview-count';
-    printButton.disabled = true;
-  } else {
-    previewElement.textContent = `${filteredRecords.length} registo${filteredRecords.length !== 1 ? 's' : ''} encontrado${filteredRecords.length !== 1 ? 's' : ''} para impressão`;
-    previewElement.className = 'print-preview-count has-data';
-    printButton.disabled = false;
-  }
-}
-
-// Obter registos num intervalo de datas - VERSÃO MELHORADA
-function getRecordsInDateRange(fromDate, toDate) {
-  const from = new Date(fromDate + 'T00:00:00');
-  const to = new Date(toDate + 'T23:59:59');
-  
-  console.log('🔍 Filtrar registos entre:', from.toLocaleDateString('pt-PT'), 'e', to.toLocaleDateString('pt-PT'));
-  console.log('📊 Total de registos disponíveis:', RESULTS.length);
-  
-  const filtered = RESULTS.filter(record => {
-    // Tentar usar created_at primeiro, depois timestamp como fallback
-    let recordDate;
+// ===== Funções para atualizar campos inline - VERSÃO CORRIGIDA =====
+async function updateLoja(recordId, loja) {
+  try {
+    console.log('🔧 updateLoja chamada:', { recordId, loja });
     
-    if (record.created_at) {
-      recordDate = new Date(record.created_at);
-    } else if (record.timestamp) {
-      // Se timestamp está no formato "DD/MM/YYYY, HH:MM:SS"
-      const timestampStr = record.timestamp.toString();
-      if (timestampStr.includes('/')) {
-        const [datePart, timePart] = timestampStr.split(', ');
-        const [day, month, year] = datePart.split('/');
-        recordDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart || '00:00:00'}`);
-      } else {
-        // Tentar parsing direto
-        recordDate = new Date(record.timestamp);
-      }
-    } else {
-      console.log('⚠️ Registo sem data válida:', record);
-      return false; // Sem data válida
+    // Encontrar registo local
+    const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
+    console.log('🔧 Procurando registo com ID:', recordId);
+    console.log('🔧 Índice encontrado:', recordIndex);
+    
+    if (recordIndex === -1) {
+      console.log('❌ Registo não encontrado:', recordId);
+      showToast(`❌ Registo ID:${recordId} não encontrado`, 'error');
+      return;
     }
     
-    if (isNaN(recordDate.getTime())) {
-      console.log('❌ Data inválida para registo:', record);
-      return false;
-    }
+    console.log('🔧 Registo encontrado no índice:', recordIndex);
+    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
     
-    const isInRange = recordDate >= from && recordDate <= to;
-    console.log(`📅 Registo ${record.id}: ${recordDate.toLocaleDateString('pt-PT')} - ${isInRange ? '✅ Incluído' : '❌ Excluído'}`);
+    // Atualizar localmente primeiro
+    const oldLoja = RESULTS[recordIndex].loja;
+    RESULTS[recordIndex].loja = loja;
+    console.log('🔧 Atualizado localmente de', oldLoja, 'para', loja);
     
-    return isInRange;
-  });
-  
-  console.log('✅ Registos filtrados:', filtered.length);
-  return filtered;
-}
-
-// Executar impressão
-function executePrint() {
-  const fromDate = document.getElementById('printDateFrom').value;
-  const toDate = document.getElementById('printDateTo').value;
-  
-  if (!fromDate || !toDate) {
-    showToast('Selecione as datas para impressão', 'error');
-    return;
-  }
-  
-  const recordsToPrint = getRecordsInDateRange(fromDate, toDate);
-  
-  if (recordsToPrint.length === 0) {
-    showToast('Nenhum registo encontrado no período selecionado', 'error');
-    return;
-  }
-  
-  // Gerar conteúdo de impressão
-  const printContent = generatePrintContent(recordsToPrint, fromDate, toDate);
-  
-  // Criar janela de impressão
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-  
-  // Aguardar carregamento e imprimir
-  printWindow.onload = function() {
-    printWindow.print();
-    printWindow.close();
-  };
-  
-  // Fechar modal
-  closePrintModal();
-  
-  showToast(`${recordsToPrint.length} registo${recordsToPrint.length !== 1 ? 's' : ''} enviado${recordsToPrint.length !== 1 ? 's' : ''} para impressão`, 'success');
-}
-
-// Gerar conteúdo HTML para impressão
-function generatePrintContent(records, fromDate, toDate) {
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('pt-PT');
-  };
-  
-  const formatDateTime = (dateStr) => {
-    if (!dateStr) return '—';
+    // Enviar para servidor (enviar TODOS os campos necessários)
+    console.log('🔧 Enviando para servidor...');
+    const fullRecord = RESULTS[recordIndex];
+    const payload = {
+      id: recordId,
+      text: fullRecord.text || '',
+      eurocode: fullRecord.eurocode || '',
+      filename: fullRecord.filename || '',
+      source: fullRecord.source || '',
+      brand: fullRecord.brand || '',
+      vehicle: fullRecord.vehicle || '',
+      matricula: fullRecord.matricula || '',
+      loja: loja,  // CAMPO PRINCIPAL A ATUALIZAR
+      observacoes: fullRecord.observacoes || ''
+    };
     
-    // Se for timestamp no formato DD/MM/YYYY, HH:MM:SS
-    if (typeof dateStr === 'string' && dateStr.includes('/')) {
-      const [datePart, timePart] = dateStr.split(', ');
-      if (datePart && timePart) {
-        const [day, month, year] = datePart.split('/');
-        const formattedDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`);
-        return formattedDate.toLocaleString('pt-PT');
-      }
-    }
+    console.log('🔧 Payload completo:', payload);
     
-    // Parsing normal para ISO dates
-    return new Date(dateStr).toLocaleString('pt-PT');
-  };
-  
-  const periodText = fromDate === toDate 
-    ? `Dia ${formatDate(fromDate)}`
-    : `Período de ${formatDate(fromDate)} a ${formatDate(toDate)}`;
-  
-  // Obter email do utilizador
-  let userEmail = 'utilizador@expressglass.pt'; // fallback
-  
-  // Tentar obter email de várias fontes
-  if (window.authManager && window.authManager.user && window.authManager.user.email) {
-    userEmail = window.authManager.user.email;
-  } else if (localStorage.getItem('user')) {
-    try {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      if (userData && userData.email) {
-        userEmail = userData.email;
-      }
-    } catch (e) {
-      console.log('Erro ao obter email do localStorage:', e);
-    }
-  }
-  
-  console.log('Email do utilizador para impressão:', userEmail);
-  
-  return `
-    <!DOCTYPE html>
-    <html lang="pt">
-    <head>
-      <meta charset="UTF-8">
-      <title>ExpressGlass - Relatório de Receção</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 20px;
-          color: #333;
-        }
-        .print-header {
-          text-align: center;
-          margin-bottom: 30px;
-          border-bottom: 2px solid #333;
-          padding-bottom: 20px;
-        }
-        .print-header h1 {
-          margin: 0;
-          font-size: 24px;
-          color: #333;
-        }
-        .print-header .print-period {
-          margin: 10px 0 0 0;
-          font-size: 14px;
-          color: #666;
-        }
-        .print-header .print-user {
-          margin: 5px 0 0 0;
-          font-size: 12px;
-          color: #888;
-          font-style: italic;
-        }
-        .print-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11px;
-        }
-        .print-table th,
-        .print-table td {
-          border: 1px solid #333;
-          padding: 6px 4px;
-          text-align: left;
-          vertical-align: top;
-        }
-        .print-table th {
-          background: #f0f0f0;
-          font-weight: bold;
-          font-size: 10px;
-        }
-        .print-table tr:nth-child(even) {
-          background: #f9f9f9;
-        }
-        .print-footer {
-          margin-top: 30px;
-          text-align: center;
-          font-size: 10px;
-          color: #666;
-          border-top: 1px solid #ccc;
-          padding-top: 10px;
-        }
-        .eurocode {
-          font-family: 'Courier New', monospace;
-          font-weight: bold;
-          color: #007acc;
-        }
-        .glass-type {
-          font-weight: bold;
-          color: #16a34a;
-        }
-        .matricula {
-          font-family: 'Courier New', monospace;
-          font-weight: bold;
-          color: #059669;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="print-header">
-        <h1>EXPRESSGLASS - Receção de Material</h1>
-        <div class="print-period">${periodText}</div>
-        <div class="print-user">Utilizador: ${userEmail}</div>
-      </div>
-      
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th style="width: 30px;">#</th>
-            <th style="width: 120px;">Data/Hora</th>
-            <th style="width: 80px;">Tipo</th>
-            <th style="width: 100px;">Veículo</th>
-            <th style="width: 120px;">Eurocode</th>
-            <th style="width: 80px;">Marca</th>
-            <th style="width: 80px;">Matrícula</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${records.map((record, index) => {
-            const glassType = detectGlassType(record.eurocode);
-            const recordDateTime = record.created_at || record.timestamp;
-            console.log('Formatando data para impressão:', recordDateTime);
-            return `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${formatDateTime(recordDateTime)}</td>
-                <td class="glass-type">${glassType}</td>
-                <td>${record.vehicle || '—'}</td>
-                <td class="eurocode">${record.eurocode || '—'}</td>
-                <td>${record.brand || '—'}</td>
-                <td class="matricula">${record.matricula || '—'}</td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-      
-      <div class="print-footer">
-        <div>Total de registos: ${records.length}</div>
-        <div>Relatório gerado em ${formatDateTime(new Date().toISOString())}</div>
-        <div>ExpressGlass - Sistema de Receção de Material</div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-// Event listeners para o modal de impressão
-document.addEventListener('DOMContentLoaded', function() {
-  // Fechar modal
-  const printModalClose = document.getElementById('printModalClose');
-  const printCancel = document.getElementById('printCancel');
-  const printConfirm = document.getElementById('printConfirm');
-  const printModal = document.getElementById('printModal');
-  
-  if (printModalClose) {
-    printModalClose.addEventListener('click', closePrintModal);
-  }
-  
-  if (printCancel) {
-    printCancel.addEventListener('click', closePrintModal);
-  }
-  
-  if (printConfirm) {
-    printConfirm.addEventListener('click', executePrint);
-  }
-  
-  // Fechar modal ao clicar fora
-  if (printModal) {
-    printModal.addEventListener('click', (e) => {
-      if (e.target === printModal) {
-        closePrintModal();
-      }
+    const response = await fetch('/.netlify/functions/update-ocr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(payload)
     });
+    
+    console.log('🔧 Resposta do servidor:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('❌ Erro do servidor:', errorText);
+      
+      // Restaurar valor anterior em caso de erro
+      RESULTS[recordIndex].loja = oldLoja;
+      renderTable();
+      
+      throw new Error(`Erro ${response.status}: ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Sucesso do servidor:', result);
+    
+    // Mostrar sucesso
+    showToast(`✅ Loja alterada para ${loja}`, 'success');
+    
+  } catch (error) {
+    console.error('❌ Erro ao atualizar loja:', error);
+    showToast(`❌ Erro ao alterar loja: ${error.message}`, 'error');
+    
+    // Restaurar valor anterior em caso de erro
+    renderTable();
   }
-  
-  // Atualizar preview quando as datas mudarem
-  const printDateFrom = document.getElementById('printDateFrom');
-  const printDateTo = document.getElementById('printDateTo');
-  
-  if (printDateFrom) {
-    printDateFrom.addEventListener('change', updatePrintPreview);
-  }
-  
-  if (printDateTo) {
-    printDateTo.addEventListener('change', updatePrintPreview);
-  }
-});
+}
 
-
+async function updateObservacoes(recordId, observacoes) {
+  try {
+    console.log('🔧 updateObservacoes chamada:', { recordId, observacoes });
+    
+    // Encontrar registo local
+    const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
+    console.log('🔧 Procurando registo com ID:', recordId);
+    console.log('🔧 Índice encontrado:', recordIndex);
+    
+    if (recordIndex === -1) {
+      console.log('❌ Registo não encontrado:', recordId);
+      showToast('Registo não encontrado', 'error');
+      return;
+    }
+    
+    console.log('🔧 Registo encontrado no índice:', recordIndex);
+    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
+    
+    // Atualizar localmente primeiro
+    RESULTS[recordIndex].observacoes = observacoes;
+    console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
+    
+    // Enviar para servidor (enviar TODOS os campos necessários)
+    console.log('🔧 Enviando para servidor...');
+    const fullRecord = RESULTS[recordIndex];
+    const payload = {
+      id: recordId,
+      text: fullRecord.text || '',
+      eurocode: fullRecord.eurocode || '',
+      filename: fullRecord.filename || '',
+      source: fullRecord.source || '',
+      brand: fullRecord.brand || '',
+      vehicle: fullRecord.vehicle || '',
+      matricula: fullRecord.matricula || '',
+      loja: fullRecord.loja || 'LOJA',
+      observacoes: observacoes  // CAMPO PRINCIPAL A ATUALIZAR
+    };
+    
+    const response = await fetch('/.netlify/functions/update-ocr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    console.log('🔧 Resposta do servidor:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.log('❌ Erro do servidor:', errorData);
+      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar observações'}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Sucesso do servidor:', result);
+    
+    // Mostrar sucesso
+    if (observacoes.trim()) {
+      showToast('Observações guardadas', 'success');
+    } else {
+      showToast('Observações removidas', 'success');
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro ao atualizar observações:', error);
+    showToast(`Erro ao guardar observações: ${error.message}`, 'error');
+    
+    // Restaurar valor anterior em caso de erro
+    renderTable();
+  }
+}
 
 // Atalho: window.setAuthToken('...') para definir token manualmente
 window.setAuthToken = function(t){
@@ -1772,7 +1178,6 @@ window.setAuthToken = function(t){
   saveToken(t);
   alert('Token guardado.');
 };
-
 
 // ===== Excel Export (SheetJS) =====
 function exportExcelWithData(dataToExport){
@@ -1989,15 +1394,8 @@ function saveEditedRecord() {
   
   if (!lojaSelect || !observacoesTextarea) return;
   
-  // Atualizar dados
-  if (!RESULTS[currentEditingRowIndex]) {
-    RESULTS[currentEditingRowIndex] = {};
-  }
-  
-  RESULTS[currentEditingRowIndex].loja = lojaSelect.value;
-  RESULTS[currentEditingRowIndex].observacoes = observacoesTextarea.value;
-  
-  console.log('Dados atualizados:', {
+  // Atualizar dados localmente
+  RESULTS[currentEditingRowIndex] = Object.assign(RESULTS[currentEditingRowIndex], {
     loja: lojaSelect.value,
     observacoes: observacoesTextarea.value
   });
@@ -2021,167 +1419,5 @@ function saveEditedRecord() {
 }
 
 window.openEditRecordModal = openEditRecordModal;
-
-// ===== Funções para atualizar campos inline =====
-async function updateLoja(recordId, loja) {
-  try {
-    // DEBUG VISUAL PARA TELEMÓVEL
-    showToast(`🔧 Iniciando updateLoja ID:${recordId} Loja:${loja}`, 'info');
-    console.log('🔧 updateLoja chamada:', { recordId, loja });
-    
-    // Verificar token primeiro
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showToast('❌ Token não encontrado!', 'error');
-      return;
-    }
-    showToast(`✅ Token OK: ${token.substring(0, 10)}...`, 'info');
-    
-    // Encontrar registo local
-    const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
-    console.log('🔧 Procurando registo com ID:', recordId);
-    console.log('🔧 Índice encontrado:', recordIndex);
-    
-    if (recordIndex === -1) {
-      console.log('❌ Registo não encontrado:', recordId);
-      showToast(`❌ Registo ID:${recordId} não encontrado`, 'error');
-      return;
-    }
-    
-    showToast(`✅ Registo encontrado no índice ${recordIndex}`, 'info');
-    console.log('🔧 Registo encontrado no índice:', recordIndex);
-    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
-    
-    // Atualizar localmente primeiro
-    RESULTS[recordIndex].loja = loja;
-    console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
-    showToast(`✅ Atualizado localmente para ${loja}`, 'info');
-    
-    // Enviar para servidor (enviar registo completo)
-    console.log('🔧 Enviando para servidor...');
-    showToast('🔄 Enviando para servidor...', 'info');
-    
-    const fullRecord = RESULTS[recordIndex];
-    const payload = {
-      id: recordId,
-      matricula: fullRecord.matricula || '',
-      loja: loja,
-      observacoes: fullRecord.observacoes || '',
-      eurocode: fullRecord.eurocode || '',
-      vehicle: fullRecord.vehicle || '',
-      brand: fullRecord.brand || '',
-      timestamp: fullRecord.timestamp || '',
-      text: fullRecord.text || '',
-      filename: fullRecord.filename || '',
-      source: fullRecord.source || ''
-    };
-    
-    const response = await fetch('/.netlify/functions/update-ocr', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-    
-    console.log('🔧 Resposta do servidor:', response.status);
-    showToast(`📡 Resposta servidor: ${response.status}`, 'info');
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.log('❌ Erro do servidor:', errorText);
-      showToast(`❌ Erro ${response.status}: ${errorText.substring(0, 50)}`, 'error');
-      throw new Error(`Erro ${response.status}: ${errorText}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Sucesso do servidor:', result);
-    
-    // Mostrar sucesso
-    showToast(`✅ Loja ${loja} guardada na BD!`, 'success');
-    
-  } catch (error) {
-    console.error('❌ Erro ao atualizar loja:', error);
-    showToast(`❌ ERRO: ${error.message.substring(0, 100)}`, 'error');
-    
-    // Restaurar valor anterior em caso de erro
-    renderTable();
-  }
-}
-
-async function updateObservacoes(recordId, observacoes) {
-  try {
-    console.log('🔧 updateObservacoes chamada:', { recordId, observacoes });
-    
-    // Encontrar registo local
-    const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
-    console.log('🔧 Procurando registo com ID:', recordId);
-    console.log('🔧 Índice encontrado:', recordIndex);
-    
-    if (recordIndex === -1) {
-      console.log('❌ Registo não encontrado:', recordId);
-      showToast('Registo não encontrado', 'error');
-      return;
-    }
-    
-    console.log('🔧 Registo encontrado no índice:', recordIndex);
-    console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
-    
-    // Atualizar localmente primeiro
-    RESULTS[recordIndex].observacoes = observacoes;
-    console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
-    
-    // Enviar para servidor (enviar registo completo)
-    console.log('🔧 Enviando para servidor...');
-    const fullRecord = RESULTS[recordIndex];
-    const response = await fetch('/.netlify/functions/update-ocr', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({
-        id: recordId,
-        matricula: fullRecord.matricula || '',
-        loja: fullRecord.loja || 'LOJA',
-        observacoes: observacoes,
-        eurocode: fullRecord.eurocode || '',
-        vehicle: fullRecord.vehicle || '',
-        brand: fullRecord.brand || '',
-        timestamp: fullRecord.timestamp || '',
-        text: fullRecord.text || '',
-        filename: fullRecord.filename || '',
-        source: fullRecord.source || ''
-      })
-    });
-    
-    console.log('🔧 Resposta do servidor:', response.status);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.log('❌ Erro do servidor:', errorData);
-      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar observações'}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Sucesso do servidor:', result);
-    
-    // Mostrar sucesso
-    if (observacoes.trim()) {
-      showToast('Observações guardadas', 'success');
-    } else {
-      showToast('Observações removidas', 'success');
-    }
-    
-  } catch (error) {
-    console.error('❌ Erro ao atualizar observações:', error);
-    showToast(`Erro ao guardar observações: ${error.message}`, 'error');
-    
-    // Restaurar valor anterior em caso de erro
-    renderTable();
-  }
-}
-
 window.updateLoja = updateLoja;
 window.updateObservacoes = updateObservacoes;
