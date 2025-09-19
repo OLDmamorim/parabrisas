@@ -2023,7 +2023,17 @@ window.openEditRecordModal = openEditRecordModal;
 // ===== Funções para atualizar campos inline =====
 async function updateLoja(recordId, loja) {
   try {
+    // DEBUG VISUAL PARA TELEMÓVEL
+    showToast(`🔧 Iniciando updateLoja ID:${recordId} Loja:${loja}`, 'info');
     console.log('🔧 updateLoja chamada:', { recordId, loja });
+    
+    // Verificar token primeiro
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('❌ Token não encontrado!', 'error');
+      return;
+    }
+    showToast(`✅ Token OK: ${token.substring(0, 10)}...`, 'info');
     
     // Encontrar registo local
     const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
@@ -2032,58 +2042,66 @@ async function updateLoja(recordId, loja) {
     
     if (recordIndex === -1) {
       console.log('❌ Registo não encontrado:', recordId);
-      showToast('Registo não encontrado', 'error');
+      showToast(`❌ Registo ID:${recordId} não encontrado`, 'error');
       return;
     }
     
+    showToast(`✅ Registo encontrado no índice ${recordIndex}`, 'info');
     console.log('🔧 Registo encontrado no índice:', recordIndex);
     console.log('🔧 Dados do registo:', RESULTS[recordIndex]);
     
     // Atualizar localmente primeiro
     RESULTS[recordIndex].loja = loja;
     console.log('🔧 Atualizado localmente:', RESULTS[recordIndex]);
+    showToast(`✅ Atualizado localmente para ${loja}`, 'info');
     
     // Enviar para servidor (enviar registo completo)
     console.log('🔧 Enviando para servidor...');
+    showToast('🔄 Enviando para servidor...', 'info');
+    
     const fullRecord = RESULTS[recordIndex];
+    const payload = {
+      id: recordId,
+      matricula: fullRecord.matricula || '',
+      loja: loja,
+      observacoes: fullRecord.observacoes || '',
+      eurocode: fullRecord.eurocode || '',
+      vehicle: fullRecord.vehicle || '',
+      brand: fullRecord.brand || '',
+      timestamp: fullRecord.timestamp || '',
+      text: fullRecord.text || '',
+      filename: fullRecord.filename || '',
+      source: fullRecord.source || ''
+    };
+    
     const response = await fetch('/.netlify/functions/update-ocr', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        id: recordId,
-        matricula: fullRecord.matricula || '',
-        loja: loja,
-        observacoes: fullRecord.observacoes || '',
-        eurocode: fullRecord.eurocode || '',
-        vehicle: fullRecord.vehicle || '',
-        brand: fullRecord.brand || '',
-        timestamp: fullRecord.timestamp || '',
-        text: fullRecord.text || '',
-        filename: fullRecord.filename || '',
-        source: fullRecord.source || ''
-      })
+      body: JSON.stringify(payload)
     });
     
     console.log('🔧 Resposta do servidor:', response.status);
+    showToast(`📡 Resposta servidor: ${response.status}`, 'info');
     
     if (!response.ok) {
-      const errorData = await response.json();
-      console.log('❌ Erro do servidor:', errorData);
-      throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro ao atualizar loja'}`);
+      const errorText = await response.text();
+      console.log('❌ Erro do servidor:', errorText);
+      showToast(`❌ Erro ${response.status}: ${errorText.substring(0, 50)}`, 'error');
+      throw new Error(`Erro ${response.status}: ${errorText}`);
     }
     
     const result = await response.json();
     console.log('✅ Sucesso do servidor:', result);
     
     // Mostrar sucesso
-    showToast(`Loja ${loja} guardada`, 'success');
+    showToast(`✅ Loja ${loja} guardada na BD!`, 'success');
     
   } catch (error) {
     console.error('❌ Erro ao atualizar loja:', error);
-    showToast(`Erro ao guardar loja: ${error.message}`, 'error');
+    showToast(`❌ ERRO: ${error.message.substring(0, 100)}`, 'error');
     
     // Restaurar valor anterior em caso de erro
     renderTable();
