@@ -2030,7 +2030,7 @@ async function updateLoja(recordId, loja) {
     console.log('🔧 updateLoja chamada:', { recordId, loja });
     
     // Verificar token primeiro
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('eg_auth_token') || localStorage.getItem('token');
     if (!token) {
       showToast('❌ Token não encontrado!', 'error');
       return;
