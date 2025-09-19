@@ -2080,7 +2080,8 @@ async function updateLoja(recordId, loja) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': authHeader,
+        'x-api-key': token
       },
       body: JSON.stringify(payload)
     });
