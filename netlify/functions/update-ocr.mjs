@@ -56,8 +56,8 @@ export const handler = async (event) => {
     const newSource     = payload.source ?? currentRecord.source;
     const newVehicle    = payload.vehicle ?? currentRecord.vehicle;
     const newMatricula  = payload.matricula ?? currentRecord.matricula;
-    const newLoja       = payload.loja ?? currentRecord.loja;
-    const newObservacoes= payload.observacoes ?? currentRecord.observacoes;
+    const newLoja = payload.loja ?? currentRecord.loja ?? 'LOJA';
+    const newObservacoes = payload.observacoes ?? currentRecord.observacoes ?? '';
 
     // Brand
     let newBrand = payload.brand;
@@ -76,9 +76,9 @@ export const handler = async (event) => {
           vehicle     = ${newVehicle || ''},
           filename    = ${newFilename},
           source      = ${newSource},
-          matricula   = ${newMatricula || null},
-          loja        = ${newLoja || 'LOJA'},
-          observacoes = ${newObservacoes || ''}
+          matricula = ${newMatricula || null},
+          loja = ${newLoja},
+          observacoes = ${newObservacoes}
         WHERE id = ${id} AND user_id = ${user.id}
         RETURNING id, ts AS updated_at
       `;
