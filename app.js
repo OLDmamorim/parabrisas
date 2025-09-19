@@ -264,7 +264,7 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
     const brand    = detectBrandFromText(text) || '';
     const carBrand = vehicle || detectVehicleAndModelFromText(text).full || '';
 
-    const response = await fetch(SAVE_URL, {
+   const response = await fetch('/.netlify/functions/update-ocr',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, eurocode, filename, source, brand, vehicle: carBrand })
