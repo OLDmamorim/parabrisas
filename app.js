@@ -264,7 +264,7 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
     const brand    = detectBrandFromText(text) || '';
     const carBrand = vehicle || detectVehicleAndModelFromText(text).full || '';
 
-   const response = await fetch('/.netlify/functions/update-ocr',
+    const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, eurocode, filename, source, brand, vehicle: carBrand })
@@ -2030,12 +2030,12 @@ async function updateLoja(recordId, loja) {
     console.log('🔧 updateLoja chamada:', { recordId, loja });
     
     // Verificar token primeiro
-    const token = localStorage.getItem('eg_auth_token') || localStorage.getItem('token');
+    const token = localStorage.getItem('token');
     if (!token) {
       showToast('❌ Token não encontrado!', 'error');
       return;
     }
-    const authHeader = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+    showToast(`✅ Token OK: ${token.substring(0, 10)}...`, 'info');
     
     // Encontrar registo local
     const recordIndex = RESULTS.findIndex(r => parseInt(r.id) === parseInt(recordId));
@@ -2080,8 +2080,7 @@ async function updateLoja(recordId, loja) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': authHeader,
-        'x-api-key': token
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(payload)
     });
