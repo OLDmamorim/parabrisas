@@ -471,8 +471,8 @@ function renderTable() {
         <td style="font-size: 11px;">${row.timestamp}</td>
         <td style="font-weight: bold; color: #16a34a;">${glassType}</td>
         <td style="font-weight: bold;">${row.vehicle || '—'}</td>
-        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #eab308;">${row.eurocode || '—'}</td>
-        <td style="font-weight: bold; color: #16a34a;">${row.brand || '—'}</td>
+        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #007acc;">${row.eurocode || '—'}</td>
+        <td style="font-weight: bold; color: #dc2626;">${row.brand || '—'}</td>
         <td>
           <input type="text" 
                  value="${row.matricula || ''}"
@@ -671,13 +671,6 @@ function detectGlassType(eurocode) {
   if (!eurocode || typeof eurocode !== 'string') return '—';
   
   const code = eurocode.trim().toUpperCase();
-  
-  // Nova lógica: Verificar se após os 4 primeiros números há AS, AK, BS, BK
-  const frisosMatch = code.match(/^\d{4}(AS|AK|BS|BK)/);
-  if (frisosMatch) {
-    return 'Frisos/molas';
-  }
-  
   const match = code.match(/[A-Z]/);
   if (!match) return '—';
   
@@ -1428,3 +1421,155 @@ function saveEditedRecord() {
 window.openEditRecordModal = openEditRecordModal;
 window.updateLoja = updateLoja;
 window.updateObservacoes = updateObservacoes;
+
+// =========================
+// MODAL DE ENTRADA MANUAL
+// =========================
+
+// Função para abrir o modal de entrada manual
+function openManualEntryModal() {
+  const modal = document.getElementById('manualEntryModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    
+    // Limpar campos
+    document.getElementById('manualEurocode').value = '';
+    document.getElementById('manualCarBrand').value = '';
+    
+    // Focar no primeiro campo
+    setTimeout(() => {
+      document.getElementById('manualEurocode').focus();
+    }, 100);
+  }
+}
+
+// Função para fechar o modal de entrada manual
+function closeManualEntryModal() {
+  const modal = document.getElementById('manualEntryModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+  }
+}
+
+// Função para guardar entrada manual
+async function saveManualEntry() {
+  const eurocode = document.getElementById('manualEurocode').value.trim();
+  const carBrand = document.getElementById('manualCarBrand').value;
+  
+  // Validação básica
+  if (!eurocode) {
+    showToast('Por favor, insira o Eurocode', 'error');
+    return;
+  }
+  
+  if (!carBrand) {
+    showToast('Por favor, selecione a marca do carro', 'error');
+    return;
+  }
+  
+  try {
+    // Detectar tipologia baseada no eurocode
+    const glassType = detectGlassType(eurocode);
+    
+    // Criar payload para salvar
+    const payload = {
+      text: `Entrada manual - ${carBrand}`,
+      eurocode: eurocode,
+      filename: 'entrada_manual',
+      source: 'manual',
+      brand: '',  // Será detectada automaticamente
+      vehicle: carBrand,
+      matricula: '',
+      loja: 'LOJA',
+      observacoes: 'Entrada manual'
+    };
+    
+    // Salvar na base de dados
+    const response = await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (response.ok) {
+      showToast('Entrada manual guardada com sucesso!', 'success');
+      closeManualEntryModal();
+      
+      // Recarregar dados
+      await loadResults();
+      
+      // Atualizar lista de capturas mobile se existir
+      if (typeof renderModernCaptures === 'function') {
+        setTimeout(renderModernCaptures, 500);
+      }
+    } else {
+      throw new Error('Erro ao guardar');
+    }
+  } catch (error) {
+    console.error('Erro ao guardar entrada manual:', error);
+    showToast('Erro ao guardar entrada manual', 'error');
+  }
+}
+
+// Event listeners para o modal de entrada manual
+document.addEventListener('DOMContentLoaded', () => {
+  // Botão de entrada manual (versão mobile original)
+  const btnManualEntry = document.getElementById('btnManualEntry');
+  if (btnManualEntry) {
+    btnManualEntry.addEventListener('click', openManualEntryModal);
+  }
+  
+  // Botão de entrada manual (versão mobile moderna)
+  const modernManualEntry = document.getElementById('modernManualEntry');
+  if (modernManualEntry) {
+    modernManualEntry.addEventListener('click', openManualEntryModal);
+  }
+  
+  // Botão cancelar
+  const manualEntryCancel = document.getElementById('manualEntryCancel');
+  if (manualEntryCancel) {
+    manualEntryCancel.addEventListener('click', closeManualEntryModal);
+  }
+  
+  // Botão guardar
+  const manualEntrySave = document.getElementById('manualEntrySave');
+  if (manualEntrySave) {
+    manualEntrySave.addEventListener('click', saveManualEntry);
+  }
+  
+  // Fechar modal ao clicar fora
+  const manualEntryModal = document.getElementById('manualEntryModal');
+  if (manualEntryModal) {
+    manualEntryModal.addEventListener('click', (e) => {
+      if (e.target === manualEntryModal) {
+        closeManualEntryModal();
+      }
+    });
+  }
+  
+  // Enter para guardar
+  const manualEurocode = document.getElementById('manualEurocode');
+  if (manualEurocode) {
+    manualEurocode.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('manualCarBrand').focus();
+      }
+    });
+  }
+  
+  const manualCarBrand = document.getElementById('manualCarBrand');
+  if (manualCarBrand) {
+    manualCarBrand.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        saveManualEntry();
+      }
+    });
+  }
+});
+
+// Exportar funções globalmente
+window.openManualEntryModal = openManualEntryModal;
+window.closeManualEntryModal = closeManualEntryModal;
+window.saveManualEntry = saveManualEntry;
