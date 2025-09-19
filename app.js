@@ -397,7 +397,9 @@ function normalizeRow(r){
     source:    r.source ?? r.origem ?? '',
     brand:     brand,
     vehicle:   r.vehicle ?? '',
-    matricula: r.matricula ?? ''
+    matricula: r.matricula ?? '',
+    loja:      r.loja ?? 'LOJA',
+    observacoes: r.observacoes ?? ''
   };
 }
 
