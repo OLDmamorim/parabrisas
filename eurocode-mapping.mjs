@@ -46,7 +46,7 @@ export const EUROCODE_PREFIX_MAP = {
   '2464': { marca: 'B X', modelo: '3 F25' },
   '2465': { marca: 'BMW SERIE', modelo: '3 4P' },
   '2466': { marca: 'BMW', modelo: 'MINI' },
-  '2467': { marca: 'BMW', modelo: null },
+  '2467': { marca: 'BMW', modelo: 'SERIE 1' },
   '2468': { marca: 'BMW', modelo: 'X4' },
   '2470': { marca: 'BMW', modelo: null },
   '2471': { marca: 'BMW SER', modelo: '4 F32 2P' },
