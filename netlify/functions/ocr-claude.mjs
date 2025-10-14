@@ -3,7 +3,7 @@
 // Substitui o Google Cloud Vision OCR
 
 import Anthropic from '@anthropic-ai/sdk';
-import { getVehicleFromEurocode } from '../../eurocode-mapping.mjs';
+import { getVehicleFromEurocode } from './eurocode-mapping.mjs';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
