@@ -905,6 +905,7 @@ RESPONDE APENAS COM O JSON, SEM MAIS NADA.`
     return ok({
       ok: true,
       data: jsonResponse,
+      structured: jsonResponse,  // ← Frontend espera este campo!
       text: jsonResponse.texto_completo || jsonResponse.eurocode || '',
       model: 'claude-3-5-haiku-20241022',
       usage: {
