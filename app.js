@@ -237,7 +237,7 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
   window.currentEurocodeModal = modal;
   window.currentImageData = {
     ocrText, filename, source,
-    vehicle: detectVehicleAndModelFromText(ocrText).full || ''
+    vehicle: vehicle || ''  // Usar o parâmetro recebido (já processado pelo backend)
   };
 
   window.selectEurocode = function(selectedCode) {
