@@ -1,6 +1,25 @@
 // Endpoint para obter e atualizar dados do utilizador atual
 import { jsonHeaders, sql } from './db.mjs';
-import { requireAuth, formatMatricula, isValidMatricula } from '../../auth-utils.mjs';
+import { requireAuth } from '../../auth-utils.mjs';
+
+// Funções auxiliares para matrícula
+function formatMatricula(matricula) {
+  if (!matricula) return null;
+  // Remove espaços e converte para maiúsculas
+  const clean = matricula.replace(/\s+/g, '').toUpperCase();
+  // Formata como XX-XX-XX
+  if (clean.length === 6) {
+    return `${clean.slice(0,2)}-${clean.slice(2,4)}-${clean.slice(4,6)}`;
+  }
+  return clean;
+}
+
+function isValidMatricula(matricula) {
+  if (!matricula) return false;
+  // Valida formato XX-XX-XX
+  const regex = /^[A-Z0-9]{2}-[A-Z0-9]{2}-[A-Z0-9]{2}$/;
+  return regex.test(matricula);
+}
 
 export async function handler(event, context) {
   try {
