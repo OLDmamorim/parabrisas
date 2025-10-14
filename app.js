@@ -417,19 +417,25 @@ async function runOCR(imageBase64) {
       console.error('Erro HTTP:', res.status, errorText);
       throw new Error(`HTTP ${res.status}: ${errorText}`);
     }
-    const data = await res.json();
+    const responseData = await res.json();
     
     // Suporte para Claude OCR (novo formato)
-    if (data.data && data.data.texto_completo) {
-      return data.data.texto_completo;
+    if (responseData.data && responseData.data.texto_completo) {
+      return {
+        text: responseData.data.texto_completo,
+        structured: responseData.data // Dados estruturados do Claude
+      };
     }
     
     // Fallback para Google Vision (formato antigo)
-    return data.text || data.fullText || data.raw || '';
+    return {
+      text: responseData.text || responseData.fullText || responseData.raw || '',
+      structured: null
+    };
   } catch (err) {
     console.error('Erro no OCR:', err);
     showToast('Erro no OCR: ' + err.message, 'error');
-    return '';
+    return { text: '', structured: null };
   }
 }
 
@@ -571,15 +577,29 @@ async function processImage(file) {
       reader.readAsDataURL(file);
     });
 
-    const ocrText = await runOCR(base64);
-    if (!ocrText) throw new Error('Nenhum texto encontrado na imagem');
+    const ocrResult = await runOCR(base64);
+    if (!ocrResult.text) throw new Error('Nenhum texto encontrado na imagem');
 
-    const vehicle = detectVehicleAndModelFromText(ocrText).full || '';
+    // Usar dados estruturados do Claude se disponíveis
+    let vehicle = '';
+    if (ocrResult.structured) {
+      const { veiculo_marca, veiculo_modelo } = ocrResult.structured;
+      if (veiculo_marca && veiculo_modelo) {
+        vehicle = `${veiculo_marca} ${veiculo_modelo}`;
+      } else if (veiculo_marca) {
+        vehicle = veiculo_marca;
+      }
+    }
+    
+    // Fallback para detecção antiga se Claude não encontrou
+    if (!vehicle) {
+      vehicle = detectVehicleAndModelFromText(ocrResult.text).full || '';
+    }
 
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
     setStatus(mobileStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
 
-    showEurocodeValidationModal(ocrText, file.name, 'upload', vehicle);
+    showEurocodeValidationModal(ocrResult.text, file.name, 'upload', vehicle);
   } catch (error) {
     console.error('Erro ao processar imagem:', error);
     showToast('Erro ao processar imagem: ' + error.message, 'error');

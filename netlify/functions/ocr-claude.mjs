@@ -84,7 +84,11 @@ INSTRUÇÕES:
 4. Identifica a marca do fabricante do vidro
    Marcas comuns: PILKINGTON, SAINT-GOBAIN SEKURIT, AGC, SEKURIT, GUARDIAN, VITRO, FUYAO, SHATTERPRUFE
 5. Identifica o veículo compatível (marca e modelo)
-   Exemplos: VW Golf, Mercedes C-Class, BMW Serie 3, Renault Clio
+   IMPORTANTE: Procura por texto como "NISSAN ALMERA", "BMW SERIE 3", "VW GOLF", etc.
+   A marca do veículo geralmente aparece ANTES do modelo na mesma linha
+   Exemplos: "NISSAN ALMERA" → marca=Nissan, modelo=Almera
+            "BMW SERIE 3" → marca=BMW, modelo=Serie 3
+            "VW GOLF" → marca=VW, modelo=Golf
 6. Identifica o tipo de vidro (parabrisas, lateral, traseiro, etc.)
 7. Identifica características especiais visíveis:
    - Sensor de chuva
@@ -102,8 +106,8 @@ Responde APENAS com um objeto JSON válido, sem markdown (sem \`\`\`json), sem e
   "eurocode": "código principal identificado ou null",
   "eurocodes_alternativos": ["outros códigos encontrados"],
   "marca_fabricante": "marca do vidro em MAIÚSCULAS ou null",
-  "veiculo_marca": "marca do veículo ou null",
-  "veiculo_modelo": "modelo do veículo ou null",
+  "veiculo_marca": "marca do veículo (ex: Nissan, BMW, VW) ou null",
+  "veiculo_modelo": "modelo do veículo (ex: Almera, Serie 3, Golf) ou null",
   "veiculo_anos": "anos compatíveis (ex: 2015-2020) ou null",
   "tipo_vidro": "tipo (ex: Parabrisas, Vidro lateral direito, Vidro traseiro) ou null",
   "caracteristicas": ["lista de características especiais"],
@@ -120,7 +124,9 @@ REGRAS IMPORTANTES:
   * "baixa" = imagem muito pouco legível ou informação muito incerta
 - No texto_completo, inclui TODO o texto que consegues ler, linha por linha
 - Se vires códigos que parecem Eurocodes mas não tens certeza, inclui em eurocodes_alternativos
-- Mantém os nomes das marcas em MAIÚSCULAS (ex: PILKINGTON, não Pilkington)
+- Mantém os nomes das marcas FABRICANTES em MAIÚSCULAS (ex: PILKINGTON, não Pilkington)
+- Para marca e modelo do VEÍCULO, usa capitalização normal (ex: Nissan Almera, não NISSAN ALMERA)
+- SEMPRE tenta extrair o modelo do veículo se a marca estiver presente na mesma linha
 
 RESPONDE APENAS COM O JSON, SEM MAIS NADA.`
             }
