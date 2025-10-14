@@ -412,12 +412,23 @@ async function runOCR(imageBase64) {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ imageBase64 })
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('Erro HTTP:', res.status, errorText);
+      throw new Error(`HTTP ${res.status}: ${errorText}`);
+    }
     const data = await res.json();
+    
+    // Suporte para Claude OCR (novo formato)
+    if (data.data && data.data.texto_completo) {
+      return data.data.texto_completo;
+    }
+    
+    // Fallback para Google Vision (formato antigo)
     return data.text || data.fullText || data.raw || '';
   } catch (err) {
     console.error('Erro no OCR:', err);
-    showToast('Erro no OCR', 'error');
+    showToast('Erro no OCR: ' + err.message, 'error');
     return '';
   }
 }
