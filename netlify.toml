@@ -4,7 +4,7 @@
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@google-cloud/vision","busboy","sharp","jsqr"]
+  external_node_modules = ["@google-cloud/vision","@anthropic-ai/sdk","busboy","sharp","jsqr","@neondatabase/serverless","bcryptjs","jsonwebtoken"]
 
 # Rotas limpas para as funções (usando /api/...)
 [[redirects]]
