@@ -3,138 +3,1715 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>EXPRESSGLASS • Receção de Material</title>
-  <link rel="stylesheet" href="style-new.css" />
+  <title>EXPRESSGLASS • Receção material</title>
+  <link rel="stylesheet" href="style.css?v=fix-col3-14px" />
+  <style>
+<style>
+/* ===== EXPANDIR TABELA PARA LARGURA COMPLETA ===== */
+.card {
+  width: 98vw !important;
+  max-width: none !important;
+  margin: 16px 1vw !important;
+}
+
+table {
+  width: 100% !important;
+}
+
+/* ===== FORÇAR TABELA DESKTOP GRANDE ===== */
+@media (min-width: 769px) {
+  .card {
+    width: 98vw !important;
+    max-width: none !important;
+    margin: 16px 1vw !important;
+  }
+  
+  .table-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+  
+  table {
+    width: 100% !important;
+    min-width: 1200px !important;
+  }
+  
+  .desktop-only {
+    display: block !important;
+  }
+}
+
+/* ===== ESCONDER BOTÕES DESNECESSÁRIOS ===== */
+#modernBtnNoEurocode,
+#modernBtnCancel,
+button[onclick*="noEurocode"],
+button[onclick*="cancel"] {
+  display: none !important;
+}
+
+.view-badge {
+  display: none !important;
+}
+
+/* ===== FORÇAR TABELA LARGURA COMPLETA ===== */
+.card {
+  width: 98vw !important;
+  max-width: none !important;
+  margin: 16px 1vw !important;
+}
+
+.table-container {
+  width: 100% !important;
+}
+
+table {
+  width: 100% !important;
+}
+
+/* ===== BOTÃO SAIR DISCRETO ===== */
+.header {
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 15px !important;
+}
+
+#userInfo {
+  position: fixed !important;
+  top: 150px !important;
+  right: 30px !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  z-index: 9999 !important;
+  width: auto !important;
+  height: auto !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+#userInfo > div {
+  background: none !important;
+  padding: 0 !important;
+  display: none !important;
+}
+
+#userName, #userEmail {
+  display: none !important;
+}
+
+#userInfo button {
+  background: none !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: none !important;
+  padding: 8px 15px !important;
+  border-radius: 4px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 9999 !important;
+}
+
+#userInfo button:hover {
+  color: rgba(255, 255, 255, 1) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+#userInfo button::before {
+  content: none !important;
+}
+
+/* Mobile: mesmo estilo, só ajustar posição */
+@media (max-width: 768px) {
+  .card {
+    width: 96vw !important;
+    margin: 16px 2vw !important;
+  }
+  
+  #userInfo {
+    top: 20px !important;
+    right: 15px !important;
+    z-index: 10000 !important;
+  }
+  
+  #userInfo button {
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    background: rgba(255,255,255,0.9) !important;
+    color: #333 !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+  }
+}
+</style>
+
+  <style>
+    /* ===== MODIFICAÇÃO DO LOGÓTIPO ===== */
+    .brand .title {
+      display: none; /* Esconder o texto original */
+    }
+    
+    .brand .subtitle {
+      display: none; /* Esconder o subtítulo original */
+    }
+    
+    .brand {
+      width: 100%;
+      padding: 0;
+      position: relative;
+    }
+    
+    .logo-container {
+      background: white;
+      border-radius: 15px;
+      padding: 15px 20px;
+      margin: 0; /* Sem margens - ponta a ponta */
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .brand .logo {
+      max-width: 100%;
+      height: auto;
+      max-height: 60px;
+    }
+    
+    .brand .subtitle-new {
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 700;
+      font-family: 'Segoe UI', 'Roboto', 'Arial Black', sans-serif;
+      margin: 20px 20px 0;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: linear-gradient(45deg, #ffffff, #f0f8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+    }
+    
+    .brand .subtitle-new::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(45deg, #ffffff, #f0f8ff);
+      border-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    /* Esconder o badge Mobile */
+    .view-badge {
+      display: none !important;
+    }
+    
+    @media (max-width: 768px) {
+      .logo-container {
+        margin: 0; /* Ponta a ponta em mobile também */
+        padding: 12px 15px;
+        border-radius: 12px;
+      }
+      
+      .brand .logo {
+        max-height: 50px;
+      }
+      
+      .brand .subtitle-new {
+        font-size: 18px;
+        margin: 15px 15px 0;
+        letter-spacing: 0.3px;
+      }
+      
+      .brand .subtitle-new::after {
+        width: 40px;
+        height: 2px;
+        bottom: -6px;
+      }
+    }
+
+    /* ===== APENAS MODIFICAÇÕES PARA MOBILE ===== */
+    @media (max-width: 768px) {
+      /* Esconder a versão mobile original */
+      #mobileView.card.mobile-only {
+        display: none !important;
+      }
+
+      /* Nova versão mobile moderna */
+      .modern-mobile {
+        display: flex !important;
+        flex-direction: column;
+        min-height: calc(100vh - 120px);
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        margin: 0;
+        width: 100%;
+      }
+
+      .modern-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px 20px;
+      }
+
+      .modern-circle {
+        width: 180px;
+        height: 180px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        margin-bottom: 40px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .modern-circle:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      }
+
+      .modern-circle:active {
+        transform: translateY(-2px);
+      }
+
+      .modern-circle.processing {
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .modern-circle.processing:hover {
+        transform: none;
+      }
+
+      .modern-camera-icon {
+        font-size: 50px;
+        margin-bottom: 8px;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        transition: all 0.3s ease;
+      }
+
+      .modern-camera-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+      }
+
+      .modern-circle.processing .modern-camera-label {
+        color: #22c55e;
+        font-weight: 700;
+      }
+
+      /* ANIMAÇÃO CORRIGIDA - Anel verde que roda ao redor do círculo */
+      .modern-progress-ring {
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        width: 196px;
+        height: 196px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .modern-circle.processing .modern-progress-ring {
+        opacity: 1;
+      }
+
+      .modern-progress-ring circle {
+        fill: none;
+        stroke: #22c55e;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 580;
+        stroke-dashoffset: 580;
+        transform-origin: center;
+      }
+
+      /* Animação de processamento - anel verde rotativo */
+      .modern-circle.processing .modern-progress-ring circle {
+        animation: modernProcessingRing 1.5s linear infinite;
+        stroke-dasharray: 200 580;
+        stroke-dashoffset: 0;
+      }
+
+      @keyframes modernProcessingRing {
+        0% { 
+          transform: rotate(0deg);
+          stroke-dashoffset: 0;
+        }
+        50% {
+          stroke-dashoffset: -100;
+        }
+        100% { 
+          transform: rotate(360deg);
+          stroke-dashoffset: -200;
+        }
+      }
+
+      .modern-bottom-card {
+        background: white;
+        border-radius: 25px 25px 0 0;
+        width: 100%;
+        min-height: 280px;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        padding: 25px 20px;
+        margin-top: auto;
+      }
+
+      .modern-captures-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 10px;
+      }
+
+      .modern-captures-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2d3748;
+      }
+
+      .modern-captures-icon {
+        font-size: 20px;
+      }
+
+      .modern-capture-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .modern-capture-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 15px;
+        background: #f7fafc;
+        border-radius: 10px;
+        border-left: 4px solid #22d3ee;
+        transition: all 0.2s ease;
+      }
+
+      .modern-capture-item:hover {
+        background: #edf2f7;
+        transform: translateX(3px);
+      }
+
+      .modern-capture-code {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 13px;
+        letter-spacing: 0.3px;
+      }
+
+      .modern-capture-check {
+        color: #22d3ee;
+        font-size: 16px;
+      }
+
+      .modern-empty-state {
+        text-align: center;
+        padding: 30px 20px;
+        color: #a0aec0;
+      }
+
+      .modern-empty-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+        opacity: 0.5;
+      }
+
+      .modern-empty-text {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* Botão de Entrada Manual */
+      .modern-manual-btn {
+        background: #16a34a !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 15px !important;
+        padding: 12px 24px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
+        margin-top: 20px !important;
+        width: auto !important;
+        height: auto !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        position: relative !important;
+        z-index: 10 !important;
+      }
+
+      .modern-manual-btn:hover {
+        background: #15803d;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+      }
+
+      .modern-manual-btn:active {
+        transform: translateY(0);
+      }
+
+      .modern-manual-icon {
+        font-size: 16px;
+      }
+
+      .modern-manual-label {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .modern-status {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.95);
+        padding: 10px 18px;
+        border-radius: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 14px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 1000;
+      }
+
+      .modern-status.show {
+        opacity: 1;
+      }
+
+      .modern-status.success {
+        background: rgba(72, 187, 120, 0.95);
+        color: white;
+      }
+
+      .modern-status.error {
+        background: rgba(245, 101, 101, 0.95);
+        color: white;
+      }
+
+      .modern-status.processing {
+        background: rgba(34, 197, 94, 0.95);
+        color: white;
+      }
+
+      /* Modal de Seleção de Eurocode */
+      .modern-eurocode-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 20px;
+      }
+
+      .modern-eurocode-modal.show {
+        display: flex;
+      }
+
+      .modern-modal-content {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 400px;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        animation: modalSlideUp 0.3s ease;
+      }
+
+      @keyframes modalSlideUp {
+        from {
+          transform: translateY(50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .modern-modal-header {
+        padding: 25px 25px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .modern-modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+      }
+
+      .modern-modal-icon {
+        font-size: 24px;
+      }
+
+      .modern-modal-body {
+        padding: 20px 25px;
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      .modern-ocr-section {
+        margin-bottom: 25px;
+      }
+
+      .modern-ocr-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .modern-ocr-text {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #2d3748;
+        max-height: 100px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .modern-eurocodes-section {
+        margin-bottom: 20px;
+      }
+
+      .modern-eurocodes-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 15px;
+        display: block;
+      }
+
+      .modern-eurocode-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .modern-eurocode-button {
+        background: #3182ce;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        letter-spacing: 0.5px;
+      }
+
+      .modern-eurocode-button:hover {
+        background: #2c5aa0;
+        transform: translateY(-1px);
+      }
+
+      .modern-eurocode-button:active {
+        transform: translateY(0);
+      }
+
+      .modern-modal-footer {
+        padding: 20px 25px 25px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 12px;
+      }
+
+      .modern-modal-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+      }
+
+      .modern-btn-secondary {
+        background: #6b7280;
+        color: white;
+      }
+
+      .modern-btn-secondary:hover {
+        background: #4b5563;
+      }
+
+      .modern-btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .modern-btn-danger:hover {
+        background: #dc2626;
+      }
+
+      .modern-btn-primary {
+        background: #16a34a;
+        color: white;
+      }
+
+      .modern-btn-primary:hover {
+        background: #15803d;
+      }
+
+      /* Campos do Modal de Entrada Manual */
+      .modern-field {
+        margin-bottom: 20px;
+      }
+
+      .modern-field-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .modern-field-input,
+      .modern-field-select {
+        width: 100%;
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 14px;
+        color: #2d3748;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+      }
+
+      .modern-field-input:focus,
+      .modern-field-select:focus {
+        outline: none;
+        border-color: #16a34a;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+      }
+
+      .modern-field-input::placeholder {
+        color: #a0aec0;
+      }
+    }
+
+    /* Desktop mantém-se igual - sem alterações */
+    @media (min-width: 769px) {
+      .modern-mobile {
+        display: none !important;
+      }
+      .modern-eurocode-modal {
+        display: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
-  <!-- Header -->
+  <!-- HEADER -->
   <header class="header">
     <div class="brand">
       <div class="logo-container">
-        <img src="https://i.imgur.com/0KZiZQA.png" alt="ExpressGlass - Vidros para Viaturas" class="logo">
+        <img src="expressglass-logo.png" class="logo" alt="ExpressGlass - Vidros para Viaturas" />
       </div>
-      <h1 class="title">RECEÇÃO DE MATERIAL</h1>
+      <h1 class="title">EXPRESSGLASS</h1>
+      <div style="background: rgba(255,255,255,0.1); padding: 8px 16px; margin: 15px 20px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+        <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: 0.1em; margin: 0; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.4); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">RECEÇÃO MATERIAL</h2>
+      </div>
     </div>
-    
-    <!-- Botão Sair (se logado) -->
-    <div id="userInfo" style="position: absolute; top: 1.5rem; right: 1.5rem;"></div>
+    <div class="view-badge" id="viewBadge">Mobile</div>
   </header>
 
-  <!-- Container Principal -->
-  <div class="container">
-    <!-- Toolbar / Ações -->
-    <div class="toolbar">
-      <div class="toolbar-actions">
-        <button id="btnUpload" class="btn btn-primary">
-          📁 Carregar Imagem
+  <!-- MOBILE VIEW ORIGINAL (escondida) -->
+  <main id="mobileView" class="card mobile-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtn" aria-label="Ajuda">?</button>
+    
+    <div class="mobile-cta">
+      <div class="mode-grid" style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+        <button id="btnCamera" class="btn-square mode-btn selected" aria-label="Tirar foto (Eurocode)" style="width:100%;">
+          <span class="emoji">📷</span>
+          <span class="mode-label">Eurocode</span>
         </button>
-        <button id="btnExport" class="btn btn-success">
-          📊 Exportar Excel
+        <button id="btnManualEntry" class="btn-square mode-btn" aria-label="Entrada manual" style="width:100%; background: #16a34a;">
+          <span class="emoji">✏️</span>
+          <span class="mode-label">Entrada manual</span>
         </button>
-        <button id="btnPrint" class="btn btn-secondary">
-          🖨️ Imprimir
-        </button>
-        <button id="btnClear" class="btn btn-danger">
-          🗑️ Limpar Tabela
-        </button>
-      </div>
-      
-      <!-- Campo de Pesquisa -->
-      <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" 
-               id="searchInput" 
-               class="search-input" 
-               placeholder="Procurar Eurocode...">
       </div>
     </div>
 
-    <!-- Status Messages -->
-    <div id="desktopStatus" style="display: none;"></div>
-    <div id="mobileStatus" style="display: none;"></div>
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+    <div id="mobileStatus" class="status"></div>
 
-    <!-- Container de Registos (Cards) -->
-    <div id="resultsBody" class="records-container">
-      <!-- Cards serão renderizados aqui via JavaScript -->
-      <div class="loading">
-        <div class="spinner"></div>
-        <p style="margin-top: 1rem; color: var(--text-muted);">A carregar registos...</p>
+    <!-- Histórico de Capturas -->
+    <div id="mobileHistory" class="history-section">
+      <h3 class="history-title">📋 Últimas Capturas</h3>
+      <div id="mobileHistoryList" class="history-list">
+        <p class="history-empty">Ainda não há Eurocodes guardados.</p>
+      </div>
+    </div>
+
+    <footer class="footnote">
+      <small>Feito por Marco Amorim</small>
+    </footer>
+  </main>
+
+  <!-- NOVA MOBILE VIEW MODERNA -->
+  <main class="modern-mobile mobile-only">
+    <!-- Status Message -->
+    <div id="modernStatus" class="modern-status"></div>
+
+    <!-- Main Container -->
+    <div class="modern-main">
+      <!-- Central Circle -->
+      <div class="modern-circle" id="modernCameraButton">
+        <!-- Progress Ring -->
+        <svg class="modern-progress-ring">
+          <circle cx="98" cy="98" r="92"></circle>
+        </svg>
+        
+        <!-- Camera Icon -->
+        <div class="modern-camera-icon">📷</div>
+        <div class="modern-camera-label">Eurocode</div>
+      </div>
+      
+      <!-- Manual Entry Button -->
+      <button id="modernManualEntry" class="modern-manual-btn">
+        <span class="modern-manual-icon">✏️</span>
+        <span class="modern-manual-label">Entrada manual</span>
+      </button>
+    </div>
+
+    <!-- Bottom Card -->
+    <div class="modern-bottom-card">
+      <div class="modern-captures-header">
+        <span class="modern-captures-icon">📋</span>
+        <h2 class="modern-captures-title">Últimas Capturas</h2>
+      </div>
+
+      <div id="modernCapturesList" class="modern-capture-list">
+        <!-- Will be populated by JavaScript -->
+      </div>
+    </div>
+  </main>
+
+ <!-- MODAL DE SELEÇÃO DE EUROCODE (MOBILE) -->
+<div id="modernEurocodeModal" class="modern-eurocode-modal">
+  <div class="modern-modal-content">
+    <div class="modern-modal-header">
+      <span class="modern-modal-icon">🔍</span>
+      <h3 class="modern-modal-title">Selecionar Eurocode</h3>
+    </div>
+
+    <div class="modern-modal-body">
+      <!-- Só a lista de eurocodes -->
+      <div class="modern-eurocodes-section">
+        <label class="modern-eurocodes-label">Eurocodes encontrados: Clique no correto</label>
+        <div id="modernEurocodeList" class="modern-eurocode-list"></div>
+      </div>
+    </div>
+
+    <div class="modern-modal-footer">
+      <button id="modernBtnNoEurocode" class="modern-modal-btn modern-btn-secondary">Sem Eurocode</button>
+      <button id="modernBtnCancel" class="modern-modal-btn modern-btn-danger">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE ENTRADA MANUAL (MOBILE) -->
+<div id="manualEntryModal" class="modern-eurocode-modal">
+  <div class="modern-modal-content">
+    <div class="modern-modal-header">
+      <span class="modern-modal-icon">✏️</span>
+      <h3 class="modern-modal-title">Entrada Manual</h3>
+    </div>
+
+    <div class="modern-modal-body">
+      <div class="modern-field">
+        <label class="modern-field-label">Eurocode</label>
+        <input id="manualEurocode" type="text" class="modern-field-input" placeholder="Ex: 4912AGNCM1H" />
+      </div>
+      
+      <div class="modern-field">
+        <label class="modern-field-label">Marca do Carro</label>
+        <select id="manualCarBrand" class="modern-field-select">
+          <option value="">Selecionar marca...</option>
+          <option value="Alfa Romeo">Alfa Romeo</option>
+          <option value="Audi">Audi</option>
+          <option value="BMW">BMW</option> 
+          <option value="BYD">BYD</option>
+          <option value="Citroën">Citroën</option>
+          <option value="Cupra">Cupra</option>
+          <option value="Dacia">Dacia</option>
+          <option value="DAF">DAF</option>
+          <option value="Fiat">Fiat</option>
+          <option value="Ford">Ford</option>
+          <option value="Honda">Honda</option>
+          <option value="Hyundai">Hyundai</option>
+          <option value="Isuzu">Isuzu</option>
+          <option value="Jaguar">Jaguar</option>
+          <option value="Jeep">Jeep</option>
+          <option value="Land Rover">Land Rover</option>
+          <option value="Lexus">Lexus</option>    
+          <option value="Kia">Kia</option>
+          <option value="MAN">MAN</option>
+          <option value="Mazda">Mazda</option>
+          <option value="Mercedes-Benz">Mercedes-Benz</option>
+          <option value="MG">MG</option>
+          <option value="Mini">Mini</option>
+          <option value="Mitsubichi">Mitsubichi</option>
+          <option value="Nissan">Nissan</option>
+          <option value="Opel">Opel</option>
+          <option value="Peugeot">Peugeot</option>
+<option value="Porsche">Porsche</option>
+          <option value="Renault">Renault</option>
+          <option value="Scania">Scania</option>
+          <option value="Seat">Seat</option>
+          <option value="Škoda">Škoda</option>
+          <option value="Smart">Smart</option>
+          <option value="Tesla">Tesla</option>
+          <option value="Toyota">Toyota</option>
+          <option value="Volkswagen">Volkswagen</option>
+          <option value="Volvo">Volvo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modern-modal-footer">
+      <button id="manualEntryCancel" class="modern-modal-btn modern-btn-secondary">Cancelar</button>
+      <button id="manualEntrySave" class="modern-modal-btn modern-btn-primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+  <!-- DESKTOP VIEW (mantém-se 100% igual ao original) -->
+  <section id="desktopView" class="card desktop-only">
+    <!-- Botão de ajuda -->
+    <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
+    
+    <div class="toolbar">
+      <button id="btnUpload" class="btn" onclick="document.getElementById('fileInput').click()">📁 Carregar imagem</button>
+      <input id="fileInput" type="file" accept="image/*,.pdf" hidden
+       onchange="if(this.files&&this.files[0]){ window.processImage && window.processImage(this.files[0]); }" />
+      <button id="btnExport" class="btn" onclick="window.openExportModal && window.openExportModal()">📊 Exportar Excel</button>
+      <button id="btnPrint" class="btn" onclick="openPrintModal()">🖨️ Imprimir</button>
+      <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+  <tr>
+    <th style="width:60px">#</th>
+    <th style="width:220px">Data/Hora</th>
+    <th style="width:120px">Tipo</th>
+    <th style="width:160px">Veículo</th>
+    <th style="width:180px">Eurocode</th>
+    <th style="width:160px">Marca</th>
+    <th style="width:100px">Matrícula</th>
+    <th style="width:90px">SM/LOJA</th>
+    <th style="width:200px">OBS</th>
+    <th style="width:140px">Ações</th>
+  </tr>
+</thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div id="desktopStatus" class="status"></div>
+  </section>
+
+  <!-- MODAL DE AJUDA -->
+  <div id="helpModal" class="help-modal">
+    <div class="help-content">
+      <button class="help-close" id="helpClose">&times;</button>
+      <h3>💡 Como usar</h3>
+      <p><strong>📷 Captura:</strong> Tira uma foto clara da etiqueta do material.</p>
+      <p><strong>📋 Texto:</strong> O sistema lê automaticamente o texto e códigos.</p>
+      <p><strong>💾 Dados:</strong> Tudo é guardado automaticamente na base de dados.</p>
+      <p><strong>📊 Exportar:</strong> Podes exportar os dados em formato CSV.</p>
+      <p><strong>💡 Dica:</strong> Certifica-te que a etiqueta está bem iluminada e focada.</p>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO OCR -->
+  <div id="editOcrModal" class="edit-ocr-modal">
+    <div class="edit-ocr-content">
+      <div class="edit-ocr-header">
+        <h3>✏️ Editar texto lido (OCR)</h3>
+        <button class="edit-ocr-close" id="editOcrClose">&times;</button>
+      </div>
+      <div class="edit-ocr-body">
+        <textarea id="editOcrTextarea" class="edit-ocr-textarea" placeholder="Texto do OCR..."></textarea>
+      </div>
+      <div class="edit-ocr-footer">
+        <button id="editOcrCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="editOcrSave" class="btn btn-primary">Guardar</button>
       </div>
     </div>
   </div>
 
-  <!-- Inputs Escondidos -->
-  <input type="file" id="fileInput" accept="image/*" style="display: none;">
-  <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+  <!-- MODAL DE IMPRESSÃO -->
+  <div id="printModal" class="print-modal">
+    <div class="print-modal-content">
+      <div class="print-modal-header">
+        <h3>🖨️ Imprimir Registos</h3>
+        <button class="print-modal-close" id="printModalClose">&times;</button>
+      </div>
+      <div class="print-modal-body">
+        <div class="print-date-section">
+          <h4>📅 Selecionar Período</h4>
+          <div class="print-date-inputs">
+            <div class="print-date-group">
+              <label for="printDateFrom">Data Inicial:</label>
+              <input type="date" id="printDateFrom" class="print-date-input">
+            </div>
+            <div class="print-date-group">
+              <label for="printDateTo">Data Final:</label>
+              <input type="date" id="printDateTo" class="print-date-input">
+            </div>
+          </div>
+          <div class="print-quick-buttons">
+            <button onclick="setPrintDateRange('today', this)" class="print-quick-btn">Hoje</button>
+            <button onclick="setPrintDateRange('week', this)" class="print-quick-btn">Esta Semana</button>
+            <button onclick="setPrintDateRange('month', this)" class="print-quick-btn">Este Mês</button>
+            <button onclick="setPrintDateRange('all', this)" class="print-quick-btn">Todos</button>
+          </div>
+        </div>
+        <div class="print-preview-section">
+          <h4>📋 Pré-visualização</h4>
+          <div id="printPreviewCount" class="print-preview-count">
+            Selecione um período para ver os registos
+          </div>
+        </div>
+      </div>
+      <div class="print-modal-footer">
+        <button id="printCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="printConfirm" class="btn btn-primary">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Scripts -->
-  <script src="app.js"></script>
-  <script src="app-render-cards.js"></script>
-  
+  <!-- MODAL DE EDIÇÃO DE REGISTO -->
+  <div id="editRecordModal" class="edit-record-modal" style="display:none;">
+    <div class="edit-record-content">
+      <div class="edit-record-header">
+        <h3>✏️ Editar Registo</h3>
+        <button class="edit-record-close" id="editRecordClose">&times;</button>
+      </div>
+      <div class="edit-record-body">
+        <div class="edit-record-field">
+          <label for="editLoja">SM/LOJA</label>
+          <select id="editLoja" class="edit-record-select">
+            <option value="LOJA">LOJA</option>
+            <option value="SM">SM</option>
+          </select>
+        </div>
+        <div class="edit-record-field">
+          <label for="editObservacoes">OBS</label>
+          <textarea id="editObservacoes" class="edit-record-textarea" placeholder="Adicionar observações..."></textarea>
+        </div>
+      </div>
+      <div class="edit-record-footer">
+        <button id="editRecordCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="editRecordSave" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- App original (mantém-se igual) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="app.js?v=20250919-003100-debug-visual"></script>
+
+  <!-- Script para a versão mobile moderna - VERSÃO FINAL CORRIGIDA -->
   <script>
-    // Sobrescrever a função renderTable com a versão de cards
-    // (já está definida em app-render-cards.js)
-    
-    // Adicionar listener para o campo de pesquisa
-    document.addEventListener('DOMContentLoaded', () => {
-      const searchInput = document.getElementById('searchInput');
-      if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-          const query = e.target.value.trim().toUpperCase();
-          
-          if (query === '') {
-            FILTERED_RESULTS = [];
-          } else {
-            FILTERED_RESULTS = RESULTS.filter(row => {
-              const eurocode = (row.eurocode || '').toUpperCase();
-              const vehicle = (row.vehicle || '').toUpperCase();
-              const brand = (row.brand || '').toUpperCase();
-              
-              return eurocode.includes(query) || 
-                     vehicle.includes(query) || 
-                     brand.includes(query);
-            });
-          }
-          
-          renderTable();
-        });
+    // DOM Elements for modern mobile
+    const modernCameraButton = document.getElementById('modernCameraButton');
+    const modernCapturesList = document.getElementById('modernCapturesList');
+    const modernStatus = document.getElementById('modernStatus');
+    const modernEurocodeModal = document.getElementById('modernEurocodeModal');
+    const modernOcrText = document.getElementById('modernOcrText');
+    const modernEurocodeList = document.getElementById('modernEurocodeList');
+    const modernBtnNoEurocode = document.getElementById('modernBtnNoEurocode');
+    const modernBtnCancel = document.getElementById('modernBtnCancel');
+
+    let isProcessing = false;
+    let processingTimeout = null;
+
+    // Show modern status message
+    function showModernStatus(message, type = '') {
+      if (!modernStatus) return;
+      modernStatus.textContent = message;
+      modernStatus.className = `modern-status show ${type}`;
+      setTimeout(() => {
+        modernStatus.className = 'modern-status';
+      }, 3000);
+    }
+
+    // Start processing animation
+    function startProcessing() {
+      if (isProcessing) return;
+      isProcessing = true;
+      
+      console.log('Iniciando processamento...');
+      
+      if (modernCameraButton) {
+        modernCameraButton.classList.add('processing');
+        const label = modernCameraButton.querySelector('.modern-camera-label');
+        if (label) {
+          label.textContent = 'A processar...';
+        }
       }
       
-      // Botão de imprimir
-      const btnPrint = document.getElementById('btnPrint');
-      if (btnPrint) {
-        btnPrint.addEventListener('click', () => {
-          window.print();
+      showModernStatus('A processar imagem...', 'processing');
+      
+      // Timeout aumentado para 45 segundos
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
+      
+      processingTimeout = setTimeout(() => {
+        if (isProcessing) {
+          console.log('Timeout de processamento atingido');
+          stopProcessing();
+          showModernStatus('Timeout - tente novamente', 'error');
+        }
+      }, 45000); // 45 segundos
+    }
+
+    // Stop processing animation
+    function stopProcessing() {
+      if (!isProcessing) return;
+      isProcessing = false;
+      
+      console.log('Parando processamento...');
+      
+      if (modernCameraButton) {
+        modernCameraButton.classList.remove('processing');
+        const label = modernCameraButton.querySelector('.modern-camera-label');
+        if (label) {
+          label.textContent = 'Eurocode';
+        }
+      }
+      
+      // Limpar timeout
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+        processingTimeout = null;
+      }
+    }
+
+    // Show modern eurocode modal
+    function showModernEurocodeModal(ocrText, eurocodes) {
+      console.log('Mostrando modal de eurocode...');
+      
+      // CORREÇÃO: Para a animação imediatamente quando o modal aparece
+      stopProcessing();
+      
+      if (!modernEurocodeModal) return;
+      
+      // Set OCR text
+      if (modernOcrText) {
+        modernOcrText.textContent = ocrText;
+      }
+
+      // Set eurocode buttons
+      if (modernEurocodeList) {
+        modernEurocodeList.innerHTML = eurocodes.map(code => `
+          <button class="modern-eurocode-button" data-eurocode="${code}">
+            ${code}
+          </button>
+        `).join('');
+
+        // Add click handlers to eurocode buttons
+        modernEurocodeList.querySelectorAll('.modern-eurocode-button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const selectedCode = btn.dataset.eurocode;
+            hideModernEurocodeModal();
+            showModernStatus(`Eurocode ${selectedCode} selecionado!`, 'success');
+            
+            // CORREÇÃO: Garantir que a animação para após seleção
+            stopProcessing();
+            
+            // Usar a função original para guardar o eurocode
+            if (window.saveEurocode) {
+              window.saveEurocode(selectedCode, ocrText);
+            }
+            
+            // Atualizar lista de capturas
+            setTimeout(renderModernCaptures, 500);
+          });
         });
       }
+
+      modernEurocodeModal.classList.add('show');
+    }
+
+    // Hide modern eurocode modal
+    function hideModernEurocodeModal() {
+      if (modernEurocodeModal) {
+        modernEurocodeModal.classList.remove('show');
+      }
+      // CORREÇÃO: Garantir que para a animação quando esconde o modal
+      stopProcessing();
+    }
+
+    // Render modern captures list from real data
+    function renderModernCaptures() {
+      if (!modernCapturesList) return;
+      
+      // Get real data from the original system
+      const tbody = document.getElementById('resultsBody');
+      if (!tbody) {
+        modernCapturesList.innerHTML = `
+          <div class="modern-empty-state">
+            <div class="modern-empty-icon">📷</div>
+            <div class="modern-empty-text">Ainda não há capturas</div>
+          </div>
+        `;
+        return;
+      }
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const captures = [];
+      
+      for (const tr of rows) {
+        const vehicleTd = tr.querySelector('td:nth-child(4)'); // Vehicle column
+        const eurocodeTd = tr.querySelector('td:nth-child(5)'); // Eurocode column
+        
+        if (vehicleTd && eurocodeTd) {
+          const vehicle = (vehicleTd.innerText || vehicleTd.textContent || '').trim();
+          const eurocode = (eurocodeTd.innerText || eurocodeTd.textContent || '').trim();
+          
+          if (vehicle && eurocode && vehicle !== '—' && eurocode !== '—') {
+            captures.push({
+              vehicle: vehicle,
+              eurocode: eurocode
+            });
+          }
+        }
+        if (captures.length >= 5) break; // Limit to 5 most recent
+      }
+
+      if (captures.length === 0) {
+        modernCapturesList.innerHTML = `
+          <div class="modern-empty-state">
+            <div class="modern-empty-icon">📷</div>
+            <div class="modern-empty-text">Ainda não há capturas</div>
+          </div>
+        `;
+        return;
+      }
+
+      modernCapturesList.innerHTML = captures.map(capture => `
+        <div class="modern-capture-item">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="modern-capture-code" style="font-weight: 600; color: #2563eb; font-size: 13px;">${capture.vehicle}</span>
+            <span style="font-weight: 700; color: #007acc; font-size: 12px; letter-spacing: 0.5px;">${capture.eurocode}</span>
+          </div>
+          <span class="modern-capture-check">✓</span>
+        </div>
+      `).join('');
+    }
+
+    // Modern camera button click
+    if (modernCameraButton) {
+      modernCameraButton.addEventListener('click', () => {
+        if (isProcessing) {
+          console.log('Clique ignorado - já está a processar');
+          return; // Prevenir cliques durante processamento
+        }
+        
+        console.log('Clique no botão da câmara moderna');
+        startProcessing(); // Iniciar animação
+        
+        // Simular clique no botão da versão clássica (que funciona)
+        const classicCameraBtn = document.getElementById('btnCamera');
+        if (classicCameraBtn) {
+          classicCameraBtn.click();
+        }
+      });
+    }
+
+    // Manual entry button clicks
+    const btnManualEntry = document.getElementById('btnManualEntry');
+    if (btnManualEntry) {
+      btnManualEntry.addEventListener('click', () => {
+        if (window.openManualEntryModal) {
+          window.openManualEntryModal();
+        }
+      });
+    }
+
+    const modernManualEntry = document.getElementById('modernManualEntry');
+    if (modernManualEntry) {
+      modernManualEntry.addEventListener('click', () => {
+        if (window.openManualEntryModal) {
+          window.openManualEntryModal();
+        }
+      });
+    }
+
+    // CORREÇÃO PRINCIPAL: Interceptar TODOS os eventos de sucesso
+    function interceptSuccessEvents() {
+      // Observar mudanças na tabela de resultados (indica sucesso)
+      const tbody = document.getElementById('resultsBody');
+      if (tbody) {
+        let lastRowCount = tbody.children.length;
+        
+        new MutationObserver((mutations) => {
+          const currentRowCount = tbody.children.length;
+          if (currentRowCount > lastRowCount) {
+            // Nova linha adicionada = sucesso
+            console.log('Nova captura detectada, parando animação...');
+            setTimeout(() => {
+              stopProcessing();
+              renderModernCaptures();
+            }, 500);
+          }
+          lastRowCount = currentRowCount;
+        }).observe(tbody, { childList: true });
+      }
+
+      // Observar mensagens de sucesso
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('sucesso') || 
+                    text.toLowerCase().includes('guardado') ||
+                    text.toLowerCase().includes('adicionado')) {
+                  console.log('Sucesso detectado:', text);
+                  setTimeout(() => {
+                    stopProcessing();
+                    renderModernCaptures();
+                  }, 500);
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+    }
+
+    // Interceptar o modal da versão clássica e mostrar na versão moderna
+    function interceptClassicModal() {
+      // Observar mudanças no DOM para detectar quando o modal clássico aparece
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            // Procurar por modais de validação de eurocode
+            const modals = document.querySelectorAll('[id*="modal"], [class*="modal"]');
+            modals.forEach((modal) => {
+              if (modal.style.display === 'block' || modal.classList.contains('show')) {
+                const modalText = modal.textContent || modal.innerText || '';
+                if (modalText.includes('Selecionar Eurocode') || modalText.includes('Eurocode')) {
+                  console.log('Modal clássico detectado, interceptando...');
+                  
+                  // Extrair dados do modal clássico
+                  const ocrTextEl = modal.querySelector('[id*="ocr"], [class*="ocr"]');
+                  const eurocodeButtons = modal.querySelectorAll('button[data-eurocode], button[onclick*="eurocode"]');
+                  
+                  if (ocrTextEl || eurocodeButtons.length > 0) {
+                    const ocrText = ocrTextEl ? (ocrTextEl.textContent || ocrTextEl.innerText || '') : '';
+                    const eurocodes = Array.from(eurocodeButtons).map(btn => 
+                      btn.dataset.eurocode || btn.textContent.trim()
+                    ).filter(Boolean);
+                    
+                    // Esconder modal clássico
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    
+                    // Mostrar modal moderno (que já para a animação)
+                    showModernEurocodeModal(ocrText, eurocodes);
+                  }
+                }
+              }
+            });
+          }
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      });
+    }
+
+    // Interceptar erros para parar a animação
+    function interceptErrors() {
+      // Observar mensagens de erro
+      const statusElements = document.querySelectorAll('[id*="status"], [class*="status"]');
+      statusElements.forEach(statusEl => {
+        if (statusEl && statusEl !== modernStatus) {
+          new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                const text = statusEl.textContent || statusEl.innerText || '';
+                if (text.toLowerCase().includes('erro') || text.toLowerCase().includes('error')) {
+                  console.log('Erro detectado:', text);
+                  stopProcessing();
+                  showModernStatus('Erro ao processar imagem', 'error');
+                }
+              }
+            });
+          }).observe(statusEl, { childList: true, subtree: true, characterData: true });
+        }
+      });
+    }
+
+    // Modal button handlers
+    if (modernBtnNoEurocode) {
+      modernBtnNoEurocode.addEventListener('click', () => {
+        hideModernEurocodeModal();
+        showModernStatus('Guardado sem Eurocode', 'success');
+        
+        // CORREÇÃO: Garantir que para a animação
+        stopProcessing();
+        
+        // Usar a função original para guardar sem eurocode
+        if (window.saveWithoutEurocode) {
+          const ocrText = modernOcrText ? modernOcrText.textContent : '';
+          window.saveWithoutEurocode(ocrText);
+        }
+        
+        // Atualizar lista de capturas
+        setTimeout(renderModernCaptures, 500);
+      });
+    }
+
+    if (modernBtnCancel) {
+      modernBtnCancel.addEventListener('click', () => {
+        hideModernEurocodeModal();
+        showModernStatus('Operação cancelada', 'error');
+        // CORREÇÃO: Para a animação quando cancela
+        stopProcessing();
+      });
+    }
+
+    // Close modal when clicking outside
+    if (modernEurocodeModal) {
+      modernEurocodeModal.addEventListener('click', (e) => {
+        if (e.target === modernEurocodeModal) {
+          hideModernEurocodeModal();
+          showModernStatus('Operação cancelada', 'error');
+          // CORREÇÃO: Para a animação quando fecha
+          stopProcessing();
+        }
+      });
+    }
+
+    // Initialize modern interface
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('Interface moderna inicializada');
+      renderModernCaptures();
+      interceptClassicModal();
+      interceptErrors();
+      interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
+      
+      // Atualizar lista periodicamente
+      setInterval(renderModernCaptures, 5000);
     });
+
+    // Render initial captures
+    renderModernCaptures();
+    interceptClassicModal();
+    interceptErrors();
+    interceptSuccessEvents(); // CORREÇÃO: Adicionar interceptação de sucessos
   </script>
-  
-  <!-- Estilos para Impressão -->
-  <style media="print">
-    .header,
-    .toolbar,
-    .card-actions,
-    .btn {
-      display: none !important;
+
+  <!-- Scripts originais mantidos -->
+  <script>
+  (function(){
+    const listEl = document.getElementById('mobileHistoryList');
+    if (!listEl) return;
+
+    async function fetchRowsFromAPI(){
+      try {
+        const resp = await fetch('/.netlify/functions/get-rows');
+        if (!resp.ok) return null;
+        return await resp.json();
+      } catch {
+        return null;
+      }
     }
+
+    function pickEuro(row){
+      const c = (row?.eurocode || '').trim();
+      return c || null;
+    }
+
+    function scrapeEurocodesFromTable(limit=50){
+      const tbody = document.getElementById('resultsBody');
+      if(!tbody) return [];
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const out = [];
+      for (const tr of rows){
+        const td = tr.querySelector('td:nth-child(4)');
+        const raw = (td?.innerText || td?.textContent || '').trim();
+        const code = raw.split(/\s+/)[0];
+        if (code) out.push(code);
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+
+    function renderList(codes){
+      if (!listEl) return;
+      if (!codes || !codes.length){
+        listEl.innerHTML = '<p class="history-empty">Ainda não há Eurocodes guardados.</p>';
+        return;
+      }
+      const ul = document.createElement('ul');
+      ul.style.listStyle = 'none';
+      ul.style.margin = '0';
+      ul.style.padding = '0';
+      codes.forEach(code => {
+        const li = document.createElement('li');
+        li.textContent = code;
+        li.style.textAlign = 'left';
+        li.style.padding = '10px 12px';
+        li.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+        li.style.fontWeight = '700';
+        li.style.letterSpacing = '.3px';
+        ul.appendChild(li);
+      });
+      listEl.innerHTML = '';
+      listEl.appendChild(ul);
+    }
+
+    async function refresh(){
+      const apiRows = await fetchRowsFromAPI();
+      if (apiRows){
+        const codes = apiRows.map(pickEuro).filter(Boolean);
+        renderList([...new Set(codes)].slice(0,50));
+        return;
+      }
+      const codes = scrapeEurocodesFromTable();
+      renderList([...new Set(codes)].slice(0,50));
+    }
+
+    refresh();
+
+    const tbody = document.getElementById('resultsBody');
+    if (tbody){
+      new MutationObserver(refresh)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      const txt = (t?.textContent || '').toLowerCase();
+      const isValidate = txt.includes('valid') || t?.dataset?.action === 'validate';
+      if (isValidate) setTimeout(refresh, 500);
+    });
+
+    setInterval(refresh, 10000);
+  })();
+  </script>
+
+  <script>
+  (function(){
+    const tbody = document.getElementById('resultsBody');
+    function fixCol3(){
+      document.querySelectorAll('#resultsTable tbody tr td:nth-child(3)').forEach(td=>{
+        td.style.setProperty('font-size','14px','important');
+        td.style.setProperty('line-height','1.35','important');
+        td.style.setProperty('white-space','pre-wrap','important');
+        td.style.setProperty('word-break','break-word','important');
+        td.style.setProperty('letter-spacing','0','important');
+      });
+    }
+    fixCol3();
+    if (tbody){
+      new MutationObserver(fixCol3)
+        .observe(tbody, { childList:true, subtree:true, characterData:true });
+    }
+    window.addEventListener('resize', fixCol3);
+  })();
+  </script>
+<script>
+window.addEventListener('load', () => {
+  const fileInput = document.getElementById('fileInput');
+  const btnUpload = document.getElementById('btnUpload');
+  const btnExport = document.getElementById('btnExport');
+  const btnClear  = document.getElementById('btnClear');
+
+  btnUpload?.addEventListener('click', () => fileInput?.click());
+  fileInput?.addEventListener('change', (e) => {
+    const f = e.target.files?.[0];
+    if (f && window.processImage) window.processImage(f);
+  });
+
+  btnExport?.addEventListener('click', () => {
+    if (window.exportCSV) window.exportCSV();
+  });
+
+  btnClear?.addEventListener('click', () => {
+    if (window.clearTable) window.clearTable();
+  });
+}});
+</script>
+
+<!-- BOTÃO SAIR MOBILE -->
+<div id="mobileSairBtn" style="display: none;">
+  <button onclick="authManager.logout()" style="position: fixed; bottom: 20px; right: 15px; z-index: 10000; background: rgba(255,255,255,0.9); color: #333; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 8px 16px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;">Sair</button>
+</div>
+
+<style>
+@media (max-width: 768px) {
+  #mobileSairBtn {
+    display: block !important;
+  }
+  #userInfo {
+    display: none !important;
+  }
+}
+</style>
+
+<script src="auth.js"></script>
+
+  <!-- ===== MODAL EXPORTAÇÃO PARA EXCEL ===== -->
+  <div id="exportModal" class="export-modal" style="display:none;">
+    <div class="export-modal-content">
+      <div class="export-modal-header">
+        <h3>📤 Exportar para Excel</h3>
+        <button id="exportModalClose" class="export-close" title="Fechar">×</button>
+      </div>
+      <div class="export-modal-body">
+        <!-- Botões de filtro rápido -->
+        <div class="export-field">
+          <label>Período de exportação</label>
+          <div class="export-quick-buttons">
+            <button id="exportToday" class="export-quick-btn active" data-period="today">Hoje</button>
+            <button id="exportWeek" class="export-quick-btn" data-period="week">Esta Semana</button>
+            <button id="exportAll" class="export-quick-btn" data-period="all">Tudo</button>
+          </div>
+        </div>
+        
+        <!-- Campos de data (preenchidos automaticamente) -->
+        <div class="export-field">
+          <label for="exportStart">Data início</label>
+          <input id="exportStart" type="date" />
+        </div>
+        <div class="export-field">
+          <label for="exportEnd">Data fim</label>
+          <input id="exportEnd" type="date" />
+        </div>
+        
+        <div class="export-field inline">
+          <label class="inline-label">
+            <input id="exportUseSearch" type="checkbox" checked />
+            Usar também o filtro de pesquisa atual (Eurocode)
+          </label>
+        </div>
+      </div>
+      <div class="export-modal-footer">
+        <button id="exportModalCancel" class="btn-secondary">Cancelar</button>
+        <button id="exportModalConfirm" class="btn-primary">Exportar</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .export-modal{ position: fixed; inset:0; background: rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:1200; backdrop-filter: blur(6px); padding:16px; }
+    .export-modal.show{ display:flex }
+    .export-modal-content{ width:100%; max-width:520px; background: var(--card,#0f172a); color:var(--text,#e5e7eb); border:1px solid var(--cardBorder,#1f2937); border-radius:16px; box-shadow: var(--shadowLarge,0 20px 40px rgba(0,0,0,.35)); display:flex; flex-direction:column; overflow:hidden; animation: modalSlideIn .25s ease; }
+    @keyframes modalSlideIn{ from{ transform: translateY(10px); opacity:.6 } to{ transform:none; opacity:1 } }
+    .export-modal-header{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--cardBorder,#1f2937); }
+    .export-modal-header h3{ margin:0; font-size:18px; color: var(--accent,#22d3ee) }
+    .export-close{ background:none; border:0; color: var(--muted,#a3aed0); font-size:24px; cursor:pointer; line-height:1; border-radius:8px; padding:2px 6px; }
+    .export-close:hover{ color:#fff; background: rgba(255,255,255,.08) }
+    .export-modal-body{ padding:16px 20px; display:grid; gap:12px }
+    .export-field{ display:grid; gap:6px }
+    .export-field.inline{ display:flex; align-items:center; }
+    .export-field label{ font-weight:600; font-size:14px; color: var(--muted,#a3aed0) }
+    .export-field input[type="date"]{ background: rgba(255,255,255,.06); border:1px solid var(--cardBorder,#1f2937); color: var(--text,#e5e7eb); border-radius:10px; padding:10px 12px; font-size:14px; }
+    .export-quick-buttons{ display:flex; gap:8px; margin-top:8px; }
+    .export-quick-btn{ background: rgba(255,255,255,.08); color: var(--muted,#a3aed0); border:1px solid var(--cardBorder,#1f2937); padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition: all 0.2s ease; }
+    .export-quick-btn:hover{ background: rgba(255,255,255,.12); color: var(--text,#e5e7eb); }
+    .export-quick-btn.active{ background: var(--accent,#22d3ee); color: #0f172a; border-color: var(--accent,#22d3ee); }
+    .export-modal-footer{ display:flex; gap:10px; justify-content:flex-end; padding:16px 20px; border-top:1px solid var(--cardBorder,#1f2937); }
+    .btn-secondary{ background:#6b7280; color:white; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; }
+    .btn-primary{ background:#06b6d4; color:white; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight:700; }
+    .btn-primary:hover{ filter:brightness(1.05); }
     
-    .container {
-      max-width: 100%;
-      padding: 0;
-    }
-    
-    .record-card {
-      page-break-inside: avoid;
-      box-shadow: none;
-      border: 1px solid #ccc;
-      margin-bottom: 1rem;
-    }
-    
-    .card-footer {
-      display: none;
-    }
+    /* Modal de Edição de Registo */
+    .edit-record-modal{ position: fixed; inset:0; background: rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:1300; backdrop-filter: blur(6px); padding:16px; }
+    .edit-record-modal.show{ display:flex }
+    .edit-record-content{ width:100%; max-width:420px; background: var(--card,#0f172a); color:var(--text,#e5e7eb); border:1px solid var(--cardBorder,#1f2937); border-radius:16px; box-shadow: var(--shadowLarge,0 20px 40px rgba(0,0,0,.35)); display:flex; flex-direction:column; overflow:hidden; }
+    .edit-record-header{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--cardBorder,#1f2937); }
+    .edit-record-header h3{ margin:0; font-size:18px; color: var(--accent,#22d3ee) }
+    .edit-record-close{ background:none; border:0; color: var(--muted,#a3aed0); font-size:24px; cursor:pointer; line-height:1; border-radius:8px; padding:2px 6px; }
+    .edit-record-close:hover{ color:#fff; background: rgba(255,255,255,.08) }
+    .edit-record-body{ padding:16px 20px; display:grid; gap:16px }
+    .edit-record-field{ display:grid; gap:8px }
+    .edit-record-field label{ font-weight:600; font-size:14px; color: var(--muted,#a3aed0) }
+    .edit-record-select{ background: rgba(255,255,255,.06); border:1px solid var(--cardBorder,#1f2937); color: var(--text,#e5e7eb); border-radius:10px; padding:10px 12px; font-size:14px; }
+    .edit-record-textarea{ background: rgba(255,255,255,.06); border:1px solid var(--cardBorder,#1f2937); color: var(--text,#e5e7eb); border-radius:10px; padding:10px 12px; font-size:14px; min-height:80px; resize:vertical; font-family: inherit; }
+    .edit-record-footer{ display:flex; gap:10px; justify-content:flex-end; padding:16px 20px; border-top:1px solid var(--cardBorder,#1f2937); }
   </style>
+
 </body>
 </html>
-

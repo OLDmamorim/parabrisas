@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>EXPRESSGLASS • Receção de Material</title>
+  <link rel="stylesheet" href="style-new.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <div class="logo-container">
+        <img src="https://i.imgur.com/0KZiZQA.png" alt="ExpressGlass - Vidros para Viaturas" class="logo">
+      </div>
+      <h1 class="title">RECEÇÃO DE MATERIAL</h1>
+    </div>
+    
+    <!-- Botão Sair (se logado) -->
+    <div id="userInfo" style="position: absolute; top: 1.5rem; right: 1.5rem;"></div>
+  </header>
+
+  <!-- Container Principal -->
+  <div class="container">
+    <!-- Toolbar / Ações -->
+    <div class="toolbar">
+      <div class="toolbar-actions">
+        <button id="btnUpload" class="btn btn-primary">
+          📁 Carregar Imagem
+        </button>
+        <button id="btnExport" class="btn btn-success">
+          📊 Exportar Excel
+        </button>
+        <button id="btnPrint" class="btn btn-secondary">
+          🖨️ Imprimir
+        </button>
+        <button id="btnClear" class="btn btn-danger">
+          🗑️ Limpar Tabela
+        </button>
+      </div>
+      
+      <!-- Campo de Pesquisa -->
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" 
+               id="searchInput" 
+               class="search-input" 
+               placeholder="Procurar Eurocode...">
+      </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="desktopStatus" style="display: none;"></div>
+    <div id="mobileStatus" style="display: none;"></div>
+
+    <!-- Container de Registos (Cards) -->
+    <div id="resultsBody" class="records-container">
+      <!-- Cards serão renderizados aqui via JavaScript -->
+      <div class="loading">
+        <div class="spinner"></div>
+        <p style="margin-top: 1rem; color: var(--text-muted);">A carregar registos...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inputs Escondidos -->
+  <input type="file" id="fileInput" accept="image/*" style="display: none;">
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+  <script src="app-render-cards.js"></script>
+  
+  <script>
+    // Sobrescrever a função renderTable com a versão de cards
+    // (já está definida em app-render-cards.js)
+    
+    // Adicionar listener para o campo de pesquisa
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.trim().toUpperCase();
+          
+          if (query === '') {
+            FILTERED_RESULTS = [];
+          } else {
+            FILTERED_RESULTS = RESULTS.filter(row => {
+              const eurocode = (row.eurocode || '').toUpperCase();
+              const vehicle = (row.vehicle || '').toUpperCase();
+              const brand = (row.brand || '').toUpperCase();
+              
+              return eurocode.includes(query) || 
+                     vehicle.includes(query) || 
+                     brand.includes(query);
+            });
+          }
+          
+          renderTable();
+        });
+      }
+      
+      // Botão de imprimir
+      const btnPrint = document.getElementById('btnPrint');
+      if (btnPrint) {
+        btnPrint.addEventListener('click', () => {
+          window.print();
+        });
+      }
+    });
+  </script>
+  
+  <!-- Estilos para Impressão -->
+  <style media="print">
+    .header,
+    .toolbar,
+    .card-actions,
+    .btn {
+      display: none !important;
+    }
+    
+    .container {
+      max-width: 100%;
+      padding: 0;
+    }
+    
+    .record-card {
+      page-break-inside: avoid;
+      box-shadow: none;
+      border: 1px solid #ccc;
+      margin-bottom: 1rem;
+    }
+    
+    .card-footer {
+      display: none;
+    }
+  </style>
+</body>
+</html>
+
