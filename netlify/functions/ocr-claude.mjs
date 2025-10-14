@@ -3,6 +3,7 @@
 // Substitui o Google Cloud Vision OCR
 
 import Anthropic from '@anthropic-ai/sdk';
+import { getVehicleFromEurocode } from '../../eurocode-mapping.mjs';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
@@ -172,6 +173,29 @@ RESPONDE APENAS COM O JSON, SEM MAIS NADA.`
     // Validar campos obrigatórios
     if (!jsonResponse.eurocode && !jsonResponse.texto_completo) {
       console.warn('⚠️ Nenhum Eurocode ou texto encontrado');
+    }
+
+    // Enriquecer com mapeamento de Eurocode (se disponível)
+    if (jsonResponse.eurocode) {
+      const vehicleFromEurocode = getVehicleFromEurocode(jsonResponse.eurocode);
+      
+      if (vehicleFromEurocode) {
+        console.log('📍 Mapeamento Eurocode encontrado:', vehicleFromEurocode);
+        
+        // Se o Claude não encontrou marca/modelo, usar do mapeamento
+        if (!jsonResponse.veiculo_marca && vehicleFromEurocode.marca) {
+          jsonResponse.veiculo_marca = vehicleFromEurocode.marca;
+          console.log('✅ Marca definida via Eurocode:', vehicleFromEurocode.marca);
+        }
+        
+        if (!jsonResponse.veiculo_modelo && vehicleFromEurocode.modelo) {
+          jsonResponse.veiculo_modelo = vehicleFromEurocode.modelo;
+          console.log('✅ Modelo definido via Eurocode:', vehicleFromEurocode.modelo);
+        }
+        
+        // Adicionar fonte da informação
+        jsonResponse.fonte_veiculo = vehicleFromEurocode.fonte;
+      }
     }
 
     // Log de sucesso
