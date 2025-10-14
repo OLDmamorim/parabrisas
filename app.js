@@ -423,7 +423,7 @@ async function runOCR(imageBase64) {
     if (responseData.data && responseData.data.texto_completo) {
       return {
         text: responseData.data.texto_completo,
-        structured: responseData.data // Dados estruturados do Claude
+        structured: responseData.structured || responseData.data // Dados estruturados do Claude
       };
     }
     
