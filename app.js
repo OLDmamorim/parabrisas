@@ -5,7 +5,7 @@
 // =========================
 
 // ---- Endpoints ----
-const OCR_ENDPOINT = '/.netlify/functions/ocr-proxy';
+const OCR_ENDPOINT = '/.netlify/functions/ocr-claude';
 const LIST_URL     = '/.netlify/functions/list-ocr';
 const SAVE_URL     = '/.netlify/functions/save-ocr';
 const UPDATE_URL   = '/.netlify/functions/update-ocr';
