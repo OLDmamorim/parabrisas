@@ -182,19 +182,21 @@ RESPONDE APENAS COM O JSON, SEM MAIS NADA.`
       if (vehicleFromEurocode) {
         console.log('📍 Mapeamento Eurocode encontrado:', vehicleFromEurocode);
         
-        // Se o Claude não encontrou marca/modelo, usar do mapeamento
-        if (!jsonResponse.veiculo_marca && vehicleFromEurocode.marca) {
+        // SEMPRE usar mapeamento se disponível (mais confiável que OCR)
+        if (vehicleFromEurocode.marca) {
           jsonResponse.veiculo_marca = vehicleFromEurocode.marca;
           console.log('✅ Marca definida via Eurocode:', vehicleFromEurocode.marca);
         }
         
-        if (!jsonResponse.veiculo_modelo && vehicleFromEurocode.modelo) {
+        if (vehicleFromEurocode.modelo) {
           jsonResponse.veiculo_modelo = vehicleFromEurocode.modelo;
           console.log('✅ Modelo definido via Eurocode:', vehicleFromEurocode.modelo);
         }
         
         // Adicionar fonte da informação
         jsonResponse.fonte_veiculo = vehicleFromEurocode.fonte;
+      } else {
+        console.log('⚠️ Eurocode não encontrado no mapeamento:', jsonResponse.eurocode);
       }
     }
 
