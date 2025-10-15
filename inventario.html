@@ -6,312 +6,350 @@
   <title>EXPRESSGLASS • Inventário</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* Estilos específicos do inventário */
+    /* Fundo azul */
     body {
-      background: linear-gradient(135deg, var(--bgTop) 0%, var(--bgMid) 50%, var(--bgBottom) 100%);
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+      background-attachment: fixed;
       min-height: 100vh;
+      margin: 0;
+      padding: 0;
     }
 
+    /* Container principal */
     .inventario-container {
-      max-width: 1400px;
+      max-width: 600px;
       margin: 0 auto;
       padding: 20px;
     }
 
-    .inventario-header {
+    /* Logo */
+    .inventario-logo {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 20px;
       background: white;
       border-radius: 16px;
-      padding: 30px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
-    .inventario-title-section {
-      display: flex;
-      align-items: center;
-      gap: 16px;
+    .inventario-logo img {
+      width: 100%;
+      max-width: 250px;
+      height: auto;
+      display: block;
+      margin: 0 auto;
     }
 
-    .inventario-icon {
-      font-size: 48px;
+    /* Título */
+    .inventario-header {
+      text-align: center;
+      margin-bottom: 30px;
     }
 
     .inventario-title {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 900;
-      color: #1e293b;
-      margin: 0;
+      color: white;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      margin: 0 0 8px 0;
+      letter-spacing: 1px;
     }
 
     .inventario-subtitle {
       font-size: 16px;
-      color: #64748b;
-      margin: 4px 0 0 0;
+      color: rgba(255,255,255,0.9);
+      margin: 0;
     }
 
-    .inventario-actions {
-      display: flex;
-      gap: 12px;
+    /* Botão câmera */
+    .camera-section {
+      margin-bottom: 30px;
     }
 
-    .inventario-btn {
-      padding: 12px 20px;
+    .camera-button {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: white;
       border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      margin: 0 auto;
+      cursor: pointer;
+      transition: all 0.3s ease;
     }
 
-    .inventario-btn-primary {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      color: white;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    .camera-button:active {
+      transform: scale(0.95);
     }
 
-    .inventario-btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    .camera-icon {
+      font-size: 64px;
+      margin-bottom: 8px;
     }
 
-    .inventario-btn-secondary {
-      background: #f1f5f9;
+    .camera-text {
+      font-size: 16px;
+      font-weight: 700;
       color: #475569;
     }
 
-    .inventario-btn-secondary:hover {
-      background: #e2e8f0;
-    }
-
-    .inventario-stats {
+    /* Estatísticas */
+    .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: 1fr 1fr;
       gap: 16px;
       margin-bottom: 24px;
     }
 
     .stat-card {
       background: white;
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      text-align: center;
     }
 
-    .stat-label {
-      font-size: 14px;
-      color: #64748b;
-      font-weight: 600;
+    .stat-icon {
+      font-size: 32px;
       margin-bottom: 8px;
     }
 
     .stat-value {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 900;
       color: #1e293b;
+      margin: 8px 0;
     }
 
-    .stat-icon {
-      font-size: 24px;
-      margin-right: 8px;
-    }
-
-    .inventario-table-container {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      overflow-x: auto;
-    }
-
-    .inventario-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .inventario-table thead {
-      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
-    }
-
-    .inventario-table th {
-      padding: 16px 20px;
-      text-align: left;
-      font-size: 15px;
-      font-weight: 800;
-      color: white;
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
-    .inventario-table tbody tr {
-      border-bottom: 1px solid #e2e8f0;
-      transition: all 0.2s ease;
+    /* Lista de itens */
+    .items-container {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      margin-bottom: 24px;
     }
 
-    .inventario-table tbody tr:hover {
-      background: #f8fafc;
+    .items-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
     }
 
-    .inventario-table td {
-      padding: 16px 20px;
-      font-size: 16px;
+    .items-title {
+      font-size: 18px;
+      font-weight: 800;
       color: #1e293b;
+      margin: 0;
     }
 
-    .eurocode-cell {
+    .items-count {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .item-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-left: 4px solid #3b82f6;
+    }
+
+    .item-eurocode {
       font-family: 'Courier New', monospace;
       font-size: 18px;
       font-weight: 800;
       color: #2563eb;
+      margin-bottom: 4px;
     }
 
-    .quantidade-cell {
-      font-size: 24px;
-      font-weight: 900;
+    .item-vehicle {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .item-details {
+      font-size: 14px;
+      color: #64748b;
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .item-quantity {
+      font-weight: 700;
       color: #059669;
     }
 
-    .loading {
-      text-align: center;
-      padding: 60px 20px;
-      color: #64748b;
-      font-size: 18px;
+    /* Botões de ação */
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-voltar {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-exportar {
+      background: white;
+      color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
+      padding: 40px 20px;
+      color: #64748b;
     }
 
     .empty-icon {
-      font-size: 64px;
-      margin-bottom: 16px;
-    }
-
-    .empty-title {
-      font-size: 24px;
-      font-weight: 800;
-      color: #1e293b;
-      margin-bottom: 8px;
+      font-size: 48px;
+      margin-bottom: 12px;
     }
 
     .empty-text {
       font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
       color: #64748b;
     }
 
-    @media (max-width: 768px) {
-      .inventario-header {
-        flex-direction: column;
-        align-items: flex-start;
+    /* Desktop */
+    @media (min-width: 769px) {
+      .inventario-container {
+        max-width: 1200px;
       }
 
-      .inventario-title {
-        font-size: 24px;
-      }
-
-      .inventario-actions {
-        width: 100%;
-        flex-direction: column;
-      }
-
-      .inventario-btn {
-        width: 100%;
-        justify-content: center;
-      }
-
-      .inventario-table th,
-      .inventario-table td {
-        padding: 12px 16px;
-        font-size: 14px;
-      }
-
-      .eurocode-cell {
-        font-size: 16px;
-      }
-
-      .quantidade-cell {
-        font-size: 20px;
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
       }
     }
   </style>
 </head>
 <body>
   <div class="inventario-container">
-    <!-- Header -->
+    <!-- Logo -->
+    <div class="inventario-logo">
+      <img src="expressglass-logo.png" alt="ExpressGlass">
+    </div>
+
+    <!-- Título -->
     <div class="inventario-header">
-      <div class="inventario-title-section">
-        <span class="inventario-icon">📦</span>
-        <div>
-          <h1 class="inventario-title">INVENTÁRIO</h1>
-          <p class="inventario-subtitle">Stock disponível</p>
-        </div>
+      <h1 class="inventario-title">📦 INVENTÁRIO</h1>
+      <p class="inventario-subtitle">Stock disponível</p>
+    </div>
+
+    <!-- Botões de ação -->
+    <div class="action-buttons">
+      <button class="action-btn btn-voltar" onclick="window.location.href='index.html'">
+        ← Voltar
+      </button>
+      <button class="action-btn btn-exportar" onclick="exportarInventario()">
+        📊 Exportar Excel
+      </button>
+    </div>
+
+    <!-- Botão câmera -->
+    <div class="camera-section">
+      <button class="camera-button" onclick="abrirCamera()">
+        <div class="camera-icon">📸</div>
+        <div class="camera-text">Adicionar Item</div>
+      </button>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-value" id="totalVidros">0</div>
+        <div class="stat-label">Total</div>
       </div>
-      <div class="inventario-actions">
-        <button class="inventario-btn inventario-btn-secondary" onclick="window.location.href='index.html'">
-          ← Voltar
-        </button>
-        <button class="inventario-btn inventario-btn-primary" onclick="exportarInventario()">
-          📊 Exportar Excel
-        </button>
+      <div class="stat-card">
+        <div class="stat-icon">🔢</div>
+        <div class="stat-value" id="totalEurocodes">0</div>
+        <div class="stat-label">Eurocodes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📍</div>
+        <div class="stat-value" id="totalLocalizacoes">0</div>
+        <div class="stat-label">Lojas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏭</div>
+        <div class="stat-value" id="totalMarcas">0</div>
+        <div class="stat-label">Marcas</div>
       </div>
     </div>
 
-    <!-- Stats -->
-    <div class="inventario-stats">
-      <div class="stat-card">
-        <div class="stat-label">📦 Total de Vidros</div>
-        <div class="stat-value" id="totalVidros">—</div>
+    <!-- Lista de itens -->
+    <div class="items-container">
+      <div class="items-header">
+        <h2 class="items-title">Itens em Stock</h2>
+        <span class="items-count" id="itemsCount">0 itens</span>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">🔢 Eurocodes Únicos</div>
-        <div class="stat-value" id="totalEurocodes">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">📍 Localizações</div>
-        <div class="stat-value" id="totalLocalizacoes">—</div>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="inventario-table-container">
       <div id="loadingState" class="loading">
-        ⏳ A carregar inventário...
+        ⏳ A carregar...
       </div>
       <div id="emptyState" class="empty-state" style="display: none;">
         <div class="empty-icon">📦</div>
-        <h2 class="empty-title">Inventário vazio</h2>
-        <p class="empty-text">Ainda não há vidros em stock</p>
+        <p class="empty-text">Nenhum item no inventário</p>
       </div>
-      <table class="inventario-table" id="inventarioTable" style="display: none;">
-        <thead>
-          <tr>
-            <th>🔢 EUROCODE</th>
-            <th>🚗 VEÍCULO</th>
-            <th>🏭 MARCA</th>
-            <th>📦 QUANTIDADE</th>
-            <th>📍 LOCALIZAÇÕES</th>
-          </tr>
-        </thead>
-        <tbody id="inventarioTableBody">
-          <!-- Preenchido por JavaScript -->
-        </tbody>
-      </table>
+      <div id="itemsList">
+        <!-- Preenchido por JavaScript -->
+      </div>
     </div>
   </div>
+
+  <!-- Input file escondido -->
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="auth.js"></script>
-  <script src="inventario.js"></script>
+  <script src="inventario-new.js"></script>
 </body>
 </html>
 

@@ -1,213 +1,295 @@
-// ===== INVENTÁRIO =====
+// Inventário com câmera + OCR
+(async function() {
+  console.log('📦 Inventário carregado');
 
-// Variáveis globais
-let inventarioData = [];
-let authManager = null;
-
-// Inicializar
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Inventário carregado');
-  
   // Verificar autenticação
-  if (typeof AuthManager !== 'undefined') {
-    authManager = new AuthManager();
-    const isAuth = await authManager.checkAuth();
-    if (!isAuth) return;
-    authManager.showUserInfo();
-  }
-  
-  // Carregar dados
-  await loadInventario();
-});
-
-// Carregar inventário
-async function loadInventario() {
-  try {
-    showLoading();
-    
-    // Buscar dados da API
-    const response = await fetch('/.netlify/functions/get-records');
-    
-    if (!response.ok) {
-      throw new Error('Erro ao carregar dados');
-    }
-    
-    const data = await response.json();
-    console.log('Dados recebidos:', data);
-    
-    // Processar dados
-    processarInventario(data);
-    
-  } catch (error) {
-    console.error('Erro ao carregar inventário:', error);
-    showError('Erro ao carregar inventário: ' + error.message);
-  }
-}
-
-// Processar inventário (agrupar por Eurocode)
-function processarInventario(records) {
-  if (!records || records.length === 0) {
-    showEmpty();
+  if (!window.authManager || !authManager.isAuthenticated()) {
+    window.location.href = 'index.html';
     return;
   }
-  
-  // Agrupar por Eurocode
-  const grupos = {};
-  
-  records.forEach(record => {
-    const eurocode = record.eurocode || 'SEM_EUROCODE';
-    
-    if (!grupos[eurocode]) {
-      grupos[eurocode] = {
-        eurocode: eurocode,
-        vehicle: record.vehicle || '—',
-        brand: record.brand || '—',
-        quantidade: 0,
-        localizacoes: new Set(),
-        registos: []
+
+  // Elementos
+  const cameraInput = document.getElementById('cameraInput');
+  const loadingState = document.getElementById('loadingState');
+  const emptyState = document.getElementById('emptyState');
+  const itemsList = document.getElementById('itemsList');
+  const itemsCount = document.getElementById('itemsCount');
+
+  // Abrir câmera
+  window.abrirCamera = function() {
+    cameraInput.click();
+  };
+
+  // Processar foto
+  cameraInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      // Mostrar loading
+      alert('📸 A processar imagem...');
+
+      // Ler imagem como base64
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Image = event.target.result;
+
+        try {
+          // Chamar OCR
+          const response = await fetch('/.netlify/functions/ocr-claude', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authManager.getToken()}`
+            },
+            body: JSON.stringify({
+              image: base64Image,
+              filename: file.name
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Erro ao processar imagem');
+          }
+
+          const data = await response.json();
+          
+          // Extrair dados
+          const eurocode = data.structured?.eurocode || '';
+          const vehicle = data.structured?.veiculo_marca || '';
+          const brand = data.structured?.veiculo_modelo || '';
+
+          if (eurocode) {
+            // Adicionar ao inventário
+            await adicionarItem({
+              eurocode,
+              vehicle,
+              brand,
+              localizacao: 'LOJA',
+              quantidade: 1
+            });
+
+            alert(`✅ Item adicionado!\n\n🔢 ${eurocode}\n🚗 ${vehicle || 'N/A'}`);
+            
+            // Recarregar
+            await carregarInventario();
+          } else {
+            alert('❌ Não foi possível identificar o Eurocode');
+          }
+        } catch (error) {
+          console.error('Erro OCR:', error);
+          alert('❌ Erro ao processar imagem');
+        }
       };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Erro:', error);
+      alert('❌ Erro ao processar foto');
     }
-    
-    grupos[eurocode].quantidade++;
-    if (record.sm_loja) {
-      grupos[eurocode].localizacoes.add(record.sm_loja);
+
+    // Limpar input
+    cameraInput.value = '';
+  });
+
+  // Adicionar item ao inventário
+  async function adicionarItem(item) {
+    try {
+      const response = await fetch('/.netlify/functions/db', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authManager.getToken()}`
+        },
+        body: JSON.stringify({
+          action: 'insert',
+          table: 'inventario',
+          data: {
+            eurocode: item.eurocode,
+            vehicle: item.vehicle || '',
+            brand: item.brand || '',
+            localizacao: item.localizacao || 'LOJA',
+            quantidade: item.quantidade || 1,
+            created_at: new Date().toISOString()
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao adicionar item');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Erro ao adicionar:', error);
+      throw error;
     }
-    grupos[eurocode].registos.push(record);
-  });
-  
-  // Converter para array
-  inventarioData = Object.values(grupos).map(grupo => ({
-    ...grupo,
-    localizacoes: Array.from(grupo.localizacoes).join(', ') || '—'
-  }));
-  
-  // Ordenar por quantidade (decrescente)
-  inventarioData.sort((a, b) => b.quantidade - a.quantidade);
-  
-  console.log('Inventário processado:', inventarioData);
-  
-  // Atualizar estatísticas
-  updateStats(records, inventarioData);
-  
-  // Renderizar tabela
-  renderTable();
-}
-
-// Atualizar estatísticas
-function updateStats(records, inventario) {
-  // Total de vidros
-  document.getElementById('totalVidros').textContent = records.length;
-  
-  // Eurocodes únicos
-  document.getElementById('totalEurocodes').textContent = inventario.length;
-  
-  // Localizações únicas
-  const localizacoes = new Set();
-  records.forEach(r => {
-    if (r.sm_loja) localizacoes.add(r.sm_loja);
-  });
-  document.getElementById('totalLocalizacoes').textContent = localizacoes.size || '—';
-}
-
-// Renderizar tabela
-function renderTable() {
-  const tbody = document.getElementById('inventarioTableBody');
-  const table = document.getElementById('inventarioTable');
-  const loading = document.getElementById('loadingState');
-  
-  if (!inventarioData || inventarioData.length === 0) {
-    showEmpty();
-    return;
   }
-  
-  // Esconder loading
-  loading.style.display = 'none';
-  table.style.display = 'table';
-  
-  // Gerar HTML
-  tbody.innerHTML = inventarioData.map(item => `
-    <tr>
-      <td class="eurocode-cell">${item.eurocode}</td>
-      <td>${item.vehicle}</td>
-      <td>${item.brand}</td>
-      <td class="quantidade-cell">${item.quantidade}</td>
-      <td>${item.localizacoes}</td>
-    </tr>
-  `).join('');
-}
 
-// Mostrar loading
-function showLoading() {
-  document.getElementById('loadingState').style.display = 'block';
-  document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('inventarioTable').style.display = 'none';
-}
+  // Carregar inventário
+  async function carregarInventario() {
+    try {
+      loadingState.style.display = 'block';
+      emptyState.style.display = 'none';
+      itemsList.innerHTML = '';
 
-// Mostrar vazio
-function showEmpty() {
-  document.getElementById('loadingState').style.display = 'none';
-  document.getElementById('emptyState').style.display = 'block';
-  document.getElementById('inventarioTable').style.display = 'none';
-  
-  // Zerar stats
-  document.getElementById('totalVidros').textContent = '0';
-  document.getElementById('totalEurocodes').textContent = '0';
-  document.getElementById('totalLocalizacoes').textContent = '0';
-}
+      // Buscar dados da tabela principal (receção)
+      const response = await fetch('/.netlify/functions/db', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authManager.getToken()}`
+        },
+        body: JSON.stringify({
+          action: 'select',
+          table: 'ocr_results',
+          orderBy: 'created_at',
+          orderDirection: 'desc'
+        })
+      });
 
-// Mostrar erro
-function showError(message) {
-  const loading = document.getElementById('loadingState');
-  loading.innerHTML = `
-    <div style="color: #ef4444;">
-      <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
-      <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Erro</div>
-      <div style="font-size: 16px;">${message}</div>
-      <button onclick="loadInventario()" style="margin-top: 20px; padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-        🔄 Tentar novamente
-      </button>
-    </div>
-  `;
-}
+      if (!response.ok) {
+        throw new Error('Erro ao carregar dados');
+      }
 
-// Exportar para Excel
-function exportarInventario() {
-  if (!inventarioData || inventarioData.length === 0) {
-    alert('Não há dados para exportar');
-    return;
+      const data = await response.json();
+      const items = data.data || [];
+
+      loadingState.style.display = 'none';
+
+      if (items.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      // Agrupar por Eurocode
+      const grouped = {};
+      items.forEach(item => {
+        const eurocode = item.eurocode;
+        if (!eurocode || eurocode === '—') return;
+
+        if (!grouped[eurocode]) {
+          grouped[eurocode] = {
+            eurocode,
+            vehicle: item.vehicle || '',
+            brand: item.brand || '',
+            quantidade: 0,
+            localizacoes: new Set()
+          };
+        }
+
+        grouped[eurocode].quantidade++;
+        if (item.sm_loja) {
+          grouped[eurocode].localizacoes.add(item.sm_loja);
+        }
+      });
+
+      // Converter para array
+      const groupedArray = Object.values(grouped);
+
+      // Atualizar estatísticas
+      const totalVidros = groupedArray.reduce((sum, item) => sum + item.quantidade, 0);
+      const totalEurocodes = groupedArray.length;
+      const allLocalizacoes = new Set();
+      const allMarcas = new Set();
+
+      groupedArray.forEach(item => {
+        item.localizacoes.forEach(loc => allLocalizacoes.add(loc));
+        if (item.brand) allMarcas.add(item.brand);
+      });
+
+      document.getElementById('totalVidros').textContent = totalVidros;
+      document.getElementById('totalEurocodes').textContent = totalEurocodes;
+      document.getElementById('totalLocalizacoes').textContent = allLocalizacoes.size;
+      document.getElementById('totalMarcas').textContent = allMarcas.size;
+      itemsCount.textContent = `${groupedArray.length} itens`;
+
+      // Renderizar lista
+      itemsList.innerHTML = groupedArray.map(item => `
+        <div class="item-card">
+          <div class="item-eurocode">🔢 ${item.eurocode}</div>
+          ${item.vehicle ? `<div class="item-vehicle">🚗 ${item.vehicle}</div>` : ''}
+          <div class="item-details">
+            <span class="item-quantity">📦 ${item.quantidade}x</span>
+            ${item.brand ? `<span>🏭 ${item.brand}</span>` : ''}
+            ${item.localizacoes.size > 0 ? `<span>📍 ${Array.from(item.localizacoes).join(', ')}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+    } catch (error) {
+      console.error('Erro ao carregar:', error);
+      loadingState.style.display = 'none';
+      emptyState.style.display = 'block';
+    }
   }
-  
-  try {
-    // Preparar dados para Excel
-    const excelData = inventarioData.map(item => ({
-      'Eurocode': item.eurocode,
-      'Veículo': item.vehicle,
-      'Marca': item.brand,
-      'Quantidade': item.quantidade,
-      'Localizações': item.localizacoes
-    }));
-    
-    // Criar workbook
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    
-    // Adicionar worksheet
-    XLSX.utils.book_append_sheet(wb, ws, 'Inventário');
-    
-    // Gerar nome do ficheiro
-    const now = new Date();
-    const filename = `inventario_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.xlsx`;
-    
-    // Download
-    XLSX.writeFile(wb, filename);
-    
-    console.log('Excel exportado:', filename);
-    
-  } catch (error) {
-    console.error('Erro ao exportar:', error);
-    alert('Erro ao exportar: ' + error.message);
-  }
-}
 
-console.log('inventario.js carregado');
+  // Exportar para Excel
+  window.exportarInventario = async function() {
+    try {
+      // Buscar dados
+      const response = await fetch('/.netlify/functions/db', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authManager.getToken()}`
+        },
+        body: JSON.stringify({
+          action: 'select',
+          table: 'ocr_results',
+          orderBy: 'created_at',
+          orderDirection: 'desc'
+        })
+      });
+
+      const data = await response.json();
+      const items = data.data || [];
+
+      // Agrupar
+      const grouped = {};
+      items.forEach(item => {
+        const eurocode = item.eurocode;
+        if (!eurocode || eurocode === '—') return;
+
+        if (!grouped[eurocode]) {
+          grouped[eurocode] = {
+            Eurocode: eurocode,
+            Veículo: item.vehicle || '',
+            Marca: item.brand || '',
+            Quantidade: 0,
+            Localizações: new Set()
+          };
+        }
+
+        grouped[eurocode].Quantidade++;
+        if (item.sm_loja) {
+          grouped[eurocode].Localizações.add(item.sm_loja);
+        }
+      });
+
+      // Converter para array
+      const exportData = Object.values(grouped).map(item => ({
+        ...item,
+        Localizações: Array.from(item.Localizações).join(', ')
+      }));
+
+      // Criar Excel
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Inventário');
+
+      // Download
+      const filename = `inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, filename);
+
+      alert('✅ Excel exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      alert('❌ Erro ao exportar Excel');
+    }
+  };
+
+  // Carregar ao iniciar
+  await carregarInventario();
+})();
 
