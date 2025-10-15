@@ -1335,8 +1335,8 @@ table {
       const captures = [];
       
       for (const tr of rows) {
-        const vehicleTd = tr.querySelector('td:nth-child(4)'); // Vehicle column
-        const eurocodeTd = tr.querySelector('td:nth-child(5)'); // Eurocode column
+        const vehicleTd = tr.querySelector('td:nth-child(3)'); // Vehicle column (coluna 3)
+        const eurocodeTd = tr.querySelector('td:nth-child(4)'); // Eurocode column (coluna 4)
         
         if (eurocodeTd) {
           const eurocode = (eurocodeTd.innerText || eurocodeTd.textContent || '').trim();
