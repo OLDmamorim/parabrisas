@@ -482,14 +482,35 @@ function renderTable() {
     const originalIndex = RESULTS.findIndex(r => r.id === row.id);
     const glassType = detectGlassType(row.eurocode);
     
+    // Badge colorido para o tipo
+    let typeBadge = '';
+    let typeColor = '';
+    let typeIcon = '';
+    
+    if (glassType === 'Parabrisas') {
+      typeColor = 'background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;';
+      typeIcon = '🟢';
+    } else if (glassType === 'Óculo') {
+      typeColor = 'background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;';
+      typeIcon = '🟡';
+    } else if (glassType === 'Lateral') {
+      typeColor = 'background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;';
+      typeIcon = '🔵';
+    } else {
+      typeColor = 'background: #94a3b8; color: white;';
+      typeIcon = '⚪';
+    }
+    
+    typeBadge = `<span style="${typeColor} padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; display: inline-block; text-transform: uppercase; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${typeIcon} ${glassType}</span>`;
+    
     return `
-      <tr>
-        <td>${index + 1}</td>
-        <td style="font-size: 11px;">${row.timestamp}</td>
-        <td style="font-weight: bold; color: #16a34a;">${glassType}</td>
-        <td style="font-weight: bold;">${row.vehicle || '—'}</td>
-        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #007acc;">${row.eurocode || '—'}</td>
-        <td style="font-weight: bold; color: #dc2626;">${row.brand || '—'}</td>
+      <tr style="transition: all 0.2s ease;">
+        <td style="font-size: 16px; font-weight: 700; color: #64748b;">${index + 1}</td>
+        <td style="font-size: 14px; color: #475569;">📅 ${row.timestamp}</td>
+        <td>${typeBadge}</td>
+        <td style="font-size: 17px; font-weight: 700; color: #1e293b;">🚗 ${row.vehicle || '<span style="color: #94a3b8; font-style: italic;">—</span>'}</td>
+        <td style="font-family: 'Courier New', monospace; font-size: 16px; font-weight: 800; color: #2563eb; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 10px 16px; border-radius: 8px; letter-spacing: 1px;">🔢 ${row.eurocode || '—'}</td>
+        <td style="font-size: 15px; font-weight: 700;">${row.brand ? `🏭 <span style="color: #059669;">${row.brand}</span>` : '<span style="color: #94a3b8;">—</span>'}</td>
         <td>
           <input type="text" 
                  value="${row.matricula || ''}"
