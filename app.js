@@ -506,27 +506,27 @@ function renderTable() {
       typeAbbr = '—';
     }
     
-    typeBadge = `<span style="${typeColor} padding: 8px 16px; border-radius: 20px; font-size: 16px; font-weight: 800; letter-spacing: 1px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${typeIcon} ${typeAbbr}</span>`;
+    typeBadge = `<span style="${typeColor} padding: 10px 20px; border-radius: 20px; font-size: 18px !important; font-weight: 800; letter-spacing: 1.5px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${typeIcon} ${typeAbbr}</span>`;
     
     return `
       <tr style="transition: all 0.2s ease;">
-        <td style="font-size: 16px; color: #475569; font-weight: 600;">📅 ${row.timestamp}</td>
+        <td style="font-size: 17px !important; color: #475569; font-weight: 600;">📅 ${row.timestamp}</td>
         <td>${typeBadge}</td>
-        <td style="font-size: 19px; font-weight: 700; color: #1e293b;">🚗 ${row.vehicle || '<span style="color: #94a3b8; font-style: italic;">—</span>'}</td>
-        <td style="font-family: 'Courier New', monospace; font-size: 18px; font-weight: 800; color: #2563eb; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 12px 18px; border-radius: 8px; letter-spacing: 1.5px;">🔢 ${row.eurocode || '—'}</td>
-        <td style="font-size: 17px; font-weight: 700;">${row.brand ? `🏭 <span style="color: #059669;">${row.brand}</span>` : '<span style="color: #94a3b8;">—</span>'}</td>
+        <td style="font-size: 22px !important; font-weight: 700 !important; color: #1e293b;">🚗 ${row.vehicle || '<span style="color: #94a3b8; font-style: italic;">—</span>'}</td>
+        <td style="font-family: 'Courier New', monospace; font-size: 20px !important; font-weight: 800 !important; color: #2563eb; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 14px 20px; border-radius: 10px; letter-spacing: 2px;">🔢 ${row.eurocode || '—'}</td>
+        <td style="font-size: 19px !important; font-weight: 700 !important;">${row.brand ? `🏭 <span style="color: #059669;">${row.brand}</span>` : '<span style="color: #94a3b8;">—</span>'}</td>
         <td>
           <input type="text" 
                  value="${row.matricula || ''}"
                  placeholder="XX-XX-XX"
-                 style="width: 100px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 15px; font-family: 'Courier New', monospace; font-weight: bold;"
+                 style="width: 110px; padding: 10px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 17px !important; font-family: 'Courier New', monospace; font-weight: bold;"
                  oninput="formatMatriculaInput(this)"
                  onblur="updateMatricula(${row.id}, this.value)"
                  onkeypress="if(event.key==='Enter') this.blur()">
         </td>
         <td>
           <select onchange="updateLoja(${row.id}, this.value)" 
-                  style="width: 80px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 15px; font-weight: bold;">
+                  style="width: 90px; padding: 10px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 17px !important; font-weight: bold;">
             <option value="LOJA" ${row.loja === 'LOJA' ? 'selected' : ''}>LOJA</option>
             <option value="SM" ${row.loja === 'SM' ? 'selected' : ''}>SM</option>
           </select>
@@ -534,7 +534,7 @@ function renderTable() {
         <td>
           <textarea value="${row.observacoes || ''}"
                  placeholder="Observações..."
-                 style="width: 200px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 14px;"
+                 style="width: 210px; padding: 10px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px !important;"
                  onblur="updateObservacoes(${row.id}, this.value)"
                  onkeypress="if(event.key==='Enter') this.blur()">${row.observacoes || ''}</textarea>
         </td>
