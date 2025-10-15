@@ -466,114 +466,72 @@ async function loadResults() {
 }
 
 // =========================
-// Render (CARDS VERSION)
+// Render
 function renderTable() {
-  console.log('renderTable chamada - versão CARDS v1.0');
-  
-  const container = document.getElementById('resultsBody');
-  if (!container) {
-    console.error('Container resultsBody não encontrado');
-    return;
-  }
+  console.log('renderTable chamada - versão com campos editáveis v7');
+  if (!resultsBody) return;
 
   const dataToShow = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
 
-  // Estado vazio
   if (dataToShow.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">📦</div>
-        <h3 class="empty-state-title">Nenhum registo encontrado</h3>
-        <p class="empty-state-text">Carregue uma imagem para começar</p>
-      </div>
-    `;
+    resultsBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">Nenhum registo encontrado</td></tr>';
     return;
   }
 
-  // Renderizar cards
-  container.innerHTML = dataToShow.map((row, index) => {
+  resultsBody.innerHTML = dataToShow.map((row, index) => {
     const originalIndex = RESULTS.findIndex(r => r.id === row.id);
     const glassType = detectGlassType(row.eurocode);
-    const glassTypeClass = glassType.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    
-    // Determinar se o veículo está vazio
-    const vehicleDisplay = row.vehicle || 'Veículo não identificado';
-    const vehicleClass = row.vehicle ? '' : 'empty';
     
     return `
-      <div class="record-card fade-in" data-id="${row.id}">
-        <!-- Header do Card -->
-        <div class="card-header">
-          <span class="card-type ${glassTypeClass}">${glassType}</span>
-          <span class="card-date">${row.timestamp}</span>
-        </div>
-        
-        <!-- Body do Card -->
-        <div class="card-body">
-          <h3 class="card-vehicle ${vehicleClass}">${vehicleDisplay}</h3>
-          
-          <div class="card-info-grid">
-            <div class="card-info-item">
-              <span class="card-info-label">Eurocode</span>
-              <span class="card-eurocode">${row.eurocode || '—'}</span>
-            </div>
-            
-            ${row.brand ? `
-              <div class="card-info-item">
-                <span class="card-info-label">Marca do Vidro</span>
-                <span class="card-brand">${row.brand}</span>
-              </div>
-            ` : ''}
+      <tr>
+        <td>${index + 1}</td>
+        <td style="font-size: 11px;">${row.timestamp}</td>
+        <td style="font-weight: bold; color: #16a34a;">${glassType}</td>
+        <td style="font-weight: bold;">${row.vehicle || '—'}</td>
+        <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #007acc;">${row.eurocode || '—'}</td>
+        <td style="font-weight: bold; color: #dc2626;">${row.brand || '—'}</td>
+        <td>
+          <input type="text" 
+                 value="${row.matricula || ''}"
+                 placeholder="XX-XX-XX"
+                 style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-family: 'Courier New', monospace; font-weight: bold;"
+                 oninput="formatMatriculaInput(this)"
+                 onblur="updateMatricula(${row.id}, this.value)"
+                 onkeypress="if(event.key==='Enter') this.blur()">
+        </td>
+        <td>
+          <select onchange="updateLoja(${row.id}, this.value)" 
+                  style="width: 60px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-weight: bold;">
+            <option value="LOJA" ${row.loja === 'LOJA' ? 'selected' : ''}>LOJA</option>
+            <option value="SM" ${row.loja === 'SM' ? 'selected' : ''}>SM</option>
+          </select>
+        </td>
+        <td>
+          <textarea value="${row.observacoes || ''}"
+                 placeholder="Observações..."
+                 style="width: 180px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px;"
+                 onblur="updateObservacoes(${row.id}, this.value)"
+                 onkeypress="if(event.key==='Enter') this.blur()">${row.observacoes || ''}</textarea>
+        </td>
+        <td>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button onclick="openEditRecordModal(${originalIndex})"
+                    style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
+                    title="Editar registo"
+                    onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
+                    onmouseout="this.style.background='none'; this.style.color='#666'">
+              ✏️ Editar
+            </button>
+            <button onclick="deleteRow(${row.id})"
+                    style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
+                    title="Eliminar registo"
+                    onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
+                    onmouseout="this.style.background='none'">
+              🗑️ Apagar
+            </button>
           </div>
-        </div>
-        
-        <!-- Footer do Card - Campos Editáveis -->
-        <div class="card-footer">
-          <div class="card-footer-grid">
-            <div>
-              <label class="card-info-label">Matrícula</label>
-              <input type="text" 
-                     class="card-input"
-                     value="${row.matricula || ''}"
-                     placeholder="XX-XX-XX"
-                     oninput="formatMatriculaInput(this)"
-                     onblur="updateMatricula(${row.id}, this.value)"
-                     onkeypress="if(event.key==='Enter') this.blur()">
-            </div>
-            
-            <div>
-              <label class="card-info-label">Localização</label>
-              <select class="card-select" 
-                      onchange="updateLoja(${row.id}, this.value)">
-                <option value="LOJA" ${row.loja === 'LOJA' ? 'selected' : ''}>LOJA</option>
-                <option value="SM" ${row.loja === 'SM' ? 'selected' : ''}>SM</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label class="card-info-label">Observações</label>
-            <textarea class="card-textarea"
-                      placeholder="Adicionar observações..."
-                      onblur="updateObservacoes(${row.id}, this.value)"
-                      onkeypress="if(event.key==='Enter' && !event.shiftKey) this.blur()">${row.observacoes || ''}</textarea>
-          </div>
-        </div>
-        
-        <!-- Ações do Card -->
-        <div class="card-actions">
-          <button class="btn btn-sm btn-edit" 
-                  onclick="openEditRecordModal(${originalIndex})"
-                  title="Editar registo">
-            ✏️ Editar
-          </button>
-          <button class="btn btn-sm btn-delete" 
-                  onclick="deleteRow(${row.id})"
-                  title="Eliminar registo">
-            🗑️ Apagar
-          </button>
-        </div>
-      </div>
+        </td>
+      </tr>
     `;
   }).join('');
 }
