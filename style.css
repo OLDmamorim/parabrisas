@@ -1,29 +1,31 @@
 :root{
-  --bgTop:#1f63ff;
-  --bgBottom:#0b45d9;
-  --bgMid:#1554e8;
-  --card:#0f172a;
-  --cardBorder:#1f2937;
-  --text:#e5e7eb;
-  --muted:#a3aed0;
-  --accent:#22d3ee;
+  --bgTop:#f0f4f8;
+  --bgBottom:#e1e8ed;
+  --bgMid:#e8eef3;
+  --card:#ffffff;
+  --cardBorder:#d1dce6;
+  --text:#1e293b;
+  --muted:#64748b;
+  --accent:#2563eb;
   --danger:#ef4444;
   --success:#10b981;
   --warning:#f59e0b;
-  --shadow:0 10px 25px rgba(0,0,0,.25);
-  --shadowLarge:0 20px 40px rgba(0,0,0,.35);
-  --shadowSuccess:0 0 20px rgba(16, 185, 129, 0.3);
-  --shadowError:0 0 20px rgba(239, 68, 68, 0.3);
+  --shadow:0 2px 8px rgba(0,0,0,.08);
+  --shadowLarge:0 4px 16px rgba(0,0,0,.12);
+  --shadowSuccess:0 0 12px rgba(16, 185, 129, 0.2);
+  --shadowError:0 0 12px rgba(239, 68, 68, 0.2);
 }
 
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color:var(--text);
   background: linear-gradient(135deg, var(--bgTop) 0%, var(--bgMid) 50%, var(--bgBottom) 100%);
   background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* HEADER */
@@ -35,11 +37,8 @@ body{
 .title{
   margin:0; letter-spacing:.08em; font-weight:900;
   font-size: clamp(32px, 6vw, 48px);
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  color: #1e293b;
 }
 .subtitle{
   margin:0; color:var(--muted); font-weight:600;
@@ -90,8 +89,8 @@ body{
   width:140px; height:140px;
   display:grid; place-items:center;
   border-radius:20px;
-  border:2px solid rgba(255,255,255,.15);
-  background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border:2px solid var(--cardBorder);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   box-shadow:var(--shadow);
   cursor:pointer;
   transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -117,7 +116,7 @@ body{
 .btn-square:hover {
   transform: translateY(-2px) scale(1.02);
   border-color: var(--accent);
-  box-shadow: 0 15px 35px rgba(0,0,0,.4), 0 0 20px rgba(34, 211, 238, 0.2);
+  box-shadow: 0 8px 20px rgba(0,0,0,.15), 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .btn-square:active {
@@ -205,20 +204,37 @@ body{
   overflow:auto;
   border:1px solid var(--cardBorder);
   border-radius:16px;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(10px);
+  background: var(--card);
+  box-shadow: var(--shadow);
 }
-table{ width:100%; border-collapse:separate; border-spacing:0 }
-th,td{ padding:14px 16px; border-bottom:1px solid #111827; vertical-align:top }
+table{ 
+  width:100%; 
+  border-collapse:separate; 
+  border-spacing:0;
+  font-size: 15px;
+}
+th,td{ 
+  padding:16px 18px; 
+  border-bottom:1px solid var(--cardBorder); 
+  vertical-align:top;
+  line-height: 1.6;
+}
 thead th{
   position:sticky; top:0;
-  background:linear-gradient(135deg, #0b1220 0%, #0f172a 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   z-index:1;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  border-bottom: 2px solid var(--cardBorder);
+  text-transform: uppercase;
+  font-size: 13px;
 }
-tbody tr:nth-child(odd){ background:rgba(255,255,255,.03) }
-tbody tr:hover { background:rgba(255,255,255,.06) }
+tbody tr:nth-child(odd){ background: #fafbfc }
+tbody tr:hover { 
+  background: #f0f4f8;
+  transition: background 0.2s ease;
+}
 
 .status{
   margin-top:12px;
@@ -239,8 +255,8 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
 /* TOAST */
 .toast{
   position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-  background:linear-gradient(135deg, #0b1220 0%, #1e293b 100%);
-  border:1px solid #334155;
+  background: white;
+  border:1px solid var(--cardBorder);
   color:var(--text);
   padding:16px 20px; border-radius:16px;
   box-shadow:var(--shadowLarge);
@@ -248,7 +264,6 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
   transition:all .3s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight:600;
   max-width:min(92vw, 600px);
-  backdrop-filter: blur(10px);
 }
 .toast.show{
   opacity:1;
@@ -257,7 +272,7 @@ tbody tr:hover { background:rgba(255,255,255,.06) }
 
 .toast.success {
   border-color: var(--success);
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, #0b1220 100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, white 100%);
 }
 
 .toast.error {
