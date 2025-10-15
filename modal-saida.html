@@ -1,0 +1,48 @@
+<!-- MODAL DE SAÍDA DE STOCK -->
+<div id="saidaModal" class="saida-modal">
+  <div class="saida-modal-content">
+    <div class="saida-modal-header">
+      <span class="saida-modal-icon">📤</span>
+      <h3 class="saida-modal-title">Dar Saída de Stock</h3>
+      <button class="saida-modal-close" onclick="closeSaidaModal()">&times;</button>
+    </div>
+
+    <div class="saida-modal-body">
+      <div class="saida-info">
+        <p class="saida-info-label">Eurocode:</p>
+        <p class="saida-info-value" id="saidaEurocode">—</p>
+      </div>
+
+      <div class="saida-field">
+        <label class="saida-field-label">Motivo da Saída *</label>
+        <select id="saidaMotivo" class="saida-field-select">
+          <option value="">Selecionar motivo...</option>
+          <option value="devolucao">Devolução</option>
+          <option value="utilizacao">Utilização</option>
+          <option value="defeito">Defeito</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+
+      <div class="saida-field">
+        <label class="saida-field-label">Observações</label>
+        <textarea id="saidaObservacoes" class="saida-field-textarea" placeholder="Detalhes adicionais (opcional)..." rows="4"></textarea>
+      </div>
+
+      <div class="saida-warning">
+        <span class="saida-warning-icon">⚠️</span>
+        <p class="saida-warning-text">Este registo será <strong>removido permanentemente</strong> da base de dados.</p>
+      </div>
+    </div>
+
+    <div class="saida-modal-footer">
+      <button class="saida-btn saida-btn-cancel" onclick="closeSaidaModal()">
+        Cancelar
+      </button>
+      <button class="saida-btn saida-btn-confirm" onclick="confirmarSaida()">
+        📤 Confirmar Saída
+      </button>
+    </div>
+  </div>
+</div>
+
