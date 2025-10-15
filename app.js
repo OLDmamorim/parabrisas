@@ -623,9 +623,12 @@ async function processImage(file) {
       }
     }
     
-    // Fallback para detecção antiga se Claude não encontrou
+    // Se não conseguiu obter veículo do backend, deixar vazio
+    // O backend já tentou usar o mapeamento de Eurocodes
+    // Não usar fallback de texto bruto que pode retornar lixo
     if (!vehicle) {
-      vehicle = detectVehicleAndModelFromText(ocrResult.text).full || '';
+      console.log('⚠️ Veículo não identificado - será deixado vazio');
+      vehicle = '';
     }
 
     setStatus(desktopStatus, 'Texto extraído! Selecione o Eurocode...', 'success');
