@@ -512,7 +512,7 @@ function renderTable() {
       <tr style="transition: all 0.2s ease;">
         <td style="font-size: 17px !important; color: #475569; font-weight: 600;">📅 ${row.timestamp}</td>
         <td>${typeBadge}</td>
-        <td style="font-size: 24px !important; font-weight: 700 !important; color: #1e293b;">🚗 ${row.vehicle || '<span style="color: #94a3b8; font-style: italic;">—</span>'}</td>
+        <td style="font-size: 24px !important; font-weight: 700 !important; color: #1e293b;">🚗 ${[row.brand, row.vehicle, row.eurocode].filter(Boolean).join(' ') || '<span style="color: #94a3b8; font-style: italic;">—</span>'}</td>
         <td style="font-family: 'Courier New', monospace; font-size: 18px !important; font-weight: 800 !important; color: #2563eb; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 14px 20px; border-radius: 10px; letter-spacing: 2px;">🔢 ${row.eurocode || '—'}</td>
         <td style="font-size: 21px !important; font-weight: 700 !important;">${row.brand ? `🏭 <span style="color: #059669;">${row.brand}</span>` : '<span style="color: #94a3b8;">—</span>'}</td>
         <td>
