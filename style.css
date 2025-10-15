@@ -214,10 +214,10 @@ table{
   font-size: 15px;
 }
 th,td{ 
-  padding:16px 18px; 
+  padding:20px 22px; 
   border-bottom:1px solid var(--cardBorder); 
-  vertical-align:top;
-  line-height: 1.6;
+  vertical-align:middle;
+  line-height: 1.7;
 }
 thead th{
   position:sticky; top:0;

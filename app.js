@@ -482,47 +482,51 @@ function renderTable() {
     const originalIndex = RESULTS.findIndex(r => r.id === row.id);
     const glassType = detectGlassType(row.eurocode);
     
-    // Badge colorido para o tipo
+    // Badge colorido para o tipo (com abreviaturas)
     let typeBadge = '';
     let typeColor = '';
     let typeIcon = '';
+    let typeAbbr = '';
     
     if (glassType === 'Parabrisas') {
       typeColor = 'background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;';
       typeIcon = '🟢';
+      typeAbbr = 'PB';
     } else if (glassType === 'Óculo') {
       typeColor = 'background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;';
       typeIcon = '🟡';
+      typeAbbr = 'OC';
     } else if (glassType === 'Lateral') {
       typeColor = 'background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;';
       typeIcon = '🔵';
+      typeAbbr = 'LT';
     } else {
       typeColor = 'background: #94a3b8; color: white;';
       typeIcon = '⚪';
+      typeAbbr = '—';
     }
     
-    typeBadge = `<span style="${typeColor} padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; display: inline-block; text-transform: uppercase; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${typeIcon} ${glassType}</span>`;
+    typeBadge = `<span style="${typeColor} padding: 8px 16px; border-radius: 20px; font-size: 16px; font-weight: 800; letter-spacing: 1px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${typeIcon} ${typeAbbr}</span>`;
     
     return `
       <tr style="transition: all 0.2s ease;">
-        <td style="font-size: 16px; font-weight: 700; color: #64748b;">${index + 1}</td>
-        <td style="font-size: 14px; color: #475569;">📅 ${row.timestamp}</td>
+        <td style="font-size: 16px; color: #475569; font-weight: 600;">📅 ${row.timestamp}</td>
         <td>${typeBadge}</td>
-        <td style="font-size: 17px; font-weight: 700; color: #1e293b;">🚗 ${row.vehicle || '<span style="color: #94a3b8; font-style: italic;">—</span>'}</td>
-        <td style="font-family: 'Courier New', monospace; font-size: 16px; font-weight: 800; color: #2563eb; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 10px 16px; border-radius: 8px; letter-spacing: 1px;">🔢 ${row.eurocode || '—'}</td>
-        <td style="font-size: 15px; font-weight: 700;">${row.brand ? `🏭 <span style="color: #059669;">${row.brand}</span>` : '<span style="color: #94a3b8;">—</span>'}</td>
+        <td style="font-size: 19px; font-weight: 700; color: #1e293b;">🚗 ${row.vehicle || '<span style="color: #94a3b8; font-style: italic;">—</span>'}</td>
+        <td style="font-family: 'Courier New', monospace; font-size: 18px; font-weight: 800; color: #2563eb; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 12px 18px; border-radius: 8px; letter-spacing: 1.5px;">🔢 ${row.eurocode || '—'}</td>
+        <td style="font-size: 17px; font-weight: 700;">${row.brand ? `🏭 <span style="color: #059669;">${row.brand}</span>` : '<span style="color: #94a3b8;">—</span>'}</td>
         <td>
           <input type="text" 
                  value="${row.matricula || ''}"
                  placeholder="XX-XX-XX"
-                 style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-family: 'Courier New', monospace; font-weight: bold;"
+                 style="width: 100px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 15px; font-family: 'Courier New', monospace; font-weight: bold;"
                  oninput="formatMatriculaInput(this)"
                  onblur="updateMatricula(${row.id}, this.value)"
                  onkeypress="if(event.key==='Enter') this.blur()">
         </td>
         <td>
           <select onchange="updateLoja(${row.id}, this.value)" 
-                  style="width: 60px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-weight: bold;">
+                  style="width: 80px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 15px; font-weight: bold;">
             <option value="LOJA" ${row.loja === 'LOJA' ? 'selected' : ''}>LOJA</option>
             <option value="SM" ${row.loja === 'SM' ? 'selected' : ''}>SM</option>
           </select>
@@ -530,24 +534,24 @@ function renderTable() {
         <td>
           <textarea value="${row.observacoes || ''}"
                  placeholder="Observações..."
-                 style="width: 180px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px;"
+                 style="width: 200px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 14px;"
                  onblur="updateObservacoes(${row.id}, this.value)"
                  onkeypress="if(event.key==='Enter') this.blur()">${row.observacoes || ''}</textarea>
         </td>
         <td>
-          <div style="display: flex; gap: 8px; align-items: center;">
+          <div style="display: flex; gap: 10px; align-items: center;">
             <button onclick="openEditRecordModal(${originalIndex})"
-                    style="padding: 4px 8px; background: none; color: #666; border: none; cursor: pointer; border-radius: 3px;"
+                    style="padding: 8px 12px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; cursor: pointer; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);"
                     title="Editar registo"
-                    onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#333'" 
-                    onmouseout="this.style.background='none'; this.style.color='#666'">
+                    onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 10px rgba(37, 99, 235, 0.4)'" 
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(37, 99, 235, 0.3)'">
               ✏️ Editar
             </button>
             <button onclick="deleteRow(${row.id})"
-                    style="padding: 4px 8px; background: none; color: #dc3545; border: none; cursor: pointer; border-radius: 3px;"
+                    style="padding: 8px 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; cursor: pointer; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);"
                     title="Eliminar registo"
-                    onmouseover="this.style.background='rgba(220,53,69,0.1)'" 
-                    onmouseout="this.style.background='none'">
+                    onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 10px rgba(239, 68, 68, 0.4)'" 
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(239, 68, 68, 0.3)'">
               🗑️ Apagar
             </button>
           </div>
