@@ -1,7 +1,14 @@
 // inventario-novo.js
-(async function() {
-  console.log('📦 Inventário carregado');
-
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('📦 Inventário - DOM carregado');
+  
+  // Aguardar um pouco para garantir que auth.js inicializou
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  console.log('📦 Verificando autenticação...');
+  console.log('📦 authManager existe?', !!window.authManager);
+  console.log('📦 Token existe?', !!localStorage.getItem('authToken'));
+  
   // Verificar autenticação
   if (!window.authManager || !authManager.isAuthenticated()) {
     console.log('❌ Não autenticado, redirecionando para login...');
@@ -284,5 +291,5 @@
 
   // Carregar ao iniciar
   await carregarInventario();
-})();
+});
 
