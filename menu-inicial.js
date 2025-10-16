@@ -3,21 +3,11 @@
 (function() {
   'use strict';
 
-  const menuInicial = document.getElementById('mobileMenuInicial');
-  const menuOptions = document.querySelectorAll('.menu-option');
-  
+  console.log('🔧 Menu Inicial: Script carregado');
+
   // Detectar se é mobile
   function isMobile() {
     return window.innerWidth < 900;
-  }
-
-  // Mostrar menu inicial apenas em mobile ao carregar
-  function initMenuInicial() {
-    if (isMobile()) {
-      menuInicial.classList.add('show');
-      // Esconder o resto da interface
-      hideMainInterface();
-    }
   }
 
   // Esconder interface principal
@@ -44,12 +34,15 @@
 
   // Navegar para ação escolhida
   function navigateTo(action) {
-    console.log('Navegando para:', action);
+    console.log('📦 MENU INICIAL - Navegando para:', action);
+    console.log('📦 Tipo de ação:', typeof action, '| Valor:', action);
+    
+    const menuInicial = document.getElementById('mobileMenuInicial');
     
     switch(action) {
       case 'entrada':
         // Mostrar interface de entrada (atual)
-        menuInicial.classList.remove('show');
+        if (menuInicial) menuInicial.classList.remove('show');
         showMainInterface();
         // Atualizar título
         updateTitle('ENTRADA DE STOCK');
@@ -61,7 +54,7 @@
         
       case 'saida':
         // Mostrar interface de saída (mesma página, modo diferente)
-        menuInicial.classList.remove('show');
+        if (menuInicial) menuInicial.classList.remove('show');
         showMainInterface();
         // Ativar modo saída
         activateSaidaMode();
@@ -74,8 +67,14 @@
         
       case 'inventario':
         // Redirecionar para página de inventário
+        console.log('📦 Redirecionando para inventario.html...');
+        console.log('📦 window.location antes:', window.location.href);
         window.location.href = 'inventario.html';
+        console.log('📦 Redirecionação executada');
         break;
+        
+      default:
+        console.error('❌ Ação desconhecida:', action);
     }
   }
 
@@ -101,19 +100,68 @@
     console.log('Modo saída ativado');
   }
 
-  // Event listeners para os botões
-  menuOptions.forEach(option => {
-    option.addEventListener('click', function() {
-      const action = this.getAttribute('data-action');
-      navigateTo(action);
+  // Registar event listeners
+  function setupEventListeners() {
+    const menuOptions = document.querySelectorAll('.menu-option');
+    console.log('🔧 Menu Inicial: Encontrados', menuOptions.length, 'botões');
+    
+    if (menuOptions.length === 0) {
+      console.error('❌ Nenhum botão .menu-option encontrado!');
+      return;
+    }
+    
+    menuOptions.forEach((option, index) => {
+      const action = option.getAttribute('data-action');
+      console.log(`🔧 Botão ${index + 1}:`, action);
+      
+      // Remover listeners antigos se existirem
+      option.replaceWith(option.cloneNode(true));
     });
-  });
+    
+    // Re-selecionar após clonar
+    const freshMenuOptions = document.querySelectorAll('.menu-option');
+    freshMenuOptions.forEach(option => {
+      option.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const action = this.getAttribute('data-action');
+        console.log('🔧 Botão clicado:', action);
+        navigateTo(action);
+      });
+    });
+    
+    console.log('✅ Event listeners registados com sucesso');
+  }
+
+  // Mostrar menu inicial apenas em mobile ao carregar
+  function initMenuInicial() {
+    console.log('🔧 Inicializando menu inicial...');
+    console.log('🔧 É mobile?', isMobile());
+    
+    const menuInicial = document.getElementById('mobileMenuInicial');
+    
+    if (!menuInicial) {
+      console.error('❌ Elemento #mobileMenuInicial não encontrado!');
+      return;
+    }
+    
+    if (isMobile()) {
+      menuInicial.classList.add('show');
+      // Esconder o resto da interface
+      hideMainInterface();
+      console.log('✅ Menu inicial mostrado');
+    }
+    
+    // Registar event listeners
+    setupEventListeners();
+  }
 
   // Botão voltar (adicionar ao header depois)
   window.voltarMenuInicial = function() {
     if (isMobile()) {
+      const menuInicial = document.getElementById('mobileMenuInicial');
       hideMainInterface();
-      menuInicial.classList.add('show');
+      if (menuInicial) menuInicial.classList.add('show');
       // Remover modo saída e restaurar modo entrada
       document.body.classList.remove('modo-saida');
       document.body.classList.add('modo-entrada');
@@ -125,10 +173,12 @@
     }
   };
 
-  // Inicializar ao carregar
+  // Inicializar quando DOM estiver pronto
   if (document.readyState === 'loading') {
+    console.log('🔧 DOM ainda carregando, aguardando DOMContentLoaded...');
     document.addEventListener('DOMContentLoaded', initMenuInicial);
   } else {
+    console.log('🔧 DOM já carregado, inicializando imediatamente...');
     initMenuInicial();
   }
 
@@ -137,10 +187,10 @@
     if (isMobile()) {
       // Se estiver em entrada ou saída, voltar ao menu inicial
       if (event.state && (event.state.page === 'entrada' || event.state.page === 'saida')) {
-        voltarMenuInicial();
+        window.voltarMenuInicial();
       } else {
         // Se já estiver no menu inicial, voltar ao menu inicial novamente (não faz logout)
-        voltarMenuInicial();
+        window.voltarMenuInicial();
       }
     }
   });
@@ -157,7 +207,8 @@
     resizeTimer = setTimeout(function() {
       if (!isMobile()) {
         // Desktop: esconder menu inicial e mostrar tudo
-        menuInicial.classList.remove('show');
+        const menuInicial = document.getElementById('mobileMenuInicial');
+        if (menuInicial) menuInicial.classList.remove('show');
         showMainInterface();
       }
     }, 250);

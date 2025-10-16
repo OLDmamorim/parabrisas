@@ -996,12 +996,6 @@ table {
     <!-- Botão de ajuda -->
     <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
     
-    <!-- Abas de navegação -->
-    <div class="view-tabs">
-      <button id="tabRecepcao" class="view-tab active" onclick="switchView('recepcao')">📦 RECEÇÃO</button>
-      <button id="tabInventario" class="view-tab" onclick="switchView('inventario')">📋 INVENTÁRIO</button>
-    </div>
-    
     <div class="toolbar" id="toolbarRecepcao">
       <button id="btnUpload" class="btn" onclick="document.getElementById('fileInput').click()">📁 Carregar imagem</button>
       <input id="fileInput" type="file" accept="image/*,.pdf" hidden
@@ -1009,12 +1003,6 @@ table {
       <button id="btnExport" class="btn" onclick="window.openExportModal && window.openExportModal()">📊 Exportar Excel</button>
       <button id="btnPrint" class="btn" onclick="openPrintModal()">🖨️ Imprimir</button>
       <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
-    </div>
-    
-    <div class="toolbar" id="toolbarInventario" style="display: none;">
-      <button class="btn" onclick="window.openExportModal && window.openExportModal()">📊 Exportar Excel</button>
-      <button class="btn" onclick="openManualEntryModal()">✏️ Adicionar Manualmente</button>
-      <button class="btn danger" onclick="clearInventario()">🗑️ Limpar Tudo</button>
     </div>
 
     <div class="table-wrap">
@@ -2102,108 +2090,9 @@ window.addEventListener('load', () => {
     });
   </script>
 
-  <!-- Sistema de Abas RECEÇÃO / INVENTÁRIO -->
-  <style>
-    .view-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      border-bottom: 3px solid rgba(255,255,255,0.2);
-      padding-bottom: 10px;
-    }
-    
-    .view-tab {
-      flex: 1;
-      padding: 12px 24px;
-      background: rgba(255,255,255,0.25);
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 8px 8px 0 0;
-      color: #1e40af;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      letter-spacing: 0.5px;
-      text-shadow: 0 1px 2px rgba(255,255,255,0.8);
-    }
-    
-    .view-tab:hover {
-      background: rgba(255,255,255,0.4);
-      color: #1e3a8a;
-      border-color: rgba(255,255,255,0.5);
-    }
-    
-    .view-tab.active {
-      background: white;
-      color: #1e40af;
-      border-color: white;
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-    }
-    
-    @media (max-width: 768px) {
-      .view-tabs {
-        display: none; /* Esconder abas no mobile */
-      }
-    }
-  </style>
+
   
-  <script>
-    // Variável global para controlar vista atual
-    window.currentView = 'recepcao';
-    
-    // Função para alternar entre vistas
-    function switchView(view) {
-      window.currentView = view;
-      
-      // Atualizar abas
-      document.getElementById('tabRecepcao').classList.toggle('active', view === 'recepcao');
-      document.getElementById('tabInventario').classList.toggle('active', view === 'inventario');
-      
-      // Atualizar toolbars
-      document.getElementById('toolbarRecepcao').style.display = view === 'recepcao' ? 'flex' : 'none';
-      document.getElementById('toolbarInventario').style.display = view === 'inventario' ? 'flex' : 'none';
-      
-      // Recarregar dados da vista correspondente
-      if (view === 'recepcao') {
-        if (typeof loadResults === 'function') {
-          loadResults();
-        }
-      } else {
-        if (typeof loadInventario === 'function') {
-          loadInventario();
-        }
-      }
-    }
-    
-    // Função para carregar inventário (placeholder)
-    async function loadInventario() {
-      console.log('Carregar inventário...');
-      // TODO: Implementar carregamento de dados do inventário
-    }
-    
-    // Função para limpar inventário
-    async function clearInventario() {
-      if (!confirm('Tem a certeza que deseja limpar TODO o inventário? Esta ação não pode ser desfeita!')) {
-        return;
-      }
-      
-      try {
-        const response = await fetch('/.netlify/functions/clear-ocr?tipo=inventario', {
-          method: 'POST'
-        });
-        
-        if (response.ok) {
-          alert('✅ Inventário limpo com sucesso!');
-          loadInventario(); // Recarregar dados
-        } else {
-          throw new Error('Erro ao limpar inventário');
-        }
-      } catch (error) {
-        console.error('Erro:', error);
-        alert('❌ Erro ao limpar inventário: ' + error.message);
-      }
-    }
-  </script>
+
 
 </body>
 </html>

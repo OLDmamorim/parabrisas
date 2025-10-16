@@ -339,8 +339,8 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
       finalEurocode = '*' + eurocode;
     }
 
-    // Determinar tipo (recepcao ou inventario)
-    const tipo = window.currentView === 'inventario' ? 'inventario' : 'recepcao';
+    // Sempre usar tipo 'recepcao' (inventário tem página separada)
+    const tipo = 'recepcao';
     
     const response = await fetch(SAVE_URL, {
       method: 'POST',
@@ -542,12 +542,6 @@ async function loadResults(tipo = 'recepcao') {
     renderTable();
   }
 }
-
-// Carregar inventário
-async function loadInventario() {
-  return loadResults('inventario');
-}
-window.loadInventario = loadInventario;
 
 // =========================
 // Render
