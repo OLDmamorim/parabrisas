@@ -753,9 +753,10 @@ async function clearTable() {
   if (!confirm('Tem a certeza que quer limpar todos os dados? Esta ação não pode ser desfeita.')) return;
 
   try {
-    const response = await fetch('/.netlify/functions/clear-ocr', {
+    const response = await fetch('/.netlify/functions/clear-ocr?tipo=recepcao', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'recepcao' })
     });
 
     if (response.ok) {
@@ -769,6 +770,7 @@ async function clearTable() {
     showToast('Erro ao limpar tabela', 'error');
   }
 }
+window.clearTable = clearTable;
 
 // =========================
 // Inicialização
