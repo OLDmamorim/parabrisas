@@ -1470,7 +1470,19 @@ function openExportModal(){
       ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
       : RESULTS;
     const ranged = filterByDateRange(base, startEl?.value || '', endEl?.value || '');
-    exportExcelWithData(ranged);
+    
+    // FILTRAR APENAS STOCK DISPONÍVEL (sem saída)
+    const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
+    const inventario = ranged.filter(r => {
+      const obs = (r.observacoes || '').toUpperCase().trim();
+      return !motivosSaida.includes(obs);
+    });
+    
+    console.log('📦 Total registos:', ranged.length);
+    console.log('📦 Registos em stock (sem saída):', inventario.length);
+    console.log('📦 Registos com saída:', ranged.length - inventario.length);
+    
+    exportExcelWithData(inventario);
     close();
   };
   
