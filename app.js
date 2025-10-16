@@ -275,7 +275,7 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
 // Dar saída de vidro (remover do stock)
 async function darSaidaVidro(text, eurocode, filename, source, vehicle) {
   try {
-    // Adicionar prefixo ao eurocode conforme o tipo
+    // Aplicar prefixos se necessário
     let finalEurocode = eurocode;
     if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
       finalEurocode = '#' + eurocode;
@@ -287,31 +287,27 @@ async function darSaidaVidro(text, eurocode, filename, source, vehicle) {
     setStatus(mobileStatus,  'A procurar vidro para dar saída...');
     
     // Procurar o registo com este eurocode
-    const registoParaRemover = RESULTS.find(r => r.eurocode === finalEurocode);
+    const registoParaSaida = RESULTS.find(r => r.eurocode === finalEurocode);
     
-    if (!registoParaRemover) {
+    if (!registoParaSaida) {
       showToast(`❌ Eurocode ${finalEurocode} não encontrado no stock!`, 'error');
       setStatus(desktopStatus, 'Eurocode não encontrado!', 'error');
       setStatus(mobileStatus,  'Eurocode não encontrado!', 'error');
       return;
     }
     
-    // Remover da base de dados
-    const response = await fetch(DELETE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: registoParaRemover.id })
-    });
+    // NOVA LÓGICA: Abrir modal de saída em vez de apagar
+    console.log('📦 Abrindo modal de saída para:', registoParaSaida.id, finalEurocode);
     
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Erro ao dar saída');
+    // Verificar se a função openSaidaModal existe (do modal-saida.js)
+    if (typeof openSaidaModal === 'function') {
+      openSaidaModal(registoParaSaida.id, finalEurocode);
+      setStatus(desktopStatus, 'Selecione o motivo da saída', 'info');
+      setStatus(mobileStatus,  'Selecione o motivo da saída', 'info');
+    } else {
+      console.error('❌ Função openSaidaModal não encontrada!');
+      showToast('❌ Erro: Modal de saída não disponível', 'error');
     }
-    
-    showToast(`✅ Saída registada: ${finalEurocode}`, 'success');
-    setStatus(desktopStatus, 'Saída registada com sucesso!', 'success');
-    setStatus(mobileStatus,  'Saída registada com sucesso!', 'success');
-    await loadResults();
     
   } catch (error) {
     console.error('Erro ao dar saída:', error);
