@@ -37,26 +37,42 @@ function closeSaidaModal() {
 
 // Confirmar saída com motivo
 async function confirmarSaidaComMotivo(motivo) {
-  console.log('Confirmar saída com motivo:', motivo, 'ID:', saidaRecordId);
+  console.log('📦 ===== CONFIRMAR SAÍDA =====');
+  console.log('📦 Motivo:', motivo);
+  console.log('📦 ID do registo:', saidaRecordId);
+  console.log('📦 Eurocode:', saidaEurocode);
+  
+  if (!saidaRecordId) {
+    console.error('❌ ID do registo não definido!');
+    alert('Erro: ID do registo não encontrado');
+    return;
+  }
   
   try {
     // Atualizar OBS na base de dados usando Netlify Function
     const UPDATE_URL = '/.netlify/functions/update-ocr';
-    console.log('A enviar pedido UPDATE para:', UPDATE_URL);
+    console.log('📦 A enviar pedido UPDATE para:', UPDATE_URL);
+    
+    const token = localStorage.getItem('authToken');
+    console.log('📦 Token existe?', !!token);
+    
+    const requestBody = { 
+      id: saidaRecordId,
+      observacoes: motivo
+    };
+    console.log('📦 Request body:', requestBody);
     
     const response = await fetch(UPDATE_URL, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ 
-        id: saidaRecordId,
-        observacoes: motivo
-      })
+      body: JSON.stringify(requestBody)
     });
     
-    console.log('Resposta UPDATE:', response.status, response.statusText);
+    console.log('📦 Resposta UPDATE:', response.status, response.statusText);
+    console.log('📦 Response OK?', response.ok);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -65,10 +81,12 @@ async function confirmarSaidaComMotivo(motivo) {
     }
     
     const result = await response.json();
-    console.log('Resultado UPDATE:', result);
+    console.log('📦 Resultado UPDATE:', result);
+    console.log('📦 Registo atualizado:', result.row);
     
     // Sucesso!
-    console.log('Saída registada com sucesso!');
+    console.log('✅ Saída registada com sucesso!');
+    console.log('✅ OBS atualizado para:', motivo);
     
     // Fechar modal
     closeSaidaModal();
