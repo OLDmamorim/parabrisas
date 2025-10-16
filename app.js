@@ -243,9 +243,6 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
   window.selectEurocode = function(selectedCode) {
     const { ocrText, filename, source, vehicle } = window.currentImageData;
     
-    // DEBUG TEMPORÁRIO
-    alert(`DEBUG selectEurocode:\nEurocode: ${selectedCode}\nVehicle: ${vehicle}\nFilename: ${filename}`);
-    
     // Fechar modal ANTES de processar (mas manter dados)
     if (window.currentEurocodeModal) {
       document.body.removeChild(window.currentEurocodeModal);
@@ -328,9 +325,6 @@ async function darSaidaVidro(text, eurocode, filename, source, vehicle) {
 // Guardar na Base de Dados (brand + vehicle)
 async function saveToDatabase(text, eurocode, filename, source, vehicle) {
   try {
-    // DEBUG TEMPORÁRIO
-    alert(`DEBUG saveToDatabase:\nEurocode recebido: ${eurocode}\nVehicle: ${vehicle}`);
-    
     setStatus(desktopStatus, 'A guardar na base de dados...');
     setStatus(mobileStatus,  'A guardar na base de dados...');
 
