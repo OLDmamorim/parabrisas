@@ -65,14 +65,7 @@
         }
         break;
         
-      case 'inventario':
-        // Redirecionar para página de inventário
-        console.log('📦 Redirecionando para inventario.html...');
-        console.log('📦 window.location antes:', window.location.href);
-        window.location.href = 'inventario.html';
-        console.log('📦 Redirecionação executada');
-        break;
-        
+
       default:
         console.error('❌ Ação desconhecida:', action);
     }
