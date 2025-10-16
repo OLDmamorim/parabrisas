@@ -608,13 +608,14 @@ function renderTable() {
                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(37, 99, 235, 0.3)'">
               ✏️ Editar
             </button>
-            <button onclick="openSaidaModal(${row.id}, '${(row.eurocode || '').replace(/'/g, "\\'")}')"
+            <!-- Botão Saída removido -->
+            <!-- <button onclick="openSaidaModal(${row.id}, '${(row.eurocode || '').replace(/'/g, "\\'")}')"
                     style="padding: 8px 12px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; cursor: pointer; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);"
                     title="Dar saída"
                     onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 10px rgba(245, 158, 11, 0.4)'" 
                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(245, 158, 11, 0.3)'">
               📤 Saída
-            </button>
+            </button> -->
             <button onclick="deleteRow(${row.id})"
                     style="padding: 8px 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; cursor: pointer; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);"
                     title="Eliminar registo"
