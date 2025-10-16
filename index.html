@@ -1386,12 +1386,10 @@ table {
         }
         
         console.log('Clique no botão da câmara moderna');
-        startProcessing(); // Iniciar animação
         
-        // Simular clique no botão da versão clássica (que funciona)
-        const classicCameraBtn = document.getElementById('btnCamera');
-        if (classicCameraBtn) {
-          classicCameraBtn.click();
+        // Mostrar modal de seleção REDE/COMPLEMENTAR
+        if (window.mostrarModalTipoVidro) {
+          window.mostrarModalTipoVidro();
         }
       });
     }
@@ -1819,6 +1817,241 @@ window.addEventListener('load', () => {
     .edit-record-textarea{ background: rgba(255,255,255,.06); border:1px solid var(--cardBorder,#1f2937); color: var(--text,#e5e7eb); border-radius:10px; padding:10px 12px; font-size:14px; min-height:80px; resize:vertical; font-family: inherit; }
     .edit-record-footer{ display:flex; gap:10px; justify-content:flex-end; padding:16px 20px; border-top:1px solid var(--cardBorder,#1f2937); }
   </style>
+
+  <!-- MODAL SELEÇÃO REDE/COMPLEMENTAR -->
+  <div id="tipoVidroModal" class="tipo-vidro-modal">
+    <div class="tipo-vidro-modal-content">
+      <div class="tipo-vidro-modal-header">
+        <h3 class="tipo-vidro-modal-title">Tipo de Vidro</h3>
+      </div>
+      <div class="tipo-vidro-modal-body">
+        <p class="tipo-vidro-modal-text">Selecione o tipo de vidro:</p>
+        <div class="tipo-vidro-buttons">
+          <button id="btnTipoRede" class="tipo-vidro-btn tipo-vidro-btn-rede">
+            <span class="tipo-vidro-icon">🔵</span>
+            <span class="tipo-vidro-label">REDE</span>
+          </button>
+          <button id="btnTipoComplementar" class="tipo-vidro-btn tipo-vidro-btn-complementar">
+            <span class="tipo-vidro-icon">🟣</span>
+            <span class="tipo-vidro-label">COMPLEMENTAR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Modal Tipo de Vidro */
+    .tipo-vidro-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+      padding: 20px;
+    }
+    
+    .tipo-vidro-modal.show {
+      display: flex;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .tipo-vidro-modal-content {
+      background: white;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .tipo-vidro-modal-header {
+      padding: 24px 24px 16px;
+      text-align: center;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .tipo-vidro-modal-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      color: #1e293b;
+      letter-spacing: 0.5px;
+    }
+    
+    .tipo-vidro-modal-body {
+      padding: 24px;
+    }
+    
+    .tipo-vidro-modal-text {
+      margin: 0 0 20px;
+      font-size: 16px;
+      color: #64748b;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    .tipo-vidro-buttons {
+      display: grid;
+      gap: 16px;
+    }
+    
+    .tipo-vidro-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      border: 3px solid transparent;
+      border-radius: 16px;
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 1px;
+    }
+    
+    .tipo-vidro-btn-rede {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    .tipo-vidro-btn-rede:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+      border-color: #1d4ed8;
+    }
+    
+    .tipo-vidro-btn-rede:active {
+      transform: translateY(0);
+    }
+    
+    .tipo-vidro-btn-complementar {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+    
+    .tipo-vidro-btn-complementar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+      border-color: #6d28d9;
+    }
+    
+    .tipo-vidro-btn-complementar:active {
+      transform: translateY(0);
+    }
+    
+    .tipo-vidro-icon {
+      font-size: 28px;
+    }
+    
+    .tipo-vidro-label {
+      font-size: 18px;
+    }
+    
+    @media (max-width: 768px) {
+      .tipo-vidro-modal-content {
+        max-width: 90%;
+      }
+      
+      .tipo-vidro-modal-title {
+        font-size: 20px;
+      }
+      
+      .tipo-vidro-btn {
+        padding: 18px;
+        font-size: 18px;
+      }
+      
+      .tipo-vidro-icon {
+        font-size: 24px;
+      }
+      
+      .tipo-vidro-label {
+        font-size: 16px;
+      }
+    }
+  </style>
+
+  <script>
+    // Variável global para armazenar o tipo de vidro selecionado
+    window.tipoVidroSelecionado = 'rede'; // padrão
+    
+    // Função para mostrar o modal
+    function mostrarModalTipoVidro() {
+      const modal = document.getElementById('tipoVidroModal');
+      if (modal) {
+        modal.classList.add('show');
+      }
+    }
+    
+    // Função para fechar o modal
+    function fecharModalTipoVidro() {
+      const modal = document.getElementById('tipoVidroModal');
+      if (modal) {
+        modal.classList.remove('show');
+      }
+    }
+    
+    // Event listeners para os botões
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnRede = document.getElementById('btnTipoRede');
+      const btnComplementar = document.getElementById('btnTipoComplementar');
+      
+      if (btnRede) {
+        btnRede.addEventListener('click', () => {
+          window.tipoVidroSelecionado = 'rede';
+          fecharModalTipoVidro();
+          // Iniciar animação de processamento (se estiver em mobile)
+          if (typeof startProcessing === 'function') {
+            startProcessing();
+          }
+          // Abrir a câmara
+          const cameraInput = document.getElementById('cameraInput');
+          if (cameraInput) {
+            cameraInput.click();
+          }
+        });
+      }
+      
+      if (btnComplementar) {
+        btnComplementar.addEventListener('click', () => {
+          window.tipoVidroSelecionado = 'complementar';
+          fecharModalTipoVidro();
+          // Iniciar animação de processamento (se estiver em mobile)
+          if (typeof startProcessing === 'function') {
+            startProcessing();
+          }
+          // Abrir a câmara
+          const cameraInput = document.getElementById('cameraInput');
+          if (cameraInput) {
+            cameraInput.click();
+          }
+        });
+      }
+    });
+  </script>
 
 </body>
 </html>

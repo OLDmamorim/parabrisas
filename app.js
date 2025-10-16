@@ -264,11 +264,17 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
 
     const brand    = detectBrandFromText(text) || '';
     const carBrand = vehicle || detectVehicleAndModelFromText(text).full || '';
+    
+    // Adicionar # ao eurocode se for COMPLEMENTAR
+    let finalEurocode = eurocode;
+    if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
+      finalEurocode = '#' + eurocode;
+    }
 
     const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, eurocode, filename, source, brand, vehicle: carBrand })
+      body: JSON.stringify({ text, eurocode: finalEurocode, filename, source, brand, vehicle: carBrand })
     });
 
     if (response.ok) {
@@ -703,7 +709,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnUpload) btnUpload.addEventListener('click', () => fileInput?.click());
   if (fileInput)  fileInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
-  if (btnCamera)  btnCamera.addEventListener('click', () => cameraInput?.click());
+  if (btnCamera)  btnCamera.addEventListener('click', () => {
+    if (window.mostrarModalTipoVidro) {
+      window.mostrarModalTipoVidro();
+    } else {
+      cameraInput?.click();
+    }
+  });
   if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnExport)  btnExport.addEventListener('click', openExportModal);
   if (btnClear)   btnClear.addEventListener('click', clearTable);
@@ -1533,13 +1545,19 @@ async function saveManualEntry() {
   }
   
   try {
+    // Adicionar # ao eurocode se for COMPLEMENTAR
+    let finalEurocode = eurocode;
+    if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
+      finalEurocode = '#' + eurocode;
+    }
+    
     // Detectar tipologia baseada no eurocode
-    const glassType = detectGlassType(eurocode);
+    const glassType = detectGlassType(finalEurocode);
     
     // Criar payload para salvar
     const payload = {
       text: `Entrada manual - ${carBrand}`,
-      eurocode: eurocode,
+      eurocode: finalEurocode,
       filename: 'entrada_manual',
       source: 'manual',
       brand: '',  // Será detectada automaticamente
