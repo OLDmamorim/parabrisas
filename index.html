@@ -2184,8 +2184,22 @@ window.addEventListener('load', () => {
       if (!confirm('Tem a certeza que deseja limpar TODO o inventário? Esta ação não pode ser desfeita!')) {
         return;
       }
-      console.log('Limpar inventário...');
-      // TODO: Implementar limpeza do inventário
+      
+      try {
+        const response = await fetch('/.netlify/functions/clear-ocr?tipo=inventario', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          alert('✅ Inventário limpo com sucesso!');
+          loadInventario(); // Recarregar dados
+        } else {
+          throw new Error('Erro ao limpar inventário');
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        alert('❌ Erro ao limpar inventário: ' + error.message);
+      }
     }
   </script>
 

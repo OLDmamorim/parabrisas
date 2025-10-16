@@ -45,14 +45,15 @@ export const handler = async (event) => {
       vehicle = '',
       matricula = '',
       loja = 'LOJA',
-      observacoes = ''
+      observacoes = '',
+      tipo = 'recepcao' // 'recepcao' ou 'inventario'
     } = payload;
 
     // Inserir com user_id do utilizador autenticado
     try {
       const rows = await sql/*sql*/`
-        INSERT INTO ocr_results (text, eurocode, brand, vehicle, filename, source, matricula, loja, observacoes, user_id)
-        VALUES (${text}, ${eurocode}, ${brand}, ${vehicle}, ${filename}, ${source}, ${matricula || null}, ${loja}, ${observacoes}, ${user.id})
+        INSERT INTO ocr_results (text, eurocode, brand, vehicle, filename, source, matricula, loja, observacoes, tipo, user_id)
+        VALUES (${text}, ${eurocode}, ${brand}, ${vehicle}, ${filename}, ${source}, ${matricula || null}, ${loja}, ${observacoes}, ${tipo}, ${user.id})
         RETURNING id, ts AS created_at
       `;
       return ok({ ok: true, row: rows[0] });

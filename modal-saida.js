@@ -67,19 +67,27 @@ async function confirmarSaida() {
     
     // Apagar da base de dados usando Netlify Function
     const DELETE_URL = '/.netlify/functions/delete-ocr';
+    console.log('A enviar pedido DELETE para:', DELETE_URL, 'ID:', saidaRecordId);
+    
     const response = await fetch(DELETE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: saidaRecordId })
     });
     
+    console.log('Resposta DELETE:', response.status, response.statusText);
+    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Erro ao dar saída');
+      console.error('Erro na resposta DELETE:', errorData);
+      throw new Error(errorData.error || `Erro HTTP ${response.status}: ${response.statusText}`);
     }
     
+    const result = await response.json();
+    console.log('Resultado DELETE:', result);
+    
     // Sucesso!
-    console.log('Saída registada com sucesso!');
+    console.log('Saída registada com sucesso! ID removido:', result.deleted);
     
     // Fechar modal
     closeSaidaModal();

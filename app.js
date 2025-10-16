@@ -330,10 +330,13 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
       finalEurocode = '*' + eurocode;
     }
 
+    // Determinar tipo (recepcao ou inventario)
+    const tipo = window.currentView === 'inventario' ? 'inventario' : 'recepcao';
+    
     const response = await fetch(SAVE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, eurocode: finalEurocode, filename, source, brand, vehicle: carBrand })
+      body: JSON.stringify({ text, eurocode: finalEurocode, filename, source, brand, vehicle: carBrand, tipo })
     });
 
     if (response.ok) {
@@ -506,10 +509,11 @@ async function runOCR(imageBase64) {
 
 // =========================
 // Carregar resultados da API
-async function loadResults() {
+async function loadResults(tipo = 'recepcao') {
   try {
     setStatus(desktopStatus, 'A carregar dados...');
-    const response = await fetch(LIST_URL);
+    const url = `${LIST_URL}?tipo=${tipo}`;
+    const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
@@ -529,6 +533,12 @@ async function loadResults() {
     renderTable();
   }
 }
+
+// Carregar inventário
+async function loadInventario() {
+  return loadResults('inventario');
+}
+window.loadInventario = loadInventario;
 
 // =========================
 // Render

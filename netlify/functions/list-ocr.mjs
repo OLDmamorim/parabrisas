@@ -24,6 +24,10 @@ export const handler = async (event) => {
     
     // Verificar autenticação
     const user = await requireAuth(event);
+    
+    // Obter parâmetro tipo (recepcao ou inventario)
+    const params = event.queryStringParameters || {};
+    const tipo = params.tipo || 'recepcao';
 
     // Buscar apenas registos do utilizador atual
     try {
@@ -40,9 +44,10 @@ export const handler = async (event) => {
           matricula,
           loja,
           observacoes,
+          tipo,
           user_id
         FROM ocr_results
-        WHERE user_id = ${user.id}
+        WHERE user_id = ${user.id} AND (tipo = ${tipo} OR tipo IS NULL)
         ORDER BY ts DESC
         LIMIT 300
       `;
