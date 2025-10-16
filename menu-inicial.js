@@ -53,6 +53,10 @@
         showMainInterface();
         // Atualizar título
         updateTitle('ENTRADA DE STOCK');
+        // Adicionar estado ao histórico para controlar botão voltar
+        if (isMobile()) {
+          history.pushState({ page: 'entrada' }, '', '#entrada');
+        }
         break;
         
       case 'saida':
@@ -62,6 +66,10 @@
         // Ativar modo saída
         activateSaidaMode();
         updateTitle('SAÍDA DE STOCK');
+        // Adicionar estado ao histórico para controlar botão voltar
+        if (isMobile()) {
+          history.pushState({ page: 'saida' }, '', '#saida');
+        }
         break;
         
       case 'inventario':
@@ -106,9 +114,14 @@
     if (isMobile()) {
       hideMainInterface();
       menuInicial.classList.add('show');
-      // Remover modo saída
+      // Remover modo saída e restaurar modo entrada
       document.body.classList.remove('modo-saida');
       document.body.classList.add('modo-entrada');
+      // Mostrar botão de carregar novamente
+      const btnCarregar = document.getElementById('btnUpload');
+      if (btnCarregar) btnCarregar.style.display = '';
+      // Atualizar histórico
+      history.replaceState({ page: 'menu' }, '', '#menu');
     }
   };
 
@@ -117,6 +130,24 @@
     document.addEventListener('DOMContentLoaded', initMenuInicial);
   } else {
     initMenuInicial();
+  }
+
+  // Interceptar botão voltar do navegador
+  window.addEventListener('popstate', function(event) {
+    if (isMobile()) {
+      // Se estiver em entrada ou saída, voltar ao menu inicial
+      if (event.state && (event.state.page === 'entrada' || event.state.page === 'saida')) {
+        voltarMenuInicial();
+      } else {
+        // Se já estiver no menu inicial, voltar ao menu inicial novamente (não faz logout)
+        voltarMenuInicial();
+      }
+    }
+  });
+  
+  // Adicionar estado inicial ao histórico
+  if (isMobile()) {
+    history.replaceState({ page: 'menu' }, '', '#menu');
   }
 
   // Reinicializar ao redimensionar (mobile <-> desktop)
