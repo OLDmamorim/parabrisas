@@ -16,8 +16,12 @@ export const handler = async (event) => {
       } catch {}
     }
     
-    // Limpar apenas registos do tipo especificado
-    await sql`DELETE FROM ocr_results WHERE tipo = ${tipo} OR (tipo IS NULL AND ${tipo} = 'recepcao')`;
+    // Se tipo='all', limpar TUDO. Caso contrário, limpar apenas o tipo especificado
+    if (tipo === 'all') {
+      await sql`DELETE FROM ocr_results`;
+    } else {
+      await sql`DELETE FROM ocr_results WHERE tipo = ${tipo} OR (tipo IS NULL AND ${tipo} = 'recepcao')`;
+    }
     return { statusCode: 200, body: JSON.stringify({ ok: true, tipo }) };
   } catch (err) {
     console.error("Erro clear:", err);

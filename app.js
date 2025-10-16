@@ -750,13 +750,14 @@ function exportCSV() {
 // =========================
 // Limpar tabela
 async function clearTable() {
-  if (!confirm('Tem a certeza que quer limpar todos os dados? Esta ação não pode ser desfeita.')) return;
+  if (!confirm('Tem a certeza que quer limpar TODOS os dados da recepção? Esta ação não pode ser desfeita.')) return;
 
   try {
-    const response = await fetch('/.netlify/functions/clear-ocr?tipo=recepcao', {
+    // Usar tipo=all para limpar todos os registos (incluindo antigos sem campo tipo)
+    const response = await fetch('/.netlify/functions/clear-ocr?tipo=all', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: 'recepcao' })
+      body: JSON.stringify({ tipo: 'all' })
     });
 
     if (response.ok) {
