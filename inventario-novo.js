@@ -4,9 +4,11 @@
 
   // Verificar autenticação
   if (!window.authManager || !authManager.isAuthenticated()) {
-    window.location.href = 'index.html';
+    console.log('❌ Não autenticado, redirecionando para login...');
+    window.location.href = 'login.html';
     return;
   }
+  console.log('✅ Autenticado com sucesso');
 
   // Variável global para tipo de vidro
   window.tipoVidroSelecionado = 'rede';
