@@ -246,7 +246,12 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
     // DEBUG TEMPORÁRIO
     alert(`DEBUG selectEurocode:\nEurocode: ${selectedCode}\nVehicle: ${vehicle}\nFilename: ${filename}`);
     
-    closeEurocodeModal();
+    // Fechar modal ANTES de processar (mas manter dados)
+    if (window.currentEurocodeModal) {
+      document.body.removeChild(window.currentEurocodeModal);
+      window.currentEurocodeModal = null;
+      // NÃO apagar currentImageData ainda!
+    }
     
     // Verificar se está em modo saída
     const isModoSaida = document.body.classList.contains('modo-saida');
@@ -255,6 +260,9 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
     } else {
       saveToDatabase(ocrText, selectedCode, filename, source, vehicle);
     }
+    
+    // Limpar dados DEPOIS de guardar
+    window.currentImageData = null;
   };
 
   window.closeEurocodeModal = function() {
