@@ -1133,34 +1133,76 @@ table {
           <p class="saida-info-value" id="saidaEurocode">—</p>
         </div>
 
-        <div class="saida-field">
-          <label class="saida-field-label">Motivo da Saída *</label>
-          <select id="saidaMotivo" class="saida-field-select">
-            <option value="">Selecionar motivo...</option>
-            <option value="devolucao">Devolução</option>
-            <option value="utilizacao">Utilização</option>
-            <option value="defeito">Defeito</option>
-            <option value="outro">Outro</option>
-          </select>
+        <div class="saida-info" style="margin-top: 20px; text-align: center;">
+          <p style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 15px;">Selecione o motivo da saída:</p>
         </div>
 
-        <div class="saida-field">
-          <label class="saida-field-label">Observações</label>
-          <textarea id="saidaObservacoes" class="saida-field-textarea" placeholder="Detalhes adicionais (opcional)..." rows="4"></textarea>
-        </div>
-
-        <div class="saida-warning">
-          <span class="saida-warning-icon">⚠️</span>
-          <p class="saida-warning-text">Este registo será <strong>removido permanentemente</strong> da base de dados.</p>
+        <div class="saida-buttons-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+          <button class="saida-motivo-btn" onclick="confirmarSaidaComMotivo('SERVIÇO')" style="
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          ">
+            🔧 SERVIÇO
+          </button>
+          
+          <button class="saida-motivo-btn" onclick="confirmarSaidaComMotivo('DEVOLUÇÃO')" style="
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+          ">
+            ↩️ DEVOLUÇÃO
+          </button>
+          
+          <button class="saida-motivo-btn" onclick="confirmarSaidaComMotivo('QUEBRAS')" style="
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+          ">
+            🚫 QUEBRAS
+          </button>
+          
+          <button class="saida-motivo-btn" onclick="confirmarSaidaComMotivo('OUTRO')" style="
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+          ">
+            📋 OUTRO
+          </button>
         </div>
       </div>
 
       <div class="saida-modal-footer">
         <button class="saida-btn saida-btn-cancel" onclick="closeSaidaModal()">
           Cancelar
-        </button>
-        <button class="saida-btn saida-btn-confirm" onclick="confirmarSaida()">
-          📤 Confirmar Saída
         </button>
       </div>
     </div>

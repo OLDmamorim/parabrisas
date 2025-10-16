@@ -16,10 +16,6 @@ function openSaidaModal(recordId, eurocode) {
     eurocodeElement.textContent = eurocode || '—';
   }
   
-  // Limpar campos
-  document.getElementById('saidaMotivo').value = '';
-  document.getElementById('saidaObservacoes').value = '';
-  
   // Mostrar modal
   const modal = document.getElementById('saidaModal');
   if (modal) {
@@ -39,62 +35,47 @@ function closeSaidaModal() {
   saidaEurocode = null;
 }
 
-// Confirmar saída
-async function confirmarSaida() {
-  const motivo = document.getElementById('saidaMotivo').value;
-  const observacoes = document.getElementById('saidaObservacoes').value;
-  
-  // Validar motivo
-  if (!motivo) {
-    alert('Por favor, seleciona um motivo para a saída.');
-    return;
-  }
-  
-  // Confirmar ação
-  const confirmMsg = `Tens a certeza que queres dar saída a este vidro?\n\nEurocode: ${saidaEurocode}\nMotivo: ${motivo}\n\n⚠️ Esta ação é PERMANENTE e não pode ser revertida!`;
-  
-  if (!confirm(confirmMsg)) {
-    return;
-  }
+// Confirmar saída com motivo
+async function confirmarSaidaComMotivo(motivo) {
+  console.log('Confirmar saída com motivo:', motivo, 'ID:', saidaRecordId);
   
   try {
-    // Desabilitar botão
-    const btnConfirm = document.querySelector('.saida-btn-confirm');
-    if (btnConfirm) {
-      btnConfirm.disabled = true;
-      btnConfirm.textContent = '⏳ A processar...';
-    }
+    // Atualizar OBS na base de dados usando Netlify Function
+    const UPDATE_URL = '/.netlify/functions/update-ocr';
+    console.log('A enviar pedido UPDATE para:', UPDATE_URL);
     
-    // Apagar da base de dados usando Netlify Function
-    const DELETE_URL = '/.netlify/functions/delete-ocr';
-    console.log('A enviar pedido DELETE para:', DELETE_URL, 'ID:', saidaRecordId);
-    
-    const response = await fetch(DELETE_URL, {
+    const response = await fetch(UPDATE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: saidaRecordId })
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      },
+      body: JSON.stringify({ 
+        id: saidaRecordId,
+        observacoes: motivo
+      })
     });
     
-    console.log('Resposta DELETE:', response.status, response.statusText);
+    console.log('Resposta UPDATE:', response.status, response.statusText);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Erro na resposta DELETE:', errorData);
+      console.error('Erro na resposta UPDATE:', errorData);
       throw new Error(errorData.error || `Erro HTTP ${response.status}: ${response.statusText}`);
     }
     
     const result = await response.json();
-    console.log('Resultado DELETE:', result);
+    console.log('Resultado UPDATE:', result);
     
     // Sucesso!
-    console.log('Saída registada com sucesso! ID removido:', result.deleted);
+    console.log('Saída registada com sucesso!');
     
     // Fechar modal
     closeSaidaModal();
     
     // Mostrar mensagem de sucesso
     if (typeof showToast === 'function') {
-      showToast('✅ Saída registada com sucesso!', 'success');
+      showToast(`✅ Saída registada: ${motivo}`, 'success');
     }
     
     // Recarregar dados
@@ -107,13 +88,6 @@ async function confirmarSaida() {
   } catch (error) {
     console.error('Erro ao dar saída:', error);
     alert('Erro ao dar saída: ' + error.message);
-    
-    // Reabilitar botão
-    const btnConfirm = document.querySelector('.saida-btn-confirm');
-    if (btnConfirm) {
-      btnConfirm.disabled = false;
-      btnConfirm.textContent = '📤 Confirmar Saída';
-    }
   }
 }
 
