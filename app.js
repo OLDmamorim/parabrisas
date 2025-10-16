@@ -243,7 +243,14 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
   window.selectEurocode = function(selectedCode) {
     const { ocrText, filename, source, vehicle } = window.currentImageData;
     closeEurocodeModal();
-    saveToDatabase(ocrText, selectedCode, filename, source, vehicle);
+    
+    // Verificar se está em modo saída
+    const isModoSaida = document.body.classList.contains('modo-saida');
+    if (isModoSaida) {
+      darSaidaVidro(ocrText, selectedCode, filename, source, vehicle);
+    } else {
+      saveToDatabase(ocrText, selectedCode, filename, source, vehicle);
+    }
   };
 
   window.closeEurocodeModal = function() {
@@ -254,6 +261,54 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
     }
   };
 } // <-- fecha showEurocodeValidationModal
+
+// =========================
+// Dar saída de vidro (remover do stock)
+async function darSaidaVidro(text, eurocode, filename, source, vehicle) {
+  try {
+    // Adicionar # ao eurocode se for COMPLEMENTAR
+    let finalEurocode = eurocode;
+    if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
+      finalEurocode = '#' + eurocode;
+    }
+    
+    setStatus(desktopStatus, 'A procurar vidro para dar saída...');
+    setStatus(mobileStatus,  'A procurar vidro para dar saída...');
+    
+    // Procurar o registo com este eurocode
+    const registoParaRemover = RESULTS.find(r => r.eurocode === finalEurocode);
+    
+    if (!registoParaRemover) {
+      showToast(`❌ Eurocode ${finalEurocode} não encontrado no stock!`, 'error');
+      setStatus(desktopStatus, 'Eurocode não encontrado!', 'error');
+      setStatus(mobileStatus,  'Eurocode não encontrado!', 'error');
+      return;
+    }
+    
+    // Remover da base de dados
+    const response = await fetch(DELETE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: registoParaRemover.id })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Erro ao dar saída');
+    }
+    
+    showToast(`✅ Saída registada: ${finalEurocode}`, 'success');
+    setStatus(desktopStatus, 'Saída registada com sucesso!', 'success');
+    setStatus(mobileStatus,  'Saída registada com sucesso!', 'success');
+    await loadResults();
+    
+  } catch (error) {
+    console.error('Erro ao dar saída:', error);
+    showToast('Erro ao dar saída: ' + error.message, 'error');
+    setStatus(desktopStatus, 'Erro ao dar saída', 'error');
+    setStatus(mobileStatus,  'Erro ao dar saída', 'error');
+  }
+}
 
 // =========================
 // Guardar na Base de Dados (brand + vehicle)
@@ -1551,42 +1606,51 @@ async function saveManualEntry() {
       finalEurocode = '#' + eurocode;
     }
     
-    // Detectar tipologia baseada no eurocode
-    const glassType = detectGlassType(finalEurocode);
+    // Verificar se está em modo saída
+    const isModoSaida = document.body.classList.contains('modo-saida');
     
-    // Criar payload para salvar
-    const payload = {
-      text: `Entrada manual - ${carBrand}`,
-      eurocode: finalEurocode,
-      filename: 'entrada_manual',
-      source: 'manual',
-      brand: '',  // Será detectada automaticamente
-      vehicle: carBrand,
-      matricula: '',
-      loja: 'LOJA',
-      observacoes: 'Entrada manual'
-    };
-    
-    // Salvar na base de dados
-    const response = await fetch(SAVE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    
-    if (response.ok) {
-      showToast('Entrada manual guardada com sucesso!', 'success');
+    if (isModoSaida) {
+      // MODO SAÍDA: Chamar função de saída
+      await darSaidaVidro(`Entrada manual - ${carBrand}`, finalEurocode, 'entrada_manual', 'manual', carBrand);
       closeManualEntryModal();
-      
-      // Recarregar dados
-      await loadResults();
-      
-      // Atualizar lista de capturas mobile se existir
-      if (typeof renderModernCaptures === 'function') {
-        setTimeout(renderModernCaptures, 500);
-      }
     } else {
-      throw new Error('Erro ao guardar');
+      // MODO ENTRADA: Comportamento normal
+      const glassType = detectGlassType(finalEurocode);
+      
+      // Criar payload para salvar
+      const payload = {
+        text: `Entrada manual - ${carBrand}`,
+        eurocode: finalEurocode,
+        filename: 'entrada_manual',
+        source: 'manual',
+        brand: '',  // Será detectada automaticamente
+        vehicle: carBrand,
+        matricula: '',
+        loja: 'LOJA',
+        observacoes: 'Entrada manual'
+      };
+      
+      // Salvar na base de dados
+      const response = await fetch(SAVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
+        showToast('Entrada manual guardada com sucesso!', 'success');
+        closeManualEntryModal();
+        
+        // Recarregar dados
+        await loadResults();
+        
+        // Atualizar lista de capturas mobile se existir
+        if (typeof renderModernCaptures === 'function') {
+          setTimeout(renderModernCaptures, 500);
+        }
+      } else {
+        throw new Error('Erro ao guardar');
+      }
     }
   } catch (error) {
     console.error('Erro ao guardar entrada manual:', error);
