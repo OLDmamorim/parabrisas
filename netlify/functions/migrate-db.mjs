@@ -28,7 +28,8 @@ export const handler = async (event) => {
       ADD COLUMN IF NOT EXISTS matricula TEXT,
       ADD COLUMN IF NOT EXISTS loja TEXT DEFAULT 'LOJA',
       ADD COLUMN IF NOT EXISTS observacoes TEXT,
-      ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'recepcao'
+      ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'recepcao',
+      ADD COLUMN IF NOT EXISTS saida_timestamp TIMESTAMPTZ
     `;
     
     console.log('Colunas adicionadas a ocr_results');

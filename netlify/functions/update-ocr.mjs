@@ -58,6 +58,11 @@ export const handler = async (event) => {
     const newMatricula  = payload.matricula ?? currentRecord.matricula;
     const newLoja = payload.loja ?? currentRecord.loja ?? 'LOJA';
     const newObservacoes = payload.observacoes ?? currentRecord.observacoes ?? '';
+    
+    // Se está a registar saída (tem observações de saída), guardar timestamp
+    const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
+    const isSaida = motivosSaida.includes(newObservacoes.toUpperCase().trim());
+    const saidaTimestamp = isSaida && !currentRecord.saida_timestamp ? new Date().toISOString() : (currentRecord.saida_timestamp || null);
 
     // Brand
     let newBrand = payload.brand;
@@ -78,9 +83,10 @@ export const handler = async (event) => {
           source      = ${newSource},
           matricula = ${newMatricula || null},
           loja = ${newLoja},
-          observacoes = ${newObservacoes}
+          observacoes = ${newObservacoes},
+          saida_timestamp = ${saidaTimestamp}
         WHERE id = ${id} AND user_id = ${user.id}
-        RETURNING id, ts AS updated_at
+        RETURNING id, ts AS updated_at, saida_timestamp
       `;
       
       if (rows.length === 0) {

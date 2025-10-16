@@ -991,7 +991,6 @@ table {
     
     <div class="toolbar" id="toolbarRecepcao">
       <button id="btnInventario" class="btn" onclick="window.openInventarioModal && window.openInventarioModal()">📦 INVENTÁRIO</button>
-      <button id="btnExport" class="btn" onclick="window.openExportModal && window.openExportModal()">📊 Exportar Excel</button>
       <button id="btnPrint" class="btn" onclick="openPrintModal()">🖨️ Imprimir</button>
       <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
     </div>
@@ -1802,6 +1801,13 @@ window.addEventListener('load', () => {
           <label class="inline-label">
             <input id="exportUseSearch" type="checkbox" checked />
             Usar também o filtro de pesquisa atual (Eurocode)
+          </label>
+        </div>
+        
+        <div class="export-field inline">
+          <label class="inline-label">
+            <input id="exportIncludeSaidas" type="checkbox" />
+            Incluir saídas (com colunas de data/hora saída e motivo)
           </label>
         </div>
       </div>
