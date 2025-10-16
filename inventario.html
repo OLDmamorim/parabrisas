@@ -257,6 +257,61 @@
       color: #64748b;
     }
 
+    /* Item Card */
+    .item-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .item-eurocode {
+      font-size: 18px;
+      font-weight: 900;
+      color: #1e40af;
+    }
+
+    .item-delete {
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .item-details {
+      display: grid;
+      gap: 8px;
+    }
+
+    .item-detail {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+
+    .item-label {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .item-value {
+      color: #1e293b;
+      font-weight: 700;
+    }
+
     /* Desktop */
     @media (min-width: 769px) {
       .inventario-container {
@@ -266,6 +321,136 @@
       .stats-grid {
         grid-template-columns: repeat(4, 1fr);
       }
+    }
+
+    /* Modal Tipo de Vidro */
+    .tipo-vidro-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+      padding: 20px;
+    }
+    
+    .tipo-vidro-modal.show {
+      display: flex;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .tipo-vidro-modal-content {
+      background: white;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .tipo-vidro-modal-header {
+      padding: 24px 24px 16px;
+      text-align: center;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .tipo-vidro-modal-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      color: #1e293b;
+      letter-spacing: 0.5px;
+    }
+    
+    .tipo-vidro-modal-body {
+      padding: 24px;
+    }
+    
+    .tipo-vidro-modal-text {
+      margin: 0 0 20px;
+      font-size: 16px;
+      color: #64748b;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    .tipo-vidro-buttons {
+      display: grid;
+      gap: 16px;
+    }
+    
+    .tipo-vidro-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      border: 3px solid transparent;
+      border-radius: 16px;
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 1px;
+    }
+    
+    .tipo-vidro-btn-rede {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    .tipo-vidro-btn-rede:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    }
+    
+    .tipo-vidro-btn-complementar {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+    
+    .tipo-vidro-btn-complementar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+    }
+    
+    .tipo-vidro-btn-oem {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+    
+    .tipo-vidro-btn-oem:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
+    }
+    
+    .tipo-vidro-icon {
+      font-size: 28px;
+    }
+    
+    .tipo-vidro-label {
+      font-size: 18px;
     }
   </style>
 </head>
@@ -305,22 +490,22 @@
       <div class="stat-card">
         <div class="stat-icon">📦</div>
         <div class="stat-value" id="totalVidros">0</div>
-        <div class="stat-label">Total</div>
+        <div class="stat-label">TOTAL</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">🔢</div>
-        <div class="stat-value" id="totalEurocodes">0</div>
-        <div class="stat-label">Eurocodes</div>
+        <div class="stat-icon">🔵</div>
+        <div class="stat-value" id="totalRede">0</div>
+        <div class="stat-label">REDE</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">📍</div>
-        <div class="stat-value" id="totalLocalizacoes">0</div>
-        <div class="stat-label">Lojas</div>
+        <div class="stat-icon">🟣</div>
+        <div class="stat-value" id="totalComplementar">0</div>
+        <div class="stat-label">COMPLEMENTAR</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">🏭</div>
-        <div class="stat-value" id="totalMarcas">0</div>
-        <div class="stat-label">Marcas</div>
+        <div class="stat-icon">🟠</div>
+        <div class="stat-value" id="totalOEM">0</div>
+        <div class="stat-label">OEM</div>
       </div>
     </div>
 
@@ -346,10 +531,36 @@
   <!-- Input file escondido -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
 
+  <!-- Modal REDE/COMPLEMENTAR/OEM -->
+  <div id="tipoVidroModal" class="tipo-vidro-modal">
+    <div class="tipo-vidro-modal-content">
+      <div class="tipo-vidro-modal-header">
+        <h3 class="tipo-vidro-modal-title">Tipo de Vidro</h3>
+      </div>
+      <div class="tipo-vidro-modal-body">
+        <p class="tipo-vidro-modal-text">Selecione o tipo de vidro:</p>
+        <div class="tipo-vidro-buttons">
+          <button id="btnTipoRede" class="tipo-vidro-btn tipo-vidro-btn-rede">
+            <span class="tipo-vidro-icon">🔵</span>
+            <span class="tipo-vidro-label">REDE</span>
+          </button>
+          <button id="btnTipoComplementar" class="tipo-vidro-btn tipo-vidro-btn-complementar">
+            <span class="tipo-vidro-icon">🟣</span>
+            <span class="tipo-vidro-label">COMPLEMENTAR</span>
+          </button>
+          <button id="btnTipoOEM" class="tipo-vidro-btn tipo-vidro-btn-oem">
+            <span class="tipo-vidro-icon">🟠</span>
+            <span class="tipo-vidro-label">OEM</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="auth.js"></script>
-  <script src="inventario-new.js"></script>
+  <script src="inventario-novo.js"></script>
 </body>
 </html>
 
