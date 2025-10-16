@@ -266,10 +266,12 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
 // Dar saída de vidro (remover do stock)
 async function darSaidaVidro(text, eurocode, filename, source, vehicle) {
   try {
-    // Adicionar # ao eurocode se for COMPLEMENTAR
+    // Adicionar prefixo ao eurocode conforme o tipo
     let finalEurocode = eurocode;
     if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
       finalEurocode = '#' + eurocode;
+    } else if (window.tipoVidroSelecionado === 'oem' && eurocode && !eurocode.startsWith('*')) {
+      finalEurocode = '*' + eurocode;
     }
     
     setStatus(desktopStatus, 'A procurar vidro para dar saída...');
@@ -320,10 +322,12 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
     const brand    = detectBrandFromText(text) || '';
     const carBrand = vehicle || detectVehicleAndModelFromText(text).full || '';
     
-    // Adicionar # ao eurocode se for COMPLEMENTAR
+    // Adicionar prefixo ao eurocode conforme o tipo
     let finalEurocode = eurocode;
     if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
       finalEurocode = '#' + eurocode;
+    } else if (window.tipoVidroSelecionado === 'oem' && eurocode && !eurocode.startsWith('*')) {
+      finalEurocode = '*' + eurocode;
     }
 
     const response = await fetch(SAVE_URL, {
@@ -1601,10 +1605,12 @@ async function saveManualEntry() {
   }
   
   try {
-    // Adicionar # ao eurocode se for COMPLEMENTAR
+    // Adicionar prefixo ao eurocode conforme o tipo
     let finalEurocode = eurocode;
     if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
       finalEurocode = '#' + eurocode;
+    } else if (window.tipoVidroSelecionado === 'oem' && eurocode && !eurocode.startsWith('*')) {
+      finalEurocode = '*' + eurocode;
     }
     
     // Verificar se está em modo saída

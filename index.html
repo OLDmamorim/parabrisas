@@ -1835,6 +1835,10 @@ window.addEventListener('load', () => {
             <span class="tipo-vidro-icon">🟣</span>
             <span class="tipo-vidro-label">COMPLEMENTAR</span>
           </button>
+          <button id="btnTipoOEM" class="tipo-vidro-btn tipo-vidro-btn-oem">
+            <span class="tipo-vidro-icon">🟠</span>
+            <span class="tipo-vidro-label">OEM</span>
+          </button>
         </div>
       </div>
     </div>
@@ -1962,6 +1966,22 @@ window.addEventListener('load', () => {
       transform: translateY(0);
     }
     
+    .tipo-vidro-btn-oem {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+    
+    .tipo-vidro-btn-oem:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
+      border-color: #c2410c;
+    }
+    
+    .tipo-vidro-btn-oem:active {
+      transform: translateY(0);
+    }
+    
     .tipo-vidro-icon {
       font-size: 28px;
     }
@@ -2038,6 +2058,23 @@ window.addEventListener('load', () => {
       if (btnComplementar) {
         btnComplementar.addEventListener('click', () => {
           window.tipoVidroSelecionado = 'complementar';
+          fecharModalTipoVidro();
+          // Iniciar animação de processamento (se estiver em mobile)
+          if (typeof startProcessing === 'function') {
+            startProcessing();
+          }
+          // Abrir a câmara
+          const cameraInput = document.getElementById('cameraInput');
+          if (cameraInput) {
+            cameraInput.click();
+          }
+        });
+      }
+      
+      const btnOEM = document.getElementById('btnTipoOEM');
+      if (btnOEM) {
+        btnOEM.addEventListener('click', () => {
+          window.tipoVidroSelecionado = 'oem';
           fecharModalTipoVidro();
           // Iniciar animação de processamento (se estiver em mobile)
           if (typeof startProcessing === 'function') {
