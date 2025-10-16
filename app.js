@@ -134,7 +134,7 @@ function createSearchField() {
     <span style="color: rgba(255,255,255,0.8); font-size: 14px; margin-left: 20px;">🔍</span>
     <input type="text" id="searchField" placeholder="Procurar Eurocode..." 
            style="margin-left: 8px; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.3); 
-                  border-radius: 4px; font-size: 14px; background: rgba(255,255,255,0.1); color: white; width: 180px;">
+                  border-radius: 4px; font-size: 14px; background: white; color: #1e293b; width: 180px;">
     <button id="clearSearch" style="margin-left: 5px; padding: 6px 8px; background: none; color: rgba(255,255,255,0.7); 
                                    border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer; font-size: 12px;">
       ✕
