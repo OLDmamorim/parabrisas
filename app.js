@@ -1367,6 +1367,61 @@ function exportExcelWithData(dataToExport){
 }
 function exportExcel(){ exportExcelWithData(); }
 
+// Exportar Excel COMPLETO com colunas de entrada e saída
+function exportExcelCompleto(dataToExport) {
+  const list = Array.isArray(dataToExport) ? dataToExport : (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS);
+  
+  const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
+  
+  const rows = list.map((row, index) => {
+    const obs = (row.observacoes || '').toUpperCase().trim();
+    const temSaida = motivosSaida.includes(obs);
+    
+    return {
+      "#": index + 1,
+      "Data/Hora Entrada": row.timestamp || "",
+      "Tipologia": (typeof detectGlassType === 'function' ? detectGlassType(row.eurocode) : "") || "",
+      "Veículo": row.vehicle || "",
+      "Eurocode": row.eurocode || "",
+      "Marca Vidro": row.brand || "",
+      "SM/LOJA": row.loja || "LOJA",
+      "Data/Hora Saída": temSaida ? (row.saida_timestamp || row.updated_at || "") : "",
+      "Motivo Saída": temSaida ? obs : "",
+      "Matrícula": (obs === 'SERVIÇO' && row.matricula) ? row.matricula : ""
+    };
+  });
+  
+  try {
+    let ws;
+    if (rows.length === 0) {
+      const headers = ["#", "Data/Hora Entrada", "Tipologia", "Veículo", "Eurocode", "Marca Vidro", "SM/LOJA", "Data/Hora Saída", "Motivo Saída", "Matrícula"];
+      ws = XLSX.utils.aoa_to_sheet([headers]);
+    } else {
+      ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
+    }
+    ws['!cols'] = [
+      { wch: 4 },   // #
+      { wch: 18 },  // Data/Hora Entrada
+      { wch: 12 },  // Tipologia
+      { wch: 20 },  // Veículo
+      { wch: 16 },  // Eurocode
+      { wch: 16 },  // Marca Vidro
+      { wch: 8 },   // SM/LOJA
+      { wch: 18 },  // Data/Hora Saída
+      { wch: 15 },  // Motivo Saída
+      { wch: 12 }   // Matrícula
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Registos Completos");
+    const filename = `expressglass_completo_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    if (typeof showToast === 'function') showToast('✅ Excel completo exportado!', 'success');
+  } catch (e) {
+    console.error('Erro ao exportar Excel completo:', e);
+    if (typeof showToast === 'function') showToast('Erro ao exportar Excel', 'error');
+  }
+}
+
 // ===== Helpers: datas e filtro por intervalo =====
 function parseAnyDate(ts){
   if (!ts) return null;
@@ -1396,8 +1451,8 @@ function filterByDateRange(rows, startDate, endDate){
   });
 }
 
-// ===== Modal de exportação (lazy DOM) - VERSÃO ATUALIZADA COM FILTROS =====
-function openExportModal(){
+// ===== Modal de INVENTÁRIO (exporta apenas stock disponível) =====
+function openInventarioModal(){
   console.log('Modal de exportação - versão com filtros rápidos carregada');
   const modal = document.getElementById('exportModal');
   if (!modal) { exportExcel(); return; }
@@ -1492,6 +1547,81 @@ function openExportModal(){
   if (btnAll) btnAll.onclick = () => setPeriod('all');
   
   // Definir período padrão como "hoje" DEPOIS de adicionar os listeners
+  setPeriod('today');
+}
+window.openInventarioModal = openInventarioModal;
+
+// ===== Modal de EXPORTAÇÃO COMPLETA (exporta tudo com colunas de entrada e saída) =====
+function openExportModal(){
+  console.log('Modal de exportação completa carregada');
+  const modal = document.getElementById('exportModal');
+  if (!modal) { exportExcelCompleto(); return; }
+
+  const btnClose   = document.getElementById('exportModalClose');
+  const btnCancel  = document.getElementById('exportModalCancel');
+  const btnConfirm = document.getElementById('exportModalConfirm');
+  const startEl    = document.getElementById('exportStart');
+  const endEl      = document.getElementById('exportEnd');
+  const useSearch  = document.getElementById('exportUseSearch');
+  
+  // Botões de filtro rápido
+  const btnToday   = document.getElementById('exportToday');
+  const btnWeek    = document.getElementById('exportWeek');
+  const btnAll     = document.getElementById('exportAll');
+  
+  // Função para definir período
+  function setPeriod(period) {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+    
+    document.querySelectorAll('.export-quick-btn').forEach(btn => btn.classList.remove('active'));
+    
+    if (period === 'today') {
+      if (startEl) startEl.value = todayStr;
+      if (endEl) endEl.value = todayStr;
+      if (btnToday) btnToday.classList.add('active');
+    } else if (period === 'week') {
+      const dayOfWeek = today.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(today.getTime() + mondayOffset * 24 * 60 * 60 * 1000);
+      const mondayStr = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+      
+      if (startEl) startEl.value = mondayStr;
+      if (endEl) endEl.value = todayStr;
+      if (btnWeek) btnWeek.classList.add('active');
+    } else if (period === 'all') {
+      if (startEl) startEl.value = '';
+      if (endEl) endEl.value = '';
+      if (btnAll) btnAll.classList.add('active');
+    }
+  }
+
+  modal.classList.add('show');
+  modal.style.display = 'flex';
+
+  const close = () => { modal.classList.remove('show'); modal.style.display='none'; };
+
+  if (btnClose) btnClose.onclick = close;
+  if (btnCancel) btnCancel.onclick = close;
+  if (btnConfirm) btnConfirm.onclick = () => {
+    const base = (useSearch && useSearch.checked) 
+      ? (FILTERED_RESULTS.length ? FILTERED_RESULTS : RESULTS)
+      : RESULTS;
+    const ranged = filterByDateRange(base, startEl?.value || '', endEl?.value || '');
+    
+    console.log('📊 Exportando TUDO (entrada + saída):', ranged.length, 'registos');
+    
+    exportExcelCompleto(ranged);
+    close();
+  };
+  
+  if (btnToday) btnToday.onclick = () => setPeriod('today');
+  if (btnWeek) btnWeek.onclick = () => setPeriod('week');
+  if (btnAll) btnAll.onclick = () => setPeriod('all');
+  
   setPeriod('today');
 }
 window.openExportModal = openExportModal;
