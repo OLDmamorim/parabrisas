@@ -259,66 +259,31 @@ function showEurocodeValidationModal(ocrText, filename, source, vehicle) {
 // Guardar na Base de Dados (brand + vehicle)
 async function saveToDatabase(text, eurocode, filename, source, vehicle) {
   try {
+    setStatus(desktopStatus, 'A guardar na base de dados...');
+    setStatus(mobileStatus,  'A guardar na base de dados...');
+
+    const brand    = detectBrandFromText(text) || '';
+    const carBrand = vehicle || detectVehicleAndModelFromText(text).full || '';
+    
     // Adicionar # ao eurocode se for COMPLEMENTAR
     let finalEurocode = eurocode;
     if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
       finalEurocode = '#' + eurocode;
     }
-    
-    // VERIFICAR SE ESTÁ EM MODO SAÍDA
-    const isModoSaida = document.body.classList.contains('modo-saida');
-    
-    if (isModoSaida) {
-      // MODO SAÍDA: Procurar e remover o registo com este eurocode
-      setStatus(desktopStatus, 'A procurar vidro para dar saída...');
-      setStatus(mobileStatus,  'A procurar vidro para dar saída...');
-      
-      // Procurar o registo com este eurocode
-      const registoParaRemover = RESULTS.find(r => r.eurocode === finalEurocode);
-      
-      if (!registoParaRemover) {
-        throw new Error(`Eurocode ${finalEurocode} não encontrado no stock!`);
-      }
-      
-      // Remover da base de dados
-      const response = await fetch(DELETE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: registoParaRemover.id })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Erro ao dar saída');
-      }
-      
-      showToast(`✅ Saída registada: ${finalEurocode}`, 'success');
-      setStatus(desktopStatus, 'Saída registada com sucesso!', 'success');
-      setStatus(mobileStatus,  'Saída registada com sucesso!', 'success');
+
+    const response = await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, eurocode: finalEurocode, filename, source, brand, vehicle: carBrand })
+    });
+
+    if (response.ok) {
+      showToast('Dados guardados com sucesso!', 'success');
+      setStatus(desktopStatus, 'Dados guardados com sucesso!', 'success');
+      setStatus(mobileStatus,  'Dados guardados com sucesso!', 'success');
       await loadResults();
-      
     } else {
-      // MODO ENTRADA: Adicionar novo registo (comportamento normal)
-      setStatus(desktopStatus, 'A guardar na base de dados...');
-      setStatus(mobileStatus,  'A guardar na base de dados...');
-
-      const brand    = detectBrandFromText(text) || '';
-      const carBrand = vehicle || detectVehicleAndModelFromText(text).full || '';
-
-      const response = await fetch(SAVE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, eurocode: finalEurocode, filename, source, brand, vehicle: carBrand })
-      });
-
-      if (response.ok) {
-        showToast('Dados guardados com sucesso!', 'success');
-        setStatus(desktopStatus, 'Dados guardados com sucesso!', 'success');
-        setStatus(mobileStatus,  'Dados guardados com sucesso!', 'success');
-        await loadResults();
-      } else {
-        throw new Error('Erro ao guardar na base de dados');
-      }
+      throw new Error('Erro ao guardar na base de dados');
     }
   } catch (error) {
     console.error('Erro ao guardar:', error);
@@ -1586,64 +1551,35 @@ async function saveManualEntry() {
       finalEurocode = '#' + eurocode;
     }
     
-    // VERIFICAR SE ESTÁ EM MODO SAÍDA
-    const isModoSaida = document.body.classList.contains('modo-saida');
+    // Detectar tipologia baseada no eurocode
+    const glassType = detectGlassType(finalEurocode);
     
-    if (isModoSaida) {
-      // MODO SAÍDA: Procurar e remover o registo com este eurocode
-      const registoParaRemover = RESULTS.find(r => r.eurocode === finalEurocode);
-      
-      if (!registoParaRemover) {
-        showToast(`Eurocode ${finalEurocode} não encontrado no stock!`, 'error');
-        return;
-      }
-      
-      // Remover da base de dados
-      const response = await fetch(DELETE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: registoParaRemover.id })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Erro ao dar saída');
-      }
-      
-      showToast(`✅ Saída registada: ${finalEurocode}`, 'success');
+    // Criar payload para salvar
+    const payload = {
+      text: `Entrada manual - ${carBrand}`,
+      eurocode: finalEurocode,
+      filename: 'entrada_manual',
+      source: 'manual',
+      brand: '',  // Será detectada automaticamente
+      vehicle: carBrand,
+      matricula: '',
+      loja: 'LOJA',
+      observacoes: 'Entrada manual'
+    };
+    
+    // Salvar na base de dados
+    const response = await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (response.ok) {
+      showToast('Entrada manual guardada com sucesso!', 'success');
       closeManualEntryModal();
+      
+      // Recarregar dados
       await loadResults();
-      
-    } else {
-      // MODO ENTRADA: Adicionar novo registo (comportamento normal)
-      const glassType = detectGlassType(finalEurocode);
-      
-      // Criar payload para salvar
-      const payload = {
-        text: `Entrada manual - ${carBrand}`,
-        eurocode: finalEurocode,
-        filename: 'entrada_manual',
-        source: 'manual',
-        brand: '',  // Será detectada automaticamente
-        vehicle: carBrand,
-        matricula: '',
-        loja: 'LOJA',
-        observacoes: 'Entrada manual'
-      };
-      
-      // Salvar na base de dados
-      const response = await fetch(SAVE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (response.ok) {
-        showToast('Entrada manual guardada com sucesso!', 'success');
-        closeManualEntryModal();
-        
-        // Recarregar dados
-        await loadResults();
       
       // Atualizar lista de capturas mobile se existir
       if (typeof renderModernCaptures === 'function') {
