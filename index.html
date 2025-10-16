@@ -990,9 +990,6 @@ table {
     <button class="help-btn" id="helpBtnDesktop" aria-label="Ajuda">?</button>
     
     <div class="toolbar" id="toolbarRecepcao">
-      <button id="btnUpload" class="btn" onclick="document.getElementById('fileInput').click()">📁 Carregar imagem</button>
-      <input id="fileInput" type="file" accept="image/*,.pdf" hidden
-       onchange="if(this.files&&this.files[0]){ window.processImage && window.processImage(this.files[0]); }" />
       <button id="btnInventario" class="btn" onclick="window.openInventarioModal && window.openInventarioModal()">📦 INVENTÁRIO</button>
       <button id="btnExport" class="btn" onclick="window.openExportModal && window.openExportModal()">📊 Exportar Excel</button>
       <button id="btnPrint" class="btn" onclick="openPrintModal()">🖨️ Imprimir</button>
