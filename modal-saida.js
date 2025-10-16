@@ -65,14 +65,17 @@ async function confirmarSaida() {
       btnConfirm.textContent = '⏳ A processar...';
     }
     
-    // Apagar da base de dados
-    const { error } = await supabase
-      .from('glass_records')
-      .delete()
-      .eq('id', saidaRecordId);
+    // Apagar da base de dados usando Netlify Function
+    const DELETE_URL = '/.netlify/functions/delete-ocr';
+    const response = await fetch(DELETE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: saidaRecordId })
+    });
     
-    if (error) {
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Erro ao dar saída');
     }
     
     // Sucesso!
@@ -82,10 +85,16 @@ async function confirmarSaida() {
     closeSaidaModal();
     
     // Mostrar mensagem de sucesso
-    showToast('✅ Saída registada com sucesso!', 'success');
+    if (typeof showToast === 'function') {
+      showToast('✅ Saída registada com sucesso!', 'success');
+    }
     
     // Recarregar dados
-    await loadData();
+    if (typeof loadResults === 'function') {
+      await loadResults();
+    } else if (typeof loadData === 'function') {
+      await loadData();
+    }
     
   } catch (error) {
     console.error('Erro ao dar saída:', error);
