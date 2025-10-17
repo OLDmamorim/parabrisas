@@ -646,26 +646,30 @@ function renderTable() {
   }).join('');
   
   // Atualizar totalizadores
-  updateTotalizadores(dataToShow);
+  updateTotalizadores();
 }
 
 // =========================
-// Atualizar Totalizadores
+// Totalizadores
 // =========================
-function updateTotalizadores(data) {
-  const totalizadoresContainer = document.getElementById('totalizadores');
-  if (!totalizadoresContainer) return;
+
+// Função para atualizar totalizadores
+function updateTotalizadores() {
+  const totalizadoresDiv = document.getElementById('totalizadores');
+  if (!totalizadoresDiv) return;
   
-  // Se não há dados, esconder totalizadores
-  if (!data || data.length === 0) {
-    totalizadoresContainer.style.display = 'none';
+  // SEMPRE usar RESULTS (todos os dados), nunca FILTERED_RESULTS
+  const data = RESULTS;
+  
+  // Mostrar/esconder totalizadores
+  if (data.length === 0) {
+    totalizadoresDiv.style.display = 'none';
     return;
   }
   
-  // Mostrar totalizadores
-  totalizadoresContainer.style.display = 'grid';
+  totalizadoresDiv.style.display = 'grid';
   
-  // Contar por tipo
+  // Calcular totais (SEMPRE com base em TODOS os registos)
   let totalGeral = 0;
   let totalRede = 0;
   let totalComplementar = 0;
