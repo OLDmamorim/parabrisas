@@ -158,7 +158,7 @@ table {
 /* ===== TOTALIZADORES ===== */
 .totalizadores-container {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin: 20px 0;
   padding: 0;
@@ -214,6 +214,11 @@ table {
   line-height: 1;
 }
 
+.totalizador-total {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
 .totalizador-stock {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-color: rgba(16, 185, 129, 0.3);
@@ -241,7 +246,7 @@ table {
 
 @media (max-width: 768px) {
   .totalizadores-container {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 8px;
     margin: 16px 0;
   }
@@ -1065,7 +1070,14 @@ table {
 
     <!-- Totalizadores -->
     <div id="totalizadores" class="totalizadores-container" style="display: none;">
-      <div class="totalizador totalizador-stock" onclick="filtrarPorTipo('todos')" style="cursor: pointer;" title="Clique para mostrar todos">
+      <div class="totalizador totalizador-total" onclick="filtrarPorTipo('total')" style="cursor: pointer;" title="Clique para mostrar todos os registos">
+        <div class="totalizador-icon">📊</div>
+        <div class="totalizador-content">
+          <div class="totalizador-label">TOTAL</div>
+          <div class="totalizador-value" id="totalTotal">0</div>
+        </div>
+      </div>
+      <div class="totalizador totalizador-stock" onclick="filtrarPorTipo('stock')" style="cursor: pointer;" title="Clique para mostrar apenas entradas em stock">
         <div class="totalizador-icon">📦</div>
         <div class="totalizador-content">
           <div class="totalizador-label">STOCK</div>

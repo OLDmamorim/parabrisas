@@ -675,6 +675,7 @@ function updateTotalizadores() {
   totalizadoresDiv.style.display = 'grid';
   
   // Calcular totais separando STOCK (sem saída) e SAÍDAS (com saída)
+  let totalTotal = data.length; // Total de todos os registos
   let totalStock = 0;
   let totalRede = 0;
   let totalComplementar = 0;
@@ -707,12 +708,14 @@ function updateTotalizadores() {
   });
   
   // Atualizar valores
+  const totalTotalEl = document.getElementById('totalTotal');
   const totalStockEl = document.getElementById('totalStock');
   const totalRedeEl = document.getElementById('totalRede');
   const totalComplementarEl = document.getElementById('totalComplementar');
   const totalOemEl = document.getElementById('totalOem');
   const totalSaidasEl = document.getElementById('totalSaidas');
   
+  if (totalTotalEl) totalTotalEl.textContent = totalTotal;
   if (totalStockEl) totalStockEl.textContent = totalStock;
   if (totalRedeEl) totalRedeEl.textContent = totalRede;
   if (totalComplementarEl) totalComplementarEl.textContent = totalComplementar;
@@ -723,7 +726,7 @@ function updateTotalizadores() {
 // =========================
 // Filtrar por Tipo
 // =========================
-let filtroTipoAtivo = 'todos';
+let filtroTipoAtivo = 'total';
 
 function filtrarPorTipo(tipo) {
   console.log('🔍 Filtrar por tipo:', tipo);
@@ -732,10 +735,19 @@ function filtrarPorTipo(tipo) {
   // Atualizar visual dos totalizadores
   document.querySelectorAll('.totalizador').forEach(el => el.classList.remove('ativo'));
   
-  if (tipo === 'todos') {
-    document.querySelector('.totalizador-stock')?.classList.add('ativo');
+  if (tipo === 'total') {
+    document.querySelector('.totalizador-total')?.classList.add('ativo');
     FILTERED_RESULTS = [];
     isFilterActive = false; // Sem filtro ativo - mostrar todos
+  } else if (tipo === 'stock') {
+    document.querySelector('.totalizador-stock')?.classList.add('ativo');
+    isFilterActive = true; // Filtro ativo
+    FILTERED_RESULTS = RESULTS.filter(r => {
+      const obs = (r.observacoes || '').toUpperCase();
+      const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
+      const isSaida = motivosSaida.some(motivo => obs.includes(motivo));
+      return !isSaida; // Mostrar apenas entradas (sem saídas)
+    });
   } else if (tipo === 'rede') {
     document.querySelector('.totalizador-rede').classList.add('ativo');
     isFilterActive = true; // Filtro ativo
@@ -781,7 +793,8 @@ function filtrarPorTipo(tipo) {
   
   // Mostrar feedback
   const labels = {
-    'todos': 'Todos os vidros',
+    'total': 'Todos os registos',
+    'stock': 'Vidros em stock (sem saídas)',
     'rede': 'Vidros REDE em stock',
     'complementar': 'Vidros COMPLEMENTAR em stock',
     'oem': 'Vidros OEM em stock',
