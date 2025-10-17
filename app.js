@@ -1729,19 +1729,31 @@ function autoPreencherVeiculo() {
   const eurocodeInput = document.getElementById('manualEurocode');
   const carBrandSelect = document.getElementById('manualCarBrand');
   
-  if (!eurocodeInput || !carBrandSelect) return;
+  if (!eurocodeInput || !carBrandSelect) {
+    console.log('❌ Elementos não encontrados');
+    return;
+  }
   
   const eurocode = eurocodeInput.value.trim();
+  console.log('🔍 Buscando veículo para eurocode:', eurocode);
+  console.log('📊 Total de registos na base:', RESULTS.length);
   
   // Só buscar se tiver pelo menos 4 caracteres
-  if (eurocode.length < 4) return;
+  if (eurocode.length < 4) {
+    console.log('⚠️ Eurocode muito curto (mínimo 4 caracteres)');
+    return;
+  }
   
   const veiculo = buscarVeiculoPorEurocode(eurocode);
+  console.log('🎯 Veículo encontrado:', veiculo || 'NENHUM');
   
   if (veiculo) {
     // Tentar selecionar o veículo no dropdown
     const options = Array.from(carBrandSelect.options);
+    console.log('📋 Opções disponíveis no dropdown:', options.map(o => o.value).join(', '));
+    
     const option = options.find(opt => opt.value.toUpperCase() === veiculo.toUpperCase());
+    console.log('🔎 Opção correspondente encontrada:', option ? option.value : 'NENHUMA');
     
     if (option) {
       carBrandSelect.value = option.value;
@@ -1754,7 +1766,12 @@ function autoPreencherVeiculo() {
       }, 2000);
       
       showToast(`✅ ${veiculo}`, 'success');
+    } else {
+      console.log('❌ Veículo "' + veiculo + '" não existe no dropdown');
+      showToast(`⚠️ Veículo "${veiculo}" não está na lista`, 'warning');
     }
+  } else {
+    console.log('ℹ️ Eurocode não encontrado nos registos anteriores');
   }
 }
 
