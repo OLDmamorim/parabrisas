@@ -16,18 +16,23 @@ async function checkIfGestor() {
     
     console.log('👤 Role do utilizador:', currentUserRole);
     
-    if (currentUserRole === 'gestor' || currentUserRole === 'administrador' || currentUserRole === 'Admin') {
+        // Gestor e Admin têm acesso ao seletor de utilizadores e upload de eurocodes
+    if (currentUserRole === 'gestor' || currentUserRole === 'Admin') {
       // Mostrar seletor de utilizadores
       document.getElementById('gestorUserSelector').style.display = 'block';
       
       // Mostrar botão de upload de eurocodes
-      const btnUploadEurocodes = document.getElementById('btnUploadEurocodes');
-      if (btnUploadEurocodes) {
-        btnUploadEurocodes.style.display = 'inline-block';
+      const uploadBtn = document.getElementById('uploadEurocodesBtn');
+      if (uploadBtn) {
+        uploadBtn.style.display = 'inline-block';
       }
       
       // Carregar lista de utilizadores
       await loadUsersList();
+    }
+    
+    // Apenas Admin tem acesso ao botão ADMIN (gestão de utilizadores)
+    // Nota: O botão ADMIN é gerido por outro sistema/página loadUsersList();
       
       return true;
     }
@@ -142,7 +147,7 @@ async function loadUserDataAsGestor(userId) {
 
 // Verificar se está em modo gestor
 function isGestorMode() {
-  return (currentUserRole === 'gestor' || currentUserRole === 'administrador' || currentUserRole === 'Admin') && selectedUserId !== null;
+  return (currentUserRole === 'gestor' || currentUserRole === 'Admin') && selectedUserId !== null;
 }
 
 // Inicializar funcionalidade de gestor quando a página carregar

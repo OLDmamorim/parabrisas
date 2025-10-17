@@ -18,9 +18,9 @@ export const handler = async (event) => {
   try {
     const user = await requireAuth(event);
     
-    // Verificar se o utilizador é gestor ou administrador
-    if (user.role !== 'gestor' && user.role !== 'administrador' && user.role !== 'Admin') {
-      return cors(403, { ok: false, error: 'Acesso negado. Apenas gestores/administradores podem atualizar eurocodes.' });
+    // Verificar se o utilizador é gestor ou Admin
+    if (user.role !== 'gestor' && user.role !== 'Admin') {
+      return cors(403, { ok: false, error: 'Acesso negado. Apenas gestores e administradores podem atualizar eurocodes.' });
     }
 
     console.log('📤 Gestor a fazer upload de eurocodes:', user.email);

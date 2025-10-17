@@ -17,9 +17,9 @@ export const handler = async (event) => {
     await init();
     const user = await requireAuth(event);
     
-    // Verificar se o utilizador é gestor ou administrador
-    if (user.role !== 'gestor' && user.role !== 'administrador' && user.role !== 'Admin') {
-      return err(403, 'Acesso negado. Apenas gestores/administradores podem listar utilizadores.');
+    // Verificar se o utilizador é Admin (apenas administradores podem gerir utilizadores)
+    if (user.role !== 'Admin') {
+      return err(403, 'Acesso negado. Apenas administradores podem listar utilizadores.');
     }
 
     console.log('📋 Listando todos os utilizadores para gestor:', user.email);
