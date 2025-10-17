@@ -913,15 +913,38 @@ function exportCSV() {
 // =========================
 // Funções de Impressão
 function openPrintModal() {
-  const printModal = document.getElementById('printModal');
-  if (printModal) {
-    printModal.style.display = 'flex';
-    printModal.style.zIndex = '99999';
-    // Definir data de hoje como padrão
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('printDateFrom').value = today;
-    document.getElementById('printDateTo').value = today;
-    updatePrintPreview();
+  try {
+    console.log('openPrintModal: Iniciando...');
+    const printModal = document.getElementById('printModal');
+    console.log('openPrintModal: Modal encontrado?', !!printModal);
+    
+    if (printModal) {
+      printModal.style.display = 'flex';
+      printModal.style.zIndex = '99999';
+      printModal.style.visibility = 'visible';
+      printModal.style.opacity = '1';
+      
+      console.log('openPrintModal: Display definido como flex');
+      
+      // Definir data de hoje como padrão
+      const today = new Date().toISOString().split('T')[0];
+      const dateFrom = document.getElementById('printDateFrom');
+      const dateTo = document.getElementById('printDateTo');
+      
+      if (dateFrom) dateFrom.value = today;
+      if (dateTo) dateTo.value = today;
+      
+      console.log('openPrintModal: Datas definidas');
+      
+      if (typeof updatePrintPreview === 'function') {
+        updatePrintPreview();
+      }
+      
+      console.log('openPrintModal: Modal aberto com sucesso');
+    }
+  } catch (error) {
+    console.error('Erro ao abrir modal de impressão:', error);
+    alert('Erro ao abrir modal: ' + error.message);
   }
 }
 window.openPrintModal = openPrintModal;

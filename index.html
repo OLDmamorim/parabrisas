@@ -2062,6 +2062,17 @@ table {
   })();
   </script>
 <script>
+// Adicionar listener global para ESC fechar modal de impressão
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const printModal = document.getElementById('printModal');
+    if (printModal && printModal.style.display === 'flex') {
+      closePrintModal();
+      console.log('Modal fechado com ESC');
+    }
+  }
+});
+
 window.addEventListener('load', () => {
   const fileInput = document.getElementById('fileInput');
   const btnUpload = document.getElementById('btnUpload');
