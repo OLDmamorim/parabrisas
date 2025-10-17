@@ -153,6 +153,11 @@
       color: #2b6cb0;
     }
 
+    .badge-gestor {
+      background: #feebc8;
+      color: #c05621;
+    }
+
     .badge-active {
       background: #c6f6d5;
       color: #2f855a;
@@ -362,7 +367,8 @@
           <label for="editRole" class="form-label">Função</label>
           <select id="editRole" class="form-select">
             <option value="user">Utilizador</option>
-            <option value="admin">Administrador</option>
+            <option value="gestor">Gestor</option>
+            <option value="Admin">Administrador</option>
           </select>
         </div>
         
@@ -459,8 +465,8 @@
           <td><strong>${user.name}</strong></td>
           <td>${user.email}</td>
           <td>
-            <span class="badge ${user.role === 'admin' ? 'badge-admin' : 'badge-user'}">
-              ${user.role === 'admin' ? 'Admin' : 'Utilizador'}
+            <span class="badge ${user.role === 'Admin' ? 'badge-admin' : (user.role === 'gestor' ? 'badge-gestor' : 'badge-user')}">
+              ${user.role === 'Admin' ? 'Admin' : (user.role === 'gestor' ? 'Gestor' : 'Utilizador')}
             </span>
           </td>
           <td>
