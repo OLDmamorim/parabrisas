@@ -911,6 +911,176 @@ function exportCSV() {
 }
 
 // =========================
+// Funções de Impressão
+function openPrintModal() {
+  const printModal = document.getElementById('printModal');
+  if (printModal) {
+    printModal.style.display = 'flex';
+    // Definir data de hoje como padrão
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('printDateFrom').value = today;
+    document.getElementById('printDateTo').value = today;
+    updatePrintPreview();
+  }
+}
+window.openPrintModal = openPrintModal;
+
+function closePrintModal() {
+  const printModal = document.getElementById('printModal');
+  if (printModal) {
+    printModal.style.display = 'none';
+  }
+}
+
+function setPrintDateRange(range, button) {
+  const today = new Date();
+  let fromDate, toDate;
+  
+  // Remover classe 'active' de todos os botões
+  document.querySelectorAll('.print-quick-btn').forEach(btn => btn.classList.remove('active'));
+  // Adicionar classe 'active' ao botão clicado
+  if (button) button.classList.add('active');
+  
+  switch(range) {
+    case 'today':
+      fromDate = toDate = today;
+      break;
+    case 'week':
+      fromDate = new Date(today);
+      fromDate.setDate(today.getDate() - 7);
+      toDate = today;
+      break;
+    case 'month':
+      fromDate = new Date(today);
+      fromDate.setMonth(today.getMonth() - 1);
+      toDate = today;
+      break;
+    case 'all':
+      fromDate = new Date('2020-01-01');
+      toDate = today;
+      break;
+  }
+  
+  document.getElementById('printDateFrom').value = fromDate.toISOString().split('T')[0];
+  document.getElementById('printDateTo').value = toDate.toISOString().split('T')[0];
+  updatePrintPreview();
+}
+window.setPrintDateRange = setPrintDateRange;
+
+function updatePrintPreview() {
+  const fromDate = document.getElementById('printDateFrom').value;
+  const toDate = document.getElementById('printDateTo').value;
+  
+  if (!fromDate || !toDate) {
+    document.getElementById('printPreviewCount').textContent = 'Selecione um período para ver os registos';
+    return;
+  }
+  
+  // Filtrar registos por data
+  const filtered = RESULTS.filter(row => {
+    const rowDate = new Date(row.created_at).toISOString().split('T')[0];
+    return rowDate >= fromDate && rowDate <= toDate;
+  });
+  
+  document.getElementById('printPreviewCount').textContent = `${filtered.length} registo(s) encontrado(s) neste período`;
+}
+
+function doPrint() {
+  const fromDate = document.getElementById('printDateFrom').value;
+  const toDate = document.getElementById('printDateTo').value;
+  
+  if (!fromDate || !toDate) {
+    showToast('Selecione um período válido', 'error');
+    return;
+  }
+  
+  // Filtrar registos por data
+  const filtered = RESULTS.filter(row => {
+    const rowDate = new Date(row.created_at).toISOString().split('T')[0];
+    return rowDate >= fromDate && rowDate <= toDate;
+  });
+  
+  if (filtered.length === 0) {
+    showToast('Nenhum registo encontrado neste período', 'error');
+    return;
+  }
+  
+  // Criar conteúdo para impressão
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>ExpressGlass - Receção Material</title>
+      <style>
+        @media print {
+          @page { margin: 1cm; }
+          body { margin: 0; }
+        }
+        body { font-family: Arial, sans-serif; font-size: 12px; }
+        h1 { text-align: center; color: #1e3a8a; }
+        .header { text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #1e3a8a; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .footer { margin-top: 20px; text-align: center; font-size: 10px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>EXPRESSGLASS - Receção Material</h1>
+        <p>Período: ${new Date(fromDate).toLocaleDateString('pt-PT')} a ${new Date(toDate).toLocaleDateString('pt-PT')}</p>
+        <p>Total de registos: ${filtered.length}</p>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Tipo</th>
+            <th>Veículo</th>
+            <th>Eurocode</th>
+            <th>Marca</th>
+            <th>Matrícula</th>
+            <th>SM/Loja</th>
+            <th>Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(row => `
+            <tr>
+              <td>${new Date(row.created_at).toLocaleString('pt-PT')}</td>
+              <td>${getTipoVidro(row.eurocode)}</td>
+              <td>${row.vehicle || ''}</td>
+              <td>${row.eurocode || ''}</td>
+              <td>${row.brand || ''}</td>
+              <td>${row.matricula || ''}</td>
+              <td>${row.loja || 'LOJA'}</td>
+              <td>${row.observacoes || ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="footer">
+        <p>Impresso em ${new Date().toLocaleString('pt-PT')}</p>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  // Abrir janela de impressão
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  printWindow.focus();
+  
+  // Aguardar carregamento e imprimir
+  setTimeout(() => {
+    printWindow.print();
+    closePrintModal();
+  }, 500);
+}
+
+// =========================
 // Limpar tabela
 async function clearTable() {
   if (!confirm('Tem a certeza que quer limpar TODOS os dados da recepção? Esta ação não pode ser desfeita.')) return;
@@ -955,6 +1125,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (cameraInput)cameraInput.addEventListener('change', (e) => { const f=e.target.files[0]; if (f) processImage(f); });
   if (btnExport)  btnExport.addEventListener('click', openExportModal);
   if (btnClear)   btnClear.addEventListener('click', clearTable);
+  
+  // Event listeners para modal de impressão
+  const printModalClose = document.getElementById('printModalClose');
+  const printCancel = document.getElementById('printCancel');
+  const printConfirm = document.getElementById('printConfirm');
+  const printDateFrom = document.getElementById('printDateFrom');
+  const printDateTo = document.getElementById('printDateTo');
+  
+  if (printModalClose) printModalClose.addEventListener('click', closePrintModal);
+  if (printCancel) printCancel.addEventListener('click', closePrintModal);
+  if (printConfirm) printConfirm.addEventListener('click', doPrint);
+  if (printDateFrom) printDateFrom.addEventListener('change', updatePrintPreview);
+  if (printDateTo) printDateTo.addEventListener('change', updatePrintPreview);
 
   const isMobile = window.innerWidth <= 768;
   const mobileView = document.getElementById('mobileView');
