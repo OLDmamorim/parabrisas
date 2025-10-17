@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Migração - Adicionar Role aos Utilizadores</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      color: #1e3a8a;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    
+    .info-box h3 {
+      color: #1e40af;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .info-box p {
+      color: #475569;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    
+    .info-box ul {
+      margin-top: 10px;
+      margin-left: 20px;
+      color: #475569;
+      font-size: 14px;
+    }
+    
+    .info-box li {
+      margin-bottom: 5px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 15px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    button:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .result.success {
+      background: #dcfce7;
+      border: 2px solid #22c55e;
+      color: #166534;
+      display: block;
+    }
+    
+    .result.error {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      color: #991b1b;
+      display: block;
+    }
+    
+    .result h4 {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .result pre {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .loading.show {
+      display: block;
+    }
+    
+    .spinner {
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #3b82f6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .users-list {
+      margin-top: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .user-item {
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 5px;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .user-email {
+      font-weight: 600;
+      color: #1e3a8a;
+    }
+    
+    .user-role {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #f59e0b;
+      color: white;
+      font-weight: 600;
+    }
+    
+    .user-role.gestor {
+      background: #8b5cf6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>👑 Migração de Utilizadores</h1>
+    <p class="subtitle">Adicionar sistema de roles (gestor/user)</p>
+    
+    <div class="info-box">
+      <h3>📋 O que esta migração faz:</h3>
+      <ul>
+        <li>Adiciona a coluna <code>role</code> à tabela <code>users</code></li>
+        <li>Define o utilizador <strong>mramorim78@gmail.com</strong> como <strong>gestor</strong></li>
+        <li>Outros utilizadores ficam com role <strong>user</strong> (padrão)</li>
+        <li>Permite que o gestor veja dados de todos os utilizadores</li>
+      </ul>
+    </div>
+    
+    <button id="migrateBtn" onclick="runMigration()">
+      🚀 Executar Migração
+    </button>
+    
+    <button onclick="window.location.href='index.html'" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
+      ← Voltar ao Sistema
+    </button>
+    
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>A executar migração...</p>
+    </div>
+    
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    async function runMigration() {
+      const btn = document.getElementById('migrateBtn');
+      const loading = document.getElementById('loading');
+      const result = document.getElementById('result');
+      
+      // Desabilitar botão e mostrar loading
+      btn.disabled = true;
+      loading.classList.add('show');
+      result.style.display = 'none';
+      result.className = 'result';
+      
+      try {
+        const token = localStorage.getItem('authToken');
+        
+        if (!token) {
+          throw new Error('Não autenticado. Por favor, faça login primeiro.');
+        }
+        
+        const response = await fetch('/.netlify/functions/migrate-add-user-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        loading.classList.remove('show');
+        
+        if (response.ok && data.ok) {
+          let usersHtml = '';
+          if (data.users && data.users.length > 0) {
+            usersHtml = '<div class="users-list">';
+            data.users.forEach(user => {
+              const roleClass = user.role === 'gestor' ? 'gestor' : '';
+              const roleText = user.role === 'gestor' ? '👑 Gestor' : 'User';
+              usersHtml += `
+                <div class="user-item">
+                  <span class="user-email">${user.email}</span>
+                  <span class="user-role ${roleClass}">${roleText}</span>
+                </div>
+              `;
+            });
+            usersHtml += '</div>';
+          }
+          
+          result.className = 'result success';
+          result.innerHTML = `
+            <h4>✅ Migração executada com sucesso!</h4>
+            <p>${data.message}</p>
+            ${data.already_exists ? '<p><em>A coluna já existia na base de dados.</em></p>' : ''}
+            ${usersHtml}
+            <p style="margin-top: 15px; font-weight: 600;">🔄 Por favor, faça logout e login novamente para aplicar as alterações.</p>
+          `;
+        } else {
+          throw new Error(data.error || 'Erro desconhecido');
+        }
+        
+      } catch (error) {
+        loading.classList.remove('show');
+        result.className = 'result error';
+        result.innerHTML = `
+          <h4>❌ Erro na migração</h4>
+          <p>${error.message}</p>
+          <pre>${error.stack || ''}</pre>
+        `;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
+
