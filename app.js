@@ -1059,7 +1059,7 @@ function doPrint() {
           ${filtered.map(row => `
             <tr>
               <td>${new Date(row.created_at).toLocaleString('pt-PT')}</td>
-              <td>${getTipoVidro(row.eurocode)}</td>
+              <td>${detectGlassType(row.eurocode)}</td>
               <td>${row.vehicle || ''}</td>
               <td>${row.eurocode || ''}</td>
               <td>${row.brand || ''}</td>
