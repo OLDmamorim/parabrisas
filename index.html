@@ -1292,6 +1292,7 @@ table {
       <button id="btnInventario" class="btn" onclick="window.openInventarioModal && window.openInventarioModal()">📦 INVENTÁRIO</button>
       <button id="btnPrint" class="btn" onclick="openPrintModal()">🖨️ Imprimir</button>
       <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
+      <button id="btnUploadEurocodes" class="btn" onclick="openUploadEurocodesModal()" style="display: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">📊 Upload Eurocodes</button>
     </div>
 
     <!-- Totalizadores -->
@@ -1388,6 +1389,44 @@ table {
       <div class="edit-ocr-footer">
         <button id="editOcrCancel" class="btn btn-secondary">Cancelar</button>
         <button id="editOcrSave" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE UPLOAD DE EUROCODES -->
+  <div id="uploadEurocodesModal" class="print-modal" style="display: none;">
+    <div class="print-modal-content">
+      <div class="print-modal-header">
+        <h3>📊 Upload de Eurocodes</h3>
+        <button class="print-modal-close" id="uploadEurocodesClose">&times;</button>
+      </div>
+      <div class="print-modal-body">
+        <div class="print-date-section">
+          <h4>📄 Selecionar Ficheiro Excel</h4>
+          <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">
+            O Excel deve ter: <strong>Coluna A</strong> = Prefixo (4 dígitos), <strong>Coluna B</strong> = Marca, <strong>Coluna C</strong> = Modelo
+          </p>
+          <div class="upload-area-modal" id="uploadAreaModal" style="border: 3px dashed #cbd5e1; border-radius: 10px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 20px;">
+            <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+            <div style="color: #475569; font-size: 16px; margin-bottom: 5px;">Clique ou arraste o ficheiro Excel aqui</div>
+            <div style="color: #94a3b8; font-size: 13px;">Formatos: .xlsx, .xls</div>
+            <input type="file" id="eurocodesFileInput" accept=".xlsx,.xls" style="display: none;">
+          </div>
+          <div id="uploadFileInfo" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <div id="uploadFileName" style="font-weight: 600; color: #1e3a8a; margin-bottom: 5px;"></div>
+            <div id="uploadFileDetails" style="font-size: 13px; color: #64748b;"></div>
+          </div>
+        </div>
+        <div class="print-preview-section">
+          <h4>📈 Resultado</h4>
+          <div id="uploadResult" class="print-preview-count">
+            Nenhum ficheiro selecionado
+          </div>
+        </div>
+      </div>
+      <div class="print-modal-footer">
+        <button id="uploadEurocodesCancel" class="btn btn-secondary">Cancelar</button>
+        <button id="uploadEurocodesConfirm" class="btn btn-primary" disabled>🚀 Processar e Atualizar</button>
       </div>
     </div>
   </div>
