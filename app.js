@@ -1148,6 +1148,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (printConfirm) printConfirm.addEventListener('click', doPrint);
   if (printDateFrom) printDateFrom.addEventListener('change', updatePrintPreview);
   if (printDateTo) printDateTo.addEventListener('change', updatePrintPreview);
+  
+  // Event listeners para botões rápidos
+  document.querySelectorAll('.print-quick-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const range = this.getAttribute('data-range');
+      setPrintDateRange(range, this);
+    });
+  });
 
   const isMobile = window.innerWidth <= 768;
   const mobileView = document.getElementById('mobileView');
