@@ -916,6 +916,7 @@ function openPrintModal() {
   const printModal = document.getElementById('printModal');
   if (printModal) {
     printModal.style.display = 'flex';
+    printModal.style.zIndex = '99999';
     // Definir data de hoje como padrão
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('printDateFrom').value = today;
