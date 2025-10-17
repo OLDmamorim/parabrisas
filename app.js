@@ -697,6 +697,58 @@ function updateTotalizadores(data) {
 }
 
 // =========================
+// Filtrar por Tipo
+// =========================
+let filtroTipoAtivo = 'todos';
+
+function filtrarPorTipo(tipo) {
+  console.log('🔍 Filtrar por tipo:', tipo);
+  filtroTipoAtivo = tipo;
+  
+  // Atualizar visual dos totalizadores
+  document.querySelectorAll('.totalizador').forEach(el => el.classList.remove('ativo'));
+  
+  if (tipo === 'todos') {
+    document.querySelector('.totalizador-total').classList.add('ativo');
+    FILTERED_RESULTS = [];
+  } else if (tipo === 'rede') {
+    document.querySelector('.totalizador-rede').classList.add('ativo');
+    FILTERED_RESULTS = RESULTS.filter(r => {
+      const eurocode = r.eurocode || '';
+      return !eurocode.startsWith('#') && !eurocode.startsWith('*');
+    });
+  } else if (tipo === 'complementar') {
+    document.querySelector('.totalizador-complementar').classList.add('ativo');
+    FILTERED_RESULTS = RESULTS.filter(r => {
+      const eurocode = r.eurocode || '';
+      return eurocode.startsWith('#');
+    });
+  } else if (tipo === 'oem') {
+    document.querySelector('.totalizador-oem').classList.add('ativo');
+    FILTERED_RESULTS = RESULTS.filter(r => {
+      const eurocode = r.eurocode || '';
+      return eurocode.startsWith('*');
+    });
+  }
+  
+  // Re-renderizar tabela
+  renderTable();
+  
+  // Mostrar feedback
+  const labels = {
+    'todos': 'Todos os vidros',
+    'rede': 'Vidros REDE',
+    'complementar': 'Vidros COMPLEMENTAR',
+    'oem': 'Vidros OEM'
+  };
+  
+  showToast(`🔍 ${labels[tipo]}`, 'info');
+}
+
+// Tornar função global
+window.filtrarPorTipo = filtrarPorTipo;
+
+// =========================
 // Eliminar registo
 async function deleteRow(id) {
   if (!confirm('Tem a certeza que quer eliminar este registo?')) return;

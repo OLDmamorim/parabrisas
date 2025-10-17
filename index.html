@@ -181,6 +181,12 @@ table {
   box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 
+.totalizador.ativo {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.3);
+  border: 2px solid rgba(255,255,255,0.5);
+}
+
 .totalizador-icon {
   font-size: 32px;
   line-height: 1;
@@ -1054,28 +1060,28 @@ table {
 
     <!-- Totalizadores -->
     <div id="totalizadores" class="totalizadores-container" style="display: none;">
-      <div class="totalizador totalizador-total">
+      <div class="totalizador totalizador-total" onclick="filtrarPorTipo('todos')" style="cursor: pointer;" title="Clique para mostrar todos">
         <div class="totalizador-icon">📊</div>
         <div class="totalizador-content">
           <div class="totalizador-label">Total</div>
           <div class="totalizador-value" id="totalGeral">0</div>
         </div>
       </div>
-      <div class="totalizador totalizador-rede">
+      <div class="totalizador totalizador-rede" onclick="filtrarPorTipo('rede')" style="cursor: pointer;" title="Clique para filtrar REDE">
         <div class="totalizador-icon">🔵</div>
         <div class="totalizador-content">
           <div class="totalizador-label">REDE</div>
           <div class="totalizador-value" id="totalRede">0</div>
         </div>
       </div>
-      <div class="totalizador totalizador-complementar">
-        <div class="totalizador-icon">🟣</div>
+      <div class="totalizador totalizador-complementar" onclick="filtrarPorTipo('complementar')" style="cursor: pointer;" title="Clique para filtrar COMPLEMENTAR">
+        <div class="totalizador-icon">🟪</div>
         <div class="totalizador-content">
           <div class="totalizador-label">COMPLEMENTAR</div>
           <div class="totalizador-value" id="totalComplementar">0</div>
         </div>
       </div>
-      <div class="totalizador totalizador-oem">
+      <div class="totalizador totalizador-oem" onclick="filtrarPorTipo('oem')" style="cursor: pointer;" title="Clique para filtrar OEM">
         <div class="totalizador-icon">🟠</div>
         <div class="totalizador-content">
           <div class="totalizador-label">OEM</div>
