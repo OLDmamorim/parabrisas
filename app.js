@@ -1705,6 +1705,22 @@ window.updateObservacoes = updateObservacoes;
 // MODAL DE ENTRADA MANUAL
 // =========================
 
+// Função para buscar veículo por eurocode
+function buscarVeiculoPorEurocode(eurocode) {
+  if (!eurocode) return null;
+  
+  // Remover prefixos # e * para busca
+  const cleanEurocode = eurocode.replace(/^[#*]/, '');
+  
+  // Procurar nos registos existentes
+  const registoEncontrado = RESULTS.find(r => {
+    const rClean = (r.eurocode || '').replace(/^[#*]/, '');
+    return rClean.toUpperCase() === cleanEurocode.toUpperCase();
+  });
+  
+  return registoEncontrado ? registoEncontrado.vehicle : null;
+}
+
 // Função para abrir o modal de entrada manual
 function openManualEntryModal() {
   const modal = document.getElementById('manualEntryModal');
@@ -1716,9 +1732,32 @@ function openManualEntryModal() {
     document.getElementById('manualEurocode').value = '';
     document.getElementById('manualCarBrand').value = '';
     
+    // Adicionar listener para auto-preencher veículo
+    const eurocodeInput = document.getElementById('manualEurocode');
+    const carBrandSelect = document.getElementById('manualCarBrand');
+    
+    if (eurocodeInput && carBrandSelect) {
+      eurocodeInput.addEventListener('blur', function() {
+        const eurocode = this.value.trim();
+        if (eurocode) {
+          const veiculo = buscarVeiculoPorEurocode(eurocode);
+          if (veiculo) {
+            // Tentar selecionar o veículo no dropdown
+            const options = Array.from(carBrandSelect.options);
+            const option = options.find(opt => opt.value.toUpperCase() === veiculo.toUpperCase());
+            if (option) {
+              carBrandSelect.value = option.value;
+              console.log('✅ Veículo auto-preenchido:', veiculo);
+              showToast(`Veículo reconhecido: ${veiculo}`, 'success');
+            }
+          }
+        }
+      });
+    }
+    
     // Focar no primeiro campo
     setTimeout(() => {
-      document.getElementById('manualEurocode').focus();
+      eurocodeInput.focus();
     }, 100);
   }
 }
