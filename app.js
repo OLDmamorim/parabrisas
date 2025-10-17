@@ -978,8 +978,13 @@ function updatePrintPreview() {
   
   // Filtrar registos por data
   const filtered = RESULTS.filter(row => {
-    const rowDate = new Date(row.created_at).toISOString().split('T')[0];
-    return rowDate >= fromDate && rowDate <= toDate;
+    if (!row.created_at) return false;
+    try {
+      const rowDate = new Date(row.created_at).toISOString().split('T')[0];
+      return rowDate >= fromDate && rowDate <= toDate;
+    } catch (e) {
+      return false;
+    }
   });
   
   document.getElementById('printPreviewCount').textContent = `${filtered.length} registo(s) encontrado(s) neste período`;
@@ -996,8 +1001,13 @@ function doPrint() {
   
   // Filtrar registos por data
   const filtered = RESULTS.filter(row => {
-    const rowDate = new Date(row.created_at).toISOString().split('T')[0];
-    return rowDate >= fromDate && rowDate <= toDate;
+    if (!row.created_at) return false;
+    try {
+      const rowDate = new Date(row.created_at).toISOString().split('T')[0];
+      return rowDate >= fromDate && rowDate <= toDate;
+    } catch (e) {
+      return false;
+    }
   });
   
   if (filtered.length === 0) {
