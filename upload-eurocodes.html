@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload de Eurocodes - ExpressGlass</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      color: #1e3a8a;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    
+    .info-box h3 {
+      color: #1e40af;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .info-box p, .info-box ul {
+      color: #475569;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    
+    .info-box ul {
+      margin-top: 10px;
+      margin-left: 20px;
+    }
+    
+    .info-box li {
+      margin-bottom: 5px;
+    }
+    
+    .upload-area {
+      border: 3px dashed #cbd5e1;
+      border-radius: 15px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 20px;
+    }
+    
+    .upload-area:hover {
+      border-color: #3b82f6;
+      background: #f8fafc;
+    }
+    
+    .upload-area.dragover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .upload-text {
+      color: #475569;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    
+    .upload-hint {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    
+    input[type="file"] {
+      display: none;
+    }
+    
+    button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 15px;
+    }
+    
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    button:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .result.success {
+      background: #dcfce7;
+      border: 2px solid #22c55e;
+      color: #166534;
+      display: block;
+    }
+    
+    .result.error {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      color: #991b1b;
+      display: block;
+    }
+    
+    .result h4 {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .result .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .stat-item {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .loading.show {
+      display: block;
+    }
+    
+    .spinner {
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #3b82f6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .file-info {
+      background: #f8fafc;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    .file-info.show {
+      display: block;
+    }
+    
+    .file-name {
+      font-weight: 600;
+      color: #1e3a8a;
+      margin-bottom: 5px;
+    }
+    
+    .file-details {
+      font-size: 13px;
+      color: #64748b;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Upload de Eurocodes</h1>
+    <p class="subtitle">Atualizar base de dados de eurocodes via Excel</p>
+    
+    <div class="info-box">
+      <h3>📋 Formato do Excel:</h3>
+      <ul>
+        <li><strong>Coluna A:</strong> Prefixo do Eurocode (4 dígitos, ex: 2436)</li>
+        <li><strong>Coluna B:</strong> Marca do veículo (ex: BMW)</li>
+        <li><strong>Coluna C:</strong> Modelo do veículo (ex: SERIE 3 E46)</li>
+      </ul>
+      <p style="margin-top: 10px;"><strong>Nota:</strong> Eurocodes duplicados serão automaticamente ignorados.</p>
+    </div>
+    
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">Clique ou arraste o ficheiro Excel aqui</div>
+      <div class="upload-hint">Formatos suportados: .xlsx, .xls</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+    </div>
+    
+    <div class="file-info" id="fileInfo">
+      <div class="file-name" id="fileName"></div>
+      <div class="file-details" id="fileDetails"></div>
+    </div>
+    
+    <button id="uploadBtn" disabled>
+      🚀 Processar e Atualizar
+    </button>
+    
+    <button onclick="window.location.href='index.html'" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
+      ← Voltar ao Sistema
+    </button>
+    
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>A processar eurocodes...</p>
+    </div>
+    
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    let selectedFile = null;
+    let parsedEurocodes = [];
+    
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileDetails = document.getElementById('fileDetails');
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('result');
+    
+    // Click para abrir seletor de ficheiros
+    uploadArea.addEventListener('click', () => fileInput.click());
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+    
+    // Seleção de ficheiro
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+    
+    // Processar ficheiro Excel
+    async function handleFile(file) {
+      if (!file.name.match(/\.(xlsx|xls)$/i)) {
+        alert('Por favor, selecione um ficheiro Excel (.xlsx ou .xls)');
+        return;
+      }
+      
+      selectedFile = file;
+      fileName.textContent = `📄 ${file.name}`;
+      fileDetails.textContent = `Tamanho: ${(file.size / 1024).toFixed(2)} KB`;
+      fileInfo.classList.add('show');
+      
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        
+        // Processar linhas (ignorar cabeçalho se existir)
+        parsedEurocodes = [];
+        
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          
+          // Ignorar linhas vazias
+          if (!row || row.length === 0) continue;
+          
+          const prefix = String(row[0] || '').trim();
+          const marca = String(row[1] || '').trim();
+          const modelo = String(row[2] || '').trim();
+          
+          // Validar prefixo (4 dígitos)
+          if (!/^\d{4}$/.test(prefix)) continue;
+          
+          // Ignorar se não tiver marca
+          if (!marca) continue;
+          
+          parsedEurocodes.push({
+            prefix,
+            marca,
+            modelo: modelo || null
+          });
+        }
+        
+        fileDetails.textContent = `${parsedEurocodes.length} eurocodes encontrados`;
+        uploadBtn.disabled = parsedEurocodes.length === 0;
+        
+        if (parsedEurocodes.length === 0) {
+          alert('Nenhum eurocode válido encontrado no ficheiro');
+        }
+        
+      } catch (error) {
+        console.error('Erro ao ler Excel:', error);
+        alert('Erro ao ler ficheiro Excel: ' + error.message);
+      }
+    }
+    
+    // Upload para servidor
+    uploadBtn.addEventListener('click', async () => {
+      if (parsedEurocodes.length === 0) return;
+      
+      uploadBtn.disabled = true;
+      loading.classList.add('show');
+      result.style.display = 'none';
+      result.className = 'result';
+      
+      try {
+        const token = localStorage.getItem('authToken');
+        
+        if (!token) {
+          throw new Error('Não autenticado. Por favor, faça login primeiro.');
+        }
+        
+        const response = await fetch('/.netlify/functions/upload-eurocodes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ eurocodes: parsedEurocodes })
+        });
+        
+        const data = await response.json();
+        
+        loading.classList.remove('show');
+        
+        if (response.ok && data.ok) {
+          result.className = 'result success';
+          result.innerHTML = `
+            <h4>✅ Eurocodes atualizados com sucesso!</h4>
+            <p>${data.message}</p>
+            <div class="stats">
+              <div class="stat-item">
+                <span class="stat-value">${data.total_received}</span>
+                <span class="stat-label">Recebidos</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">${data.added}</span>
+                <span class="stat-label">Adicionados</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">${data.already_exists}</span>
+                <span class="stat-label">Já Existiam</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">${data.total_prefixes}</span>
+                <span class="stat-label">Total na BD</span>
+              </div>
+            </div>
+          `;
+        } else {
+          throw new Error(data.error || 'Erro desconhecido');
+        }
+        
+      } catch (error) {
+        loading.classList.remove('show');
+        result.className = 'result error';
+        result.innerHTML = `
+          <h4>❌ Erro ao atualizar eurocodes</h4>
+          <p>${error.message}</p>
+        `;
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+
