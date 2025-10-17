@@ -283,6 +283,205 @@ table {
     font-size: 10px;
   }
 }
+
+/* ===== MODAL DE IMPRESSÃO ===== */
+.print-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+
+.print-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.print-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.print-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #1e3a8a;
+}
+
+.print-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.print-modal-close:hover {
+  background: #f3f4f6;
+  color: #1e3a8a;
+}
+
+.print-modal-body {
+  padding: 24px;
+}
+
+.print-date-section {
+  margin-bottom: 24px;
+}
+
+.print-date-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #374151;
+}
+
+.print-date-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.print-date-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.print-date-group label {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.print-date-input {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.print-date-input:focus {
+  outline: none;
+  border-color: #1e3a8a;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.print-quick-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.print-quick-btn {
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.print-quick-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.print-quick-btn.active {
+  background: #1e3a8a;
+  color: white;
+  border-color: #1e3a8a;
+}
+
+.print-preview-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #374151;
+}
+
+.print-preview-count {
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.print-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.print-modal-footer .btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.print-modal-footer .btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.print-modal-footer .btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.print-modal-footer .btn-primary {
+  background: #1e3a8a;
+  color: white;
+}
+
+.print-modal-footer .btn-primary:hover {
+  background: #1e40af;
+}
+
+@media (max-width: 768px) {
+  .print-modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .print-date-inputs {
+    grid-template-columns: 1fr;
+  }
+  
+  .print-quick-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 </style>
 
   <style>
