@@ -16,7 +16,7 @@ async function checkIfGestor() {
     
     console.log('👤 Role do utilizador:', currentUserRole);
     
-    if (currentUserRole === 'gestor' || currentUserRole === 'administrador') {
+    if (currentUserRole === 'gestor' || currentUserRole === 'administrador' || currentUserRole === 'Admin') {
       // Mostrar seletor de utilizadores
       document.getElementById('gestorUserSelector').style.display = 'block';
       
@@ -142,7 +142,7 @@ async function loadUserDataAsGestor(userId) {
 
 // Verificar se está em modo gestor
 function isGestorMode() {
-  return (currentUserRole === 'gestor' || currentUserRole === 'administrador') && selectedUserId !== null;
+  return (currentUserRole === 'gestor' || currentUserRole === 'administrador' || currentUserRole === 'Admin') && selectedUserId !== null;
 }
 
 // Inicializar funcionalidade de gestor quando a página carregar

@@ -27,7 +27,7 @@ export const handler = async (event) => {
     const user = await requireAuth(event);
     
     // Verificar se o utilizador é gestor ou administrador
-    if (user.role !== 'gestor' && user.role !== 'administrador') {
+    if (user.role !== 'gestor' && user.role !== 'administrador' && user.role !== 'Admin') {
       return err(403, 'Acesso negado. Apenas gestores/administradores podem aceder a dados de outros utilizadores.');
     }
     
