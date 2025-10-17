@@ -1174,7 +1174,17 @@ async function clearTable() {
     });
 
     if (response.ok) {
+      // Limpar arrays locais
+      RESULTS = [];
+      FILTERED_RESULTS = [];
+      
+      // Atualizar interface
+      renderTable();
+      updateTotalizadores();
+      
       showToast('Tabela limpa com sucesso!', 'success');
+      
+      // Recarregar do servidor para confirmar
       await loadResults();
     } else {
       throw new Error('Erro ao limpar tabela');
