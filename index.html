@@ -214,9 +214,9 @@ table {
   line-height: 1;
 }
 
-.totalizador-total {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-color: rgba(59, 130, 246, 0.3);
+.totalizador-stock {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .totalizador-rede {
@@ -232,6 +232,11 @@ table {
 .totalizador-oem {
   background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   border-color: rgba(249, 115, 22, 0.3);
+}
+
+.totalizador-saidas {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -1060,11 +1065,11 @@ table {
 
     <!-- Totalizadores -->
     <div id="totalizadores" class="totalizadores-container" style="display: none;">
-      <div class="totalizador totalizador-total" onclick="filtrarPorTipo('todos')" style="cursor: pointer;" title="Clique para mostrar todos">
-        <div class="totalizador-icon">📊</div>
+      <div class="totalizador totalizador-stock" onclick="filtrarPorTipo('todos')" style="cursor: pointer;" title="Clique para mostrar todos">
+        <div class="totalizador-icon">📦</div>
         <div class="totalizador-content">
-          <div class="totalizador-label">Total</div>
-          <div class="totalizador-value" id="totalGeral">0</div>
+          <div class="totalizador-label">STOCK</div>
+          <div class="totalizador-value" id="totalStock">0</div>
         </div>
       </div>
       <div class="totalizador totalizador-rede" onclick="filtrarPorTipo('rede')" style="cursor: pointer;" title="Clique para filtrar REDE">
@@ -1086,6 +1091,13 @@ table {
         <div class="totalizador-content">
           <div class="totalizador-label">OEM</div>
           <div class="totalizador-value" id="totalOem">0</div>
+        </div>
+      </div>
+      <div class="totalizador totalizador-saidas" onclick="filtrarPorTipo('saidas')" style="cursor: pointer;" title="Clique para filtrar SAÍDAS">
+        <div class="totalizador-icon">📤</div>
+        <div class="totalizador-content">
+          <div class="totalizador-label">SAÍDAS</div>
+          <div class="totalizador-value" id="totalSaidas">0</div>
         </div>
       </div>
     </div>

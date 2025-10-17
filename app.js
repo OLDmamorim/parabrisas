@@ -669,35 +669,50 @@ function updateTotalizadores() {
   
   totalizadoresDiv.style.display = 'grid';
   
-  // Calcular totais (SEMPRE com base em TODOS os registos)
-  let totalGeral = 0;
+  // Calcular totais separando STOCK (sem saída) e SAÍDAS (com saída)
+  let totalStock = 0;
   let totalRede = 0;
   let totalComplementar = 0;
   let totalOem = 0;
+  let totalSaidas = 0;
+  
+  const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
   
   data.forEach(row => {
     const eurocode = row.eurocode || '';
-    totalGeral++;
+    const obs = (row.observacoes || '').toUpperCase();
     
-    if (eurocode.startsWith('#')) {
-      totalComplementar++;
-    } else if (eurocode.startsWith('*')) {
-      totalOem++;
+    // Verificar se é saída
+    const isSaida = motivosSaida.some(motivo => obs.includes(motivo));
+    
+    if (isSaida) {
+      totalSaidas++;
     } else {
-      totalRede++;
+      // Só contar em STOCK se NÃO tiver saída
+      totalStock++;
+      
+      if (eurocode.startsWith('#')) {
+        totalComplementar++;
+      } else if (eurocode.startsWith('*')) {
+        totalOem++;
+      } else {
+        totalRede++;
+      }
     }
   });
   
   // Atualizar valores
-  const totalGeralEl = document.getElementById('totalGeral');
+  const totalStockEl = document.getElementById('totalStock');
   const totalRedeEl = document.getElementById('totalRede');
   const totalComplementarEl = document.getElementById('totalComplementar');
   const totalOemEl = document.getElementById('totalOem');
+  const totalSaidasEl = document.getElementById('totalSaidas');
   
-  if (totalGeralEl) totalGeralEl.textContent = totalGeral;
+  if (totalStockEl) totalStockEl.textContent = totalStock;
   if (totalRedeEl) totalRedeEl.textContent = totalRede;
   if (totalComplementarEl) totalComplementarEl.textContent = totalComplementar;
   if (totalOemEl) totalOemEl.textContent = totalOem;
+  if (totalSaidasEl) totalSaidasEl.textContent = totalSaidas;
 }
 
 // =========================
@@ -713,25 +728,41 @@ function filtrarPorTipo(tipo) {
   document.querySelectorAll('.totalizador').forEach(el => el.classList.remove('ativo'));
   
   if (tipo === 'todos') {
-    document.querySelector('.totalizador-total').classList.add('ativo');
+    document.querySelector('.totalizador-stock')?.classList.add('ativo');
     FILTERED_RESULTS = [];
   } else if (tipo === 'rede') {
     document.querySelector('.totalizador-rede').classList.add('ativo');
     FILTERED_RESULTS = RESULTS.filter(r => {
       const eurocode = r.eurocode || '';
-      return !eurocode.startsWith('#') && !eurocode.startsWith('*');
+      const obs = (r.observacoes || '').toUpperCase();
+      const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
+      const isSaida = motivosSaida.some(motivo => obs.includes(motivo));
+      return !eurocode.startsWith('#') && !eurocode.startsWith('*') && !isSaida;
     });
   } else if (tipo === 'complementar') {
     document.querySelector('.totalizador-complementar').classList.add('ativo');
     FILTERED_RESULTS = RESULTS.filter(r => {
       const eurocode = r.eurocode || '';
-      return eurocode.startsWith('#');
+      const obs = (r.observacoes || '').toUpperCase();
+      const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
+      const isSaida = motivosSaida.some(motivo => obs.includes(motivo));
+      return eurocode.startsWith('#') && !isSaida;
     });
   } else if (tipo === 'oem') {
     document.querySelector('.totalizador-oem').classList.add('ativo');
     FILTERED_RESULTS = RESULTS.filter(r => {
       const eurocode = r.eurocode || '';
-      return eurocode.startsWith('*');
+      const obs = (r.observacoes || '').toUpperCase();
+      const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
+      const isSaida = motivosSaida.some(motivo => obs.includes(motivo));
+      return eurocode.startsWith('*') && !isSaida;
+    });
+  } else if (tipo === 'saidas') {
+    document.querySelector('.totalizador-saidas').classList.add('ativo');
+    FILTERED_RESULTS = RESULTS.filter(r => {
+      const obs = (r.observacoes || '').toUpperCase();
+      const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
+      return motivosSaida.some(motivo => obs.includes(motivo));
     });
   }
   
@@ -741,9 +772,10 @@ function filtrarPorTipo(tipo) {
   // Mostrar feedback
   const labels = {
     'todos': 'Todos os vidros',
-    'rede': 'Vidros REDE',
-    'complementar': 'Vidros COMPLEMENTAR',
-    'oem': 'Vidros OEM'
+    'rede': 'Vidros REDE em stock',
+    'complementar': 'Vidros COMPLEMENTAR em stock',
+    'oem': 'Vidros OEM em stock',
+    'saidas': 'Vidros com saída'
   };
   
   showToast(`🔍 ${labels[tipo]}`, 'info');
