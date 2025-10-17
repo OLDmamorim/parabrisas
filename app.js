@@ -1014,16 +1014,23 @@ function updatePrintPreview() {
     try {
       // Converter timestamp de pt-PT para Date
       // Formato esperado: "17/10/2025, 10:55:57" ou ISO
-      let dateObj;
+      let day, month, year;
+      
       if (row.timestamp.includes('/')) {
         // Formato pt-PT: DD/MM/YYYY, HH:MM:SS
         const [datePart] = row.timestamp.split(',');
-        const [day, month, year] = datePart.trim().split('/');
-        dateObj = new Date(year, month - 1, day);
+        [day, month, year] = datePart.trim().split('/');
       } else {
-        dateObj = new Date(row.timestamp);
+        // Formato ISO
+        const dateObj = new Date(row.timestamp);
+        day = String(dateObj.getDate()).padStart(2, '0');
+        month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        year = dateObj.getFullYear();
       }
-      const rowDate = dateObj.toISOString().split('T')[0];
+      
+      // Criar string de data no formato YYYY-MM-DD para comparação
+      const rowDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      
       return rowDate >= fromDate && rowDate <= toDate;
     } catch (e) {
       console.error('Erro ao processar data:', row.timestamp, e);
@@ -1049,16 +1056,23 @@ function doPrint() {
     try {
       // Converter timestamp de pt-PT para Date
       // Formato esperado: "17/10/2025, 10:55:57" ou ISO
-      let dateObj;
+      let day, month, year;
+      
       if (row.timestamp.includes('/')) {
         // Formato pt-PT: DD/MM/YYYY, HH:MM:SS
         const [datePart] = row.timestamp.split(',');
-        const [day, month, year] = datePart.trim().split('/');
-        dateObj = new Date(year, month - 1, day);
+        [day, month, year] = datePart.trim().split('/');
       } else {
-        dateObj = new Date(row.timestamp);
+        // Formato ISO
+        const dateObj = new Date(row.timestamp);
+        day = String(dateObj.getDate()).padStart(2, '0');
+        month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        year = dateObj.getFullYear();
       }
-      const rowDate = dateObj.toISOString().split('T')[0];
+      
+      // Criar string de data no formato YYYY-MM-DD para comparação
+      const rowDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      
       return rowDate >= fromDate && rowDate <= toDate;
     } catch (e) {
       console.error('Erro ao processar data:', row.timestamp, e);
