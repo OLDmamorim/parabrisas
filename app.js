@@ -644,6 +644,56 @@ function renderTable() {
       </tr>
     `;
   }).join('');
+  
+  // Atualizar totalizadores
+  updateTotalizadores(dataToShow);
+}
+
+// =========================
+// Atualizar Totalizadores
+// =========================
+function updateTotalizadores(data) {
+  const totalizadoresContainer = document.getElementById('totalizadores');
+  if (!totalizadoresContainer) return;
+  
+  // Se não há dados, esconder totalizadores
+  if (!data || data.length === 0) {
+    totalizadoresContainer.style.display = 'none';
+    return;
+  }
+  
+  // Mostrar totalizadores
+  totalizadoresContainer.style.display = 'grid';
+  
+  // Contar por tipo
+  let totalGeral = 0;
+  let totalRede = 0;
+  let totalComplementar = 0;
+  let totalOem = 0;
+  
+  data.forEach(row => {
+    const eurocode = row.eurocode || '';
+    totalGeral++;
+    
+    if (eurocode.startsWith('#')) {
+      totalComplementar++;
+    } else if (eurocode.startsWith('*')) {
+      totalOem++;
+    } else {
+      totalRede++;
+    }
+  });
+  
+  // Atualizar valores
+  const totalGeralEl = document.getElementById('totalGeral');
+  const totalRedeEl = document.getElementById('totalRede');
+  const totalComplementarEl = document.getElementById('totalComplementar');
+  const totalOemEl = document.getElementById('totalOem');
+  
+  if (totalGeralEl) totalGeralEl.textContent = totalGeral;
+  if (totalRedeEl) totalRedeEl.textContent = totalRede;
+  if (totalComplementarEl) totalComplementarEl.textContent = totalComplementar;
+  if (totalOemEl) totalOemEl.textContent = totalOem;
 }
 
 // =========================

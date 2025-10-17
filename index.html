@@ -154,6 +154,104 @@ table {
     box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
   }
 }
+
+/* ===== TOTALIZADORES ===== */
+.totalizadores-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+  padding: 0;
+}
+
+.totalizador {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.3s ease;
+}
+
+.totalizador:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+.totalizador-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.totalizador-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.totalizador-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.7);
+}
+
+.totalizador-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.totalizador-total {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.totalizador-rede {
+  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+  border-color: rgba(34, 211, 238, 0.3);
+}
+
+.totalizador-complementar {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.totalizador-oem {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+@media (max-width: 768px) {
+  .totalizadores-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+  }
+  
+  .totalizador {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  
+  .totalizador-icon {
+    font-size: 24px;
+  }
+  
+  .totalizador-value {
+    font-size: 22px;
+  }
+  
+  .totalizador-label {
+    font-size: 10px;
+  }
+}
 </style>
 
   <style>
@@ -993,6 +1091,38 @@ table {
       <button id="btnInventario" class="btn" onclick="window.openInventarioModal && window.openInventarioModal()">📦 INVENTÁRIO</button>
       <button id="btnPrint" class="btn" onclick="openPrintModal()">🖨️ Imprimir</button>
       <button id="btnClear" class="btn danger" onclick="window.clearTable && window.clearTable()">🗑️ Limpar Tabela</button>
+    </div>
+
+    <!-- Totalizadores -->
+    <div id="totalizadores" class="totalizadores-container" style="display: none;">
+      <div class="totalizador totalizador-total">
+        <div class="totalizador-icon">📊</div>
+        <div class="totalizador-content">
+          <div class="totalizador-label">Total</div>
+          <div class="totalizador-value" id="totalGeral">0</div>
+        </div>
+      </div>
+      <div class="totalizador totalizador-rede">
+        <div class="totalizador-icon">🔵</div>
+        <div class="totalizador-content">
+          <div class="totalizador-label">REDE</div>
+          <div class="totalizador-value" id="totalRede">0</div>
+        </div>
+      </div>
+      <div class="totalizador totalizador-complementar">
+        <div class="totalizador-icon">🟣</div>
+        <div class="totalizador-content">
+          <div class="totalizador-label">COMPLEMENTAR</div>
+          <div class="totalizador-value" id="totalComplementar">0</div>
+        </div>
+      </div>
+      <div class="totalizador totalizador-oem">
+        <div class="totalizador-icon">🟠</div>
+        <div class="totalizador-content">
+          <div class="totalizador-label">OEM</div>
+          <div class="totalizador-value" id="totalOem">0</div>
+        </div>
+      </div>
     </div>
 
     <div class="table-wrap">
