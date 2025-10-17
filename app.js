@@ -550,7 +550,7 @@ function renderTable() {
 
   // Se há filtro ativo, mostrar FILTERED_RESULTS (mesmo que vazio)
   // Se não há filtro ativo, mostrar RESULTS
-  const dataToShow = isFilterActive ? FILTERED_RESULTS : (FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS);
+  const dataToShow = isFilterActive ? FILTERED_RESULTS : RESULTS;
 
   if (dataToShow.length === 0) {
     resultsBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">Nenhum registo encontrado</td></tr>';
