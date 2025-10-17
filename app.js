@@ -1705,76 +1705,6 @@ window.updateObservacoes = updateObservacoes;
 // MODAL DE ENTRADA MANUAL
 // =========================
 
-// Função para buscar veículo por eurocode
-function buscarVeiculoPorEurocode(eurocode) {
-  if (!eurocode) return null;
-  
-  // Remover prefixos # e * para busca
-  const cleanEurocode = eurocode.replace(/^[#*]/, '');
-  
-  // Procurar nos registos existentes
-  const registoEncontrado = RESULTS.find(r => {
-    const rClean = (r.eurocode || '').replace(/^[#*]/, '');
-    return rClean.toUpperCase() === cleanEurocode.toUpperCase();
-  });
-  
-  return registoEncontrado ? registoEncontrado.vehicle : null;
-}
-
-// Variável para armazenar timeout de debounce
-let autoFillTimeout = null;
-
-// Função para auto-preencher veículo
-function autoPreencherVeiculo() {
-  const eurocodeInput = document.getElementById('manualEurocode');
-  const carBrandSelect = document.getElementById('manualCarBrand');
-  
-  if (!eurocodeInput || !carBrandSelect) {
-    console.log('❌ Elementos não encontrados');
-    return;
-  }
-  
-  const eurocode = eurocodeInput.value.trim();
-  console.log('🔍 Buscando veículo para eurocode:', eurocode);
-  console.log('📊 Total de registos na base:', RESULTS.length);
-  
-  // Só buscar se tiver pelo menos 4 caracteres
-  if (eurocode.length < 4) {
-    console.log('⚠️ Eurocode muito curto (mínimo 4 caracteres)');
-    return;
-  }
-  
-  const veiculo = buscarVeiculoPorEurocode(eurocode);
-  console.log('🎯 Veículo encontrado:', veiculo || 'NENHUM');
-  
-  if (veiculo) {
-    // Tentar selecionar o veículo no dropdown
-    const options = Array.from(carBrandSelect.options);
-    console.log('📋 Opções disponíveis no dropdown:', options.map(o => o.value).join(', '));
-    
-    const option = options.find(opt => opt.value.toUpperCase() === veiculo.toUpperCase());
-    console.log('🔎 Opção correspondente encontrada:', option ? option.value : 'NENHUMA');
-    
-    if (option) {
-      carBrandSelect.value = option.value;
-      console.log('✅ Veículo auto-preenchido:', veiculo);
-      
-      // Feedback visual
-      carBrandSelect.style.background = 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
-      setTimeout(() => {
-        carBrandSelect.style.background = '';
-      }, 2000);
-      
-      showToast(`✅ ${veiculo}`, 'success');
-    } else {
-      console.log('❌ Veículo "' + veiculo + '" não existe no dropdown');
-      showToast(`⚠️ Veículo "${veiculo}" não está na lista`, 'warning');
-    }
-  } else {
-    console.log('ℹ️ Eurocode não encontrado nos registos anteriores');
-  }
-}
-
 // Função para abrir o modal de entrada manual
 function openManualEntryModal() {
   const modal = document.getElementById('manualEntryModal');
@@ -1783,34 +1713,13 @@ function openManualEntryModal() {
     modal.classList.add('show');
     
     // Limpar campos
-    const eurocodeInput = document.getElementById('manualEurocode');
-    const carBrandSelect = document.getElementById('manualCarBrand');
+    document.getElementById('manualEurocode').value = '';
+    document.getElementById('manualCarBrand').value = '';
     
-    if (eurocodeInput) eurocodeInput.value = '';
-    if (carBrandSelect) carBrandSelect.value = '';
-    
-    // Remover listeners antigos (evitar duplicação)
-    if (eurocodeInput) {
-      const newInput = eurocodeInput.cloneNode(true);
-      eurocodeInput.parentNode.replaceChild(newInput, eurocodeInput);
-      
-      // Adicionar listener com debounce
-      newInput.addEventListener('input', function() {
-        // Limpar timeout anterior
-        if (autoFillTimeout) clearTimeout(autoFillTimeout);
-        
-        // Aguardar 500ms após última tecla
-        autoFillTimeout = setTimeout(autoPreencherVeiculo, 500);
-      });
-      
-      // Também tentar ao sair do campo
-      newInput.addEventListener('blur', autoPreencherVeiculo);
-      
-      // Focar no campo
-      setTimeout(() => {
-        newInput.focus();
-      }, 100);
-    }
+    // Focar no primeiro campo
+    setTimeout(() => {
+      document.getElementById('manualEurocode').focus();
+    }, 100);
   }
 }
 
