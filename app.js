@@ -465,6 +465,12 @@ function normalizeRow(r){
     console.log('Reprocessando marca para registo existente:', brand);
   }
 
+  // Processar saida_timestamp
+  let saidaTimestamp = r.saida_timestamp || r.saidaTimestamp || '';
+  if (saidaTimestamp && typeof saidaTimestamp === 'string' && saidaTimestamp.includes('T')) {
+    try { saidaTimestamp = new Date(saidaTimestamp).toLocaleString('pt-PT'); } catch (e) {}
+  }
+
   return {
     id:        r.id ?? r.rowId ?? r.uuid ?? r._id ?? null,
     timestamp: timestamp,
@@ -476,7 +482,9 @@ function normalizeRow(r){
     vehicle:   r.vehicle ?? '',
     matricula: r.matricula ?? '',
     loja:      r.loja ?? 'LOJA',
-    observacoes: r.observacoes ?? ''
+    observacoes: r.observacoes ?? '',
+    saida_timestamp: saidaTimestamp,
+    updated_at: r.updated_at || r.updatedAt || ''
   };
 }
 
