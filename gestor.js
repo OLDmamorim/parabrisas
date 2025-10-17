@@ -22,7 +22,7 @@ async function checkIfGestor() {
       document.getElementById('gestorUserSelector').style.display = 'block';
       
       // Mostrar botão de upload de eurocodes
-      const uploadBtn = document.getElementById('uploadEurocodesBtn');
+      const uploadBtn = document.getElementById('btnUploadEurocodes');
       if (uploadBtn) {
         uploadBtn.style.display = 'inline-block';
       }
