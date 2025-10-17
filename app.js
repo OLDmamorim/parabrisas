@@ -1721,6 +1721,43 @@ function buscarVeiculoPorEurocode(eurocode) {
   return registoEncontrado ? registoEncontrado.vehicle : null;
 }
 
+// Variável para armazenar timeout de debounce
+let autoFillTimeout = null;
+
+// Função para auto-preencher veículo
+function autoPreencherVeiculo() {
+  const eurocodeInput = document.getElementById('manualEurocode');
+  const carBrandSelect = document.getElementById('manualCarBrand');
+  
+  if (!eurocodeInput || !carBrandSelect) return;
+  
+  const eurocode = eurocodeInput.value.trim();
+  
+  // Só buscar se tiver pelo menos 4 caracteres
+  if (eurocode.length < 4) return;
+  
+  const veiculo = buscarVeiculoPorEurocode(eurocode);
+  
+  if (veiculo) {
+    // Tentar selecionar o veículo no dropdown
+    const options = Array.from(carBrandSelect.options);
+    const option = options.find(opt => opt.value.toUpperCase() === veiculo.toUpperCase());
+    
+    if (option) {
+      carBrandSelect.value = option.value;
+      console.log('✅ Veículo auto-preenchido:', veiculo);
+      
+      // Feedback visual
+      carBrandSelect.style.background = 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
+      setTimeout(() => {
+        carBrandSelect.style.background = '';
+      }, 2000);
+      
+      showToast(`✅ ${veiculo}`, 'success');
+    }
+  }
+}
+
 // Função para abrir o modal de entrada manual
 function openManualEntryModal() {
   const modal = document.getElementById('manualEntryModal');
@@ -1729,36 +1766,34 @@ function openManualEntryModal() {
     modal.classList.add('show');
     
     // Limpar campos
-    document.getElementById('manualEurocode').value = '';
-    document.getElementById('manualCarBrand').value = '';
-    
-    // Adicionar listener para auto-preencher veículo
     const eurocodeInput = document.getElementById('manualEurocode');
     const carBrandSelect = document.getElementById('manualCarBrand');
     
-    if (eurocodeInput && carBrandSelect) {
-      eurocodeInput.addEventListener('blur', function() {
-        const eurocode = this.value.trim();
-        if (eurocode) {
-          const veiculo = buscarVeiculoPorEurocode(eurocode);
-          if (veiculo) {
-            // Tentar selecionar o veículo no dropdown
-            const options = Array.from(carBrandSelect.options);
-            const option = options.find(opt => opt.value.toUpperCase() === veiculo.toUpperCase());
-            if (option) {
-              carBrandSelect.value = option.value;
-              console.log('✅ Veículo auto-preenchido:', veiculo);
-              showToast(`Veículo reconhecido: ${veiculo}`, 'success');
-            }
-          }
-        }
-      });
-    }
+    if (eurocodeInput) eurocodeInput.value = '';
+    if (carBrandSelect) carBrandSelect.value = '';
     
-    // Focar no primeiro campo
-    setTimeout(() => {
-      eurocodeInput.focus();
-    }, 100);
+    // Remover listeners antigos (evitar duplicação)
+    if (eurocodeInput) {
+      const newInput = eurocodeInput.cloneNode(true);
+      eurocodeInput.parentNode.replaceChild(newInput, eurocodeInput);
+      
+      // Adicionar listener com debounce
+      newInput.addEventListener('input', function() {
+        // Limpar timeout anterior
+        if (autoFillTimeout) clearTimeout(autoFillTimeout);
+        
+        // Aguardar 500ms após última tecla
+        autoFillTimeout = setTimeout(autoPreencherVeiculo, 500);
+      });
+      
+      // Também tentar ao sair do campo
+      newInput.addEventListener('blur', autoPreencherVeiculo);
+      
+      // Focar no campo
+      setTimeout(() => {
+        newInput.focus();
+      }, 100);
+    }
   }
 }
 
