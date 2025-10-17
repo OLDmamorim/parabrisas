@@ -109,11 +109,11 @@ class AuthManager {
       `;
       
       userInfo.innerHTML = `
-        <div style="margin-bottom: 8px;">
+        <div id="userName" style="margin-bottom: 8px;">
           <strong>${this.user.name}</strong>
           ${this.user.role === 'admin' ? '<span style="color: #e53e3e; font-size: 12px;">(Admin)</span>' : ''}
         </div>
-        <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+        <div id="userEmail" style="font-size: 12px; color: #666; margin-bottom: 10px;">
           ${this.user.email}
         </div>
         <button onclick="authManager.logout()" style="
