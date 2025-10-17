@@ -1712,11 +1712,10 @@ function openManualEntryModal() {
     modal.style.display = 'flex';
     modal.classList.add('show');
     
-    // Limpar campos
+    // Limpar campo
     document.getElementById('manualEurocode').value = '';
-    document.getElementById('manualCarBrand').value = '';
     
-    // Focar no primeiro campo
+    // Focar no campo
     setTimeout(() => {
       document.getElementById('manualEurocode').focus();
     }, 100);
@@ -1735,7 +1734,6 @@ function closeManualEntryModal() {
 // Função para guardar entrada manual
 async function saveManualEntry() {
   const eurocode = document.getElementById('manualEurocode').value.trim();
-  const carBrand = document.getElementById('manualCarBrand').value;
   
   // Validação básica
   if (!eurocode) {
@@ -1743,9 +1741,19 @@ async function saveManualEntry() {
     return;
   }
   
-  if (!carBrand) {
-    showToast('Por favor, selecione a marca do carro', 'error');
-    return;
+  // Buscar veículo automaticamente nos registos anteriores
+  let carBrand = '';
+  const cleanEurocode = eurocode.replace(/^[#*]/, '');
+  const registoEncontrado = RESULTS.find(r => {
+    const rClean = (r.eurocode || '').replace(/^[#*]/, '');
+    return rClean.toUpperCase() === cleanEurocode.toUpperCase();
+  });
+  
+  if (registoEncontrado && registoEncontrado.vehicle) {
+    carBrand = registoEncontrado.vehicle;
+    console.log('✅ Veículo reconhecido automaticamente:', carBrand);
+  } else {
+    console.log('ℹ️ Eurocode novo - veículo será preenchido via OCR');
   }
   
   try {
