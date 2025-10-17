@@ -32,10 +32,7 @@ async function checkIfGestor() {
     }
     
     // Apenas Admin tem acesso ao botão ADMIN (gestão de utilizadores)
-    // Nota: O botão ADMIN é gerido por outro sistema/página loadUsersList();
-      
-      return true;
-    }
+    // Nota: O botão ADMIN é gerido por outro sistema/página
     
     return false;
   } catch (error) {
