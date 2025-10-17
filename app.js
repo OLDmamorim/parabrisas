@@ -80,6 +80,7 @@ const editOcrSave = document.getElementById('editOcrSave');
 // ---- Estado ----
 let RESULTS = [];
 let FILTERED_RESULTS = [];
+let isFilterActive = false; // Flag para controlar se um filtro está ativo
 let currentEditingRow = null;
 let currentImageData = null;
 
@@ -154,9 +155,11 @@ function createSearchField() {
 function filterResults(searchTerm) {
   if (!searchTerm.trim()) {
     FILTERED_RESULTS = [...RESULTS];
+    isFilterActive = false; // Sem filtro de pesquisa
   } else {
     const term = searchTerm.toLowerCase();
     FILTERED_RESULTS = RESULTS.filter(row => (row.eurocode || '').toLowerCase().includes(term));
+    isFilterActive = true; // Filtro de pesquisa ativo
   }
   renderTable();
 }
@@ -545,7 +548,9 @@ function renderTable() {
   console.log('renderTable chamada - versão com campos editáveis v7');
   if (!resultsBody) return;
 
-  const dataToShow = FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS;
+  // Se há filtro ativo, mostrar FILTERED_RESULTS (mesmo que vazio)
+  // Se não há filtro ativo, mostrar RESULTS
+  const dataToShow = isFilterActive ? FILTERED_RESULTS : (FILTERED_RESULTS.length > 0 ? FILTERED_RESULTS : RESULTS);
 
   if (dataToShow.length === 0) {
     resultsBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">Nenhum registo encontrado</td></tr>';
@@ -730,8 +735,10 @@ function filtrarPorTipo(tipo) {
   if (tipo === 'todos') {
     document.querySelector('.totalizador-stock')?.classList.add('ativo');
     FILTERED_RESULTS = [];
+    isFilterActive = false; // Sem filtro ativo - mostrar todos
   } else if (tipo === 'rede') {
     document.querySelector('.totalizador-rede').classList.add('ativo');
+    isFilterActive = true; // Filtro ativo
     FILTERED_RESULTS = RESULTS.filter(r => {
       const eurocode = r.eurocode || '';
       const obs = (r.observacoes || '').toUpperCase();
@@ -741,6 +748,7 @@ function filtrarPorTipo(tipo) {
     });
   } else if (tipo === 'complementar') {
     document.querySelector('.totalizador-complementar').classList.add('ativo');
+    isFilterActive = true; // Filtro ativo
     FILTERED_RESULTS = RESULTS.filter(r => {
       const eurocode = r.eurocode || '';
       const obs = (r.observacoes || '').toUpperCase();
@@ -750,6 +758,7 @@ function filtrarPorTipo(tipo) {
     });
   } else if (tipo === 'oem') {
     document.querySelector('.totalizador-oem').classList.add('ativo');
+    isFilterActive = true; // Filtro ativo
     FILTERED_RESULTS = RESULTS.filter(r => {
       const eurocode = r.eurocode || '';
       const obs = (r.observacoes || '').toUpperCase();
@@ -759,6 +768,7 @@ function filtrarPorTipo(tipo) {
     });
   } else if (tipo === 'saidas') {
     document.querySelector('.totalizador-saidas').classList.add('ativo');
+    isFilterActive = true; // Filtro ativo
     FILTERED_RESULTS = RESULTS.filter(r => {
       const obs = (r.observacoes || '').toUpperCase();
       const motivosSaida = ['SERVIÇO', 'DEVOLUÇÃO', 'QUEBRAS', 'OUTRO'];
