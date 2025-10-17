@@ -1010,11 +1010,23 @@ function updatePrintPreview() {
   
   // Filtrar registos por data
   const filtered = RESULTS.filter(row => {
-    if (!row.created_at) return false;
+    if (!row.timestamp) return false;
     try {
-      const rowDate = new Date(row.created_at).toISOString().split('T')[0];
+      // Converter timestamp de pt-PT para Date
+      // Formato esperado: "17/10/2025, 10:55:57" ou ISO
+      let dateObj;
+      if (row.timestamp.includes('/')) {
+        // Formato pt-PT: DD/MM/YYYY, HH:MM:SS
+        const [datePart] = row.timestamp.split(',');
+        const [day, month, year] = datePart.trim().split('/');
+        dateObj = new Date(year, month - 1, day);
+      } else {
+        dateObj = new Date(row.timestamp);
+      }
+      const rowDate = dateObj.toISOString().split('T')[0];
       return rowDate >= fromDate && rowDate <= toDate;
     } catch (e) {
+      console.error('Erro ao processar data:', row.timestamp, e);
       return false;
     }
   });
@@ -1033,11 +1045,23 @@ function doPrint() {
   
   // Filtrar registos por data
   const filtered = RESULTS.filter(row => {
-    if (!row.created_at) return false;
+    if (!row.timestamp) return false;
     try {
-      const rowDate = new Date(row.created_at).toISOString().split('T')[0];
+      // Converter timestamp de pt-PT para Date
+      // Formato esperado: "17/10/2025, 10:55:57" ou ISO
+      let dateObj;
+      if (row.timestamp.includes('/')) {
+        // Formato pt-PT: DD/MM/YYYY, HH:MM:SS
+        const [datePart] = row.timestamp.split(',');
+        const [day, month, year] = datePart.trim().split('/');
+        dateObj = new Date(year, month - 1, day);
+      } else {
+        dateObj = new Date(row.timestamp);
+      }
+      const rowDate = dateObj.toISOString().split('T')[0];
       return rowDate >= fromDate && rowDate <= toDate;
     } catch (e) {
+      console.error('Erro ao processar data:', row.timestamp, e);
       return false;
     }
   });
