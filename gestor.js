@@ -170,14 +170,29 @@ let parsedEurocodes = [];
 
 // Abrir modal de upload
 function openUploadEurocodesModal() {
+  console.log('🔵 openUploadEurocodesModal chamada');
+  
   const modal = document.getElementById('uploadEurocodesModal');
+  console.log('🔵 Modal encontrado:', !!modal);
+  
   if (modal) {
     modal.style.display = 'flex';
+    console.log('🔵 Modal display alterado para flex');
+    
     // Reset
     parsedEurocodes = [];
-    document.getElementById('uploadResult').textContent = 'Nenhum ficheiro selecionado';
-    document.getElementById('uploadFileInfo').style.display = 'none';
-    document.getElementById('uploadEurocodesConfirm').disabled = true;
+    
+    const uploadResult = document.getElementById('uploadResult');
+    const uploadFileInfo = document.getElementById('uploadFileInfo');
+    const uploadConfirm = document.getElementById('uploadEurocodesConfirm');
+    
+    if (uploadResult) uploadResult.textContent = 'Nenhum ficheiro selecionado';
+    if (uploadFileInfo) uploadFileInfo.style.display = 'none';
+    if (uploadConfirm) uploadConfirm.disabled = true;
+    
+    console.log('✅ Modal aberto com sucesso');
+  } else {
+    console.error('❌ Modal uploadEurocodesModal não encontrado no DOM');
   }
 }
 
