@@ -175,6 +175,9 @@ function openUploadEurocodesModal() {
   
   // Mostrar modal
   modal.style.display = 'flex';
+  modal.style.zIndex = '99999';
+  modal.style.visibility = 'visible';
+  modal.style.opacity = '1';
   
   // Reset
   parsedEurocodes = [];
