@@ -17,12 +17,13 @@ export const handler = async (event) => {
     await init();
     const user = await requireAuth(event);
     
-    // Verificar se o utilizador é Admin (apenas administradores podem gerir utilizadores)
-    if (!user.role || user.role.toLowerCase() !== 'admin') {
-      return cors(403, { ok: false, error: 'Acesso negado. Apenas administradores podem listar utilizadores.' });
+    // Verificar se o utilizador é Admin ou Gestor (ambos precisam ver a lista para o seletor)
+    const userRole = (user.role || '').toLowerCase();
+    if (userRole !== 'admin' && userRole !== 'gestor') {
+      return cors(403, { ok: false, error: 'Acesso negado. Apenas administradores e gestores podem listar utilizadores.' });
     }
 
-    console.log('📋 Listando todos os utilizadores para gestor:', user.email);
+    console.log('📋 Listando todos os utilizadores para', userRole + ':', user.email);
 
     // Listar todos os utilizadores
     const users = await sql`

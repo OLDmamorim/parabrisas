@@ -17,7 +17,8 @@ async function checkIfGestor() {
     console.log('👤 Role do utilizador:', currentUserRole);
     
         // Gestor e Admin têm acesso ao seletor de utilizadores e upload de eurocodes
-    if (currentUserRole === 'gestor' || currentUserRole === 'Admin') {
+    const roleLower = (currentUserRole || '').toLowerCase();
+    if (roleLower === 'gestor' || roleLower === 'admin') {
       // Mostrar seletor de utilizadores
       document.getElementById('gestorUserSelector').style.display = 'block';
       
@@ -144,7 +145,8 @@ async function loadUserDataAsGestor(userId) {
 
 // Verificar se está em modo gestor
 function isGestorMode() {
-  return (currentUserRole === 'gestor' || currentUserRole === 'Admin') && selectedUserId !== null;
+  const roleLower = (currentUserRole || '').toLowerCase();
+  return (roleLower === 'gestor' || roleLower === 'admin') && selectedUserId !== null;
 }
 
 // Inicializar funcionalidade de gestor quando a página carregar
