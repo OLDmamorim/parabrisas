@@ -465,8 +465,8 @@
           <td><strong>${user.name}</strong></td>
           <td>${user.email}</td>
           <td>
-            <span class="badge ${user.role === 'Admin' ? 'badge-admin' : (user.role === 'gestor' ? 'badge-gestor' : 'badge-user')}">
-              ${user.role === 'Admin' ? 'Admin' : (user.role === 'gestor' ? 'Gestor' : 'Utilizador')}
+            <span class="badge ${(user.role || '').toLowerCase() === 'admin' ? 'badge-admin' : ((user.role || '').toLowerCase() === 'gestor' ? 'badge-gestor' : 'badge-user')}">
+              ${(user.role || '').toLowerCase() === 'admin' ? 'Admin' : ((user.role || '').toLowerCase() === 'gestor' ? 'Gestor' : 'Utilizador')}
             </span>
           </td>
           <td>
