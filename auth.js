@@ -111,7 +111,7 @@ class AuthManager {
       userInfo.innerHTML = `
         <div id="userName" style="margin-bottom: 8px;">
           <strong>${this.user.name}</strong>
-          ${this.user.role === 'Admin' ? '<span style="color: #e53e3e; font-size: 12px;">(Admin)</span>' : ''}
+          ${this.user.role && this.user.role.toLowerCase() === 'admin' ? '<span style="color: #e53e3e; font-size: 12px;">(Admin)</span>' : ''}
         </div>
         <div id="userEmail" style="font-size: 12px; color: #666; margin-bottom: 10px;">
           ${this.user.email}
@@ -127,7 +127,7 @@ class AuthManager {
         ">
           Sair
         </button>
-        ${this.user.role === 'Admin' ? `
+        ${this.user.role && this.user.role.toLowerCase() === 'admin' ? `
           <button onclick="window.open('admin.html', '_blank')" style="
             background: #667eea;
             color: white;
