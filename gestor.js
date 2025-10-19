@@ -170,30 +170,30 @@ let parsedEurocodes = [];
 
 // Abrir modal de upload
 function openUploadEurocodesModal() {
-  console.log('🔵 openUploadEurocodesModal chamada');
-  
   const modal = document.getElementById('uploadEurocodesModal');
-  console.log('🔵 Modal encontrado:', !!modal);
+  if (!modal) return;
   
-  if (modal) {
-    modal.style.display = 'flex';
-    console.log('🔵 Modal display alterado para flex');
-    
-    // Reset
-    parsedEurocodes = [];
-    
-    const uploadResult = document.getElementById('uploadResult');
-    const uploadFileInfo = document.getElementById('uploadFileInfo');
-    const uploadConfirm = document.getElementById('uploadEurocodesConfirm');
-    
-    if (uploadResult) uploadResult.textContent = 'Nenhum ficheiro selecionado';
-    if (uploadFileInfo) uploadFileInfo.style.display = 'none';
-    if (uploadConfirm) uploadConfirm.disabled = true;
-    
-    console.log('✅ Modal aberto com sucesso');
-  } else {
-    console.error('❌ Modal uploadEurocodesModal não encontrado no DOM');
-  }
+  // Mostrar modal
+  modal.style.display = 'flex';
+  
+  // Reset
+  parsedEurocodes = [];
+  
+  const uploadResult = document.getElementById('uploadResult');
+  const uploadFileInfo = document.getElementById('uploadFileInfo');
+  const uploadConfirm = document.getElementById('uploadEurocodesConfirm');
+  const fileInput = document.getElementById('eurocodesFileInput');
+  
+  if (uploadResult) uploadResult.textContent = 'Nenhum ficheiro selecionado';
+  if (uploadFileInfo) uploadFileInfo.style.display = 'none';
+  if (uploadConfirm) uploadConfirm.disabled = true;
+  if (fileInput) fileInput.value = '';
+  
+  // Garantir que o modal está no topo
+  setTimeout(() => {
+    const content = modal.querySelector('.print-modal-content');
+    if (content) content.scrollTop = 0;
+  }, 50);
 }
 
 // Fechar modal de upload
