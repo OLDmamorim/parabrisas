@@ -1841,6 +1841,10 @@ function mostrarInventarioDetalhes(inventario) {
   // Esconder lista
   document.getElementById('inventarioView').style.display = 'none';
   
+  // Esconder desktopView (tabela de entradas/saídas)
+  const desktopView = document.getElementById('desktopView');
+  if (desktopView) desktopView.style.display = 'none';
+  
   // Mostrar detalhes
   const detalhes = document.getElementById('inventarioDetalhes');
   detalhes.style.display = 'block';
