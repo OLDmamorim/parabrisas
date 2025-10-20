@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "name": "parabrisas",
+  "builds": [
+    {
+      "src": "netlify/functions/**/*.mjs",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/netlify/functions/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "NEON_DATABASE_URL": "@neon_database_url",
+    "JWT_SECRET": "@jwt_secret",
+    "ANTHROPIC_API_KEY": "@anthropic_api_key",
+    "GCP_KEY_JSON": "@gcp_key_json"
+  }
+}
+
