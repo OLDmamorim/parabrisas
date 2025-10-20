@@ -1,0 +1,305 @@
+/* ===== INVENTÁRIO CSS ===== */
+/* Sistema de inventário separado do registo diário */
+
+/* Vista de inventários */
+.inventario-view {
+  display: none;
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.inventario-view.active {
+  display: block;
+}
+
+/* Header de inventários */
+.inventario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.inventario-header h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.btn-novo-inventario {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-novo-inventario:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Lista de inventários */
+.inventarios-lista {
+  display: grid;
+  gap: 16px;
+}
+
+.inventario-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 4px solid #667eea;
+}
+
+.inventario-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.inventario-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.inventario-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inventario-card-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.inventario-card-status.aberto {
+  background: #48bb78;
+  color: white;
+}
+
+.inventario-card-status.fechado {
+  background: #cbd5e0;
+  color: #4a5568;
+}
+
+.inventario-card-info {
+  display: flex;
+  gap: 20px;
+  color: #718096;
+  font-size: 14px;
+}
+
+.inventario-card-info span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Vista detalhada de inventário */
+.inventario-detalhes {
+  display: none;
+}
+
+.inventario-detalhes.active {
+  display: block;
+}
+
+.inventario-detalhes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-voltar {
+  background: #e2e8f0;
+  color: #2d3748;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-voltar:hover {
+  background: #cbd5e0;
+}
+
+.inventario-detalhes-info {
+  display: flex;
+  gap: 30px;
+  color: #4a5568;
+}
+
+/* Botões de ação no inventário */
+.inventario-acoes {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btn-adicionar-item {
+  background: #48bb78;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-adicionar-item:hover {
+  background: #38a169;
+}
+
+.btn-fechar-inventario {
+  background: #ed8936;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-fechar-inventario:hover {
+  background: #dd6b20;
+}
+
+/* Tabela de items do inventário */
+.inventario-items-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.inventario-items-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inventario-items-table th {
+  background: #f7fafc;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #2d3748;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.inventario-items-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #4a5568;
+}
+
+.inventario-items-table tr:hover {
+  background: #f7fafc;
+}
+
+/* Estado vazio */
+.inventario-vazio {
+  text-align: center;
+  padding: 60px 20px;
+  color: #a0aec0;
+}
+
+.inventario-vazio-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.inventario-vazio h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #4a5568;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .inventario-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .inventario-detalhes-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .inventario-detalhes-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .inventario-acoes {
+    flex-direction: column;
+  }
+  
+  .inventario-items-table {
+    overflow-x: auto;
+  }
+}
+
+/* Botão toggle vista (Desktop) */
+.btn-toggle-vista {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: all 0.3s ease;
+}
+
+.btn-toggle-vista:hover {
+  background: #5a67d8;
+}
+
+.btn-toggle-vista.active {
+  background: #764ba2;
+}
+

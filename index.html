@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css?v=fix-col3-14dx" />
   <link rel="stylesheet" href="menu-inicial.css" />
   <link rel="stylesheet" href="modal-saida.css" />
+  <link rel="stylesheet" href="inventario.css" />
   <style>
 <style>
 /* ===== EXPANDIR TABELA PARA LARGURA COMPLETA ===== */
@@ -1137,6 +1138,14 @@ table {
           </div>
         </button>
 
+        <!-- Inventário -->
+        <button class="menu-option" data-action="inventario">
+          <div class="menu-option-icon">📊</div>
+          <div class="menu-option-content">
+            <h3 class="menu-option-title">INVENTÁRIO</h3>
+            <p class="menu-option-desc">Criar e gerir inventários</p>
+          </div>
+        </button>
 
       </div>
     </div>
@@ -1263,6 +1272,67 @@ table {
     </div>
   </div>
 </div>
+
+  <!-- VISTA DE INVENTÁRIOS -->
+  <div id="inventarioView" class="inventario-view">
+    <div class="inventario-header">
+      <h2>📊 Inventários</h2>
+      <button id="btnNovoInventario" class="btn-novo-inventario">
+        ➕ Novo Inventário
+      </button>
+    </div>
+    
+    <div id="inventariosLista" class="inventarios-lista">
+      <!-- Lista de inventários será carregada aqui -->
+    </div>
+  </div>
+
+  <!-- VISTA DETALHADA DE INVENTÁRIO -->
+  <div id="inventarioDetalhes" class="inventario-detalhes">
+    <div class="inventario-detalhes-header">
+      <button id="btnVoltarLista" class="btn-voltar">
+        ⬅️ Voltar
+      </button>
+      <div>
+        <h2 id="inventarioTitulo">Inventário</h2>
+        <div class="inventario-detalhes-info">
+          <span id="inventarioStatus" class="inventario-card-status aberto">aberto</span>
+          <span id="inventarioTotalItems">📦 0 items</span>
+          <span id="inventarioLoja">🏪 N/A</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="inventario-acoes">
+      <button id="btnAdicionarItem" class="btn-adicionar-item" onclick="document.getElementById('modernBtnCapture')?.click()">
+        📷 Adicionar Item (OCR)
+      </button>
+      <button id="btnFecharInventario" class="btn-fechar-inventario">
+        🔒 Fechar Inventário
+      </button>
+    </div>
+
+    <div class="inventario-items-table">
+      <table id="inventarioItemsTable">
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Tipo</th>
+            <th>Veículo</th>
+            <th>Eurocode</th>
+            <th>Marca</th>
+            <th>Matrícula</th>
+            <th>Loja</th>
+            <th>Obs</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Items serão carregados aqui -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 
 <!-- MODAL DE ENTRADA MANUAL (MOBILE) -->
 <div id="manualEntryModal" class="modern-eurocode-modal">
@@ -1602,6 +1672,7 @@ table {
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="menu-inicial.js"></script>
   <script src="modal-saida.js"></script>
+  <script src="inventario.js"></script>
   <script src="app.js?v=20250919-003100-debug-visual"></script>
   <script src="gestor.js?v=20251020-fix-modal"></script>
 

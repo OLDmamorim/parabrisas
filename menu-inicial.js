@@ -65,6 +65,20 @@
         }
         break;
         
+      case 'inventario':
+        // Mostrar vista de inventários
+        if (menuInicial) menuInicial.classList.remove('show');
+        hideMainInterface();
+        // Mostrar vista de inventários
+        if (typeof mostrarVistaInventarios === 'function') {
+          mostrarVistaInventarios();
+        }
+        updateTitle('INVENTÁRIOS');
+        // Adicionar estado ao histórico
+        if (isMobile()) {
+          history.pushState({ page: 'inventario' }, '', '#inventario');
+        }
+        break;
 
       default:
         console.error('❌ Ação desconhecida:', action);

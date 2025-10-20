@@ -326,7 +326,6 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
   try {
     setStatus(desktopStatus, 'A guardar na base de dados...');
     setStatus(mobileStatus,  'A guardar na base de dados...');
-
     const brand    = detectBrandFromText(text) || '';
     const carBrand = vehicle || detectVehicleAndModelFromText(text).full || '';
     
@@ -337,9 +336,34 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
     } else if (window.tipoVidroSelecionado === 'oem' && eurocode && !eurocode.startsWith('*')) {
       finalEurocode = '*' + eurocode;
     }
-
-    // Sempre usar tipo 'recepcao' (inventário tem página separada)
-    const tipo = 'recepcao';
+    
+    // MODO INVENTÁRIO: Adicionar item ao inventário em vez de tabela diária
+    if (window.modoInventario && window.currentInventarioId) {
+      const itemData = {
+        hora: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        tipo: window.tipoVidroSelecionado || 'PB',
+        veiculo: carBrand,
+        eurocode: finalEurocode,
+        marca: brand,
+        matricula: '',
+        sm_loja: '',
+        obs: text
+      };
+      
+      if (typeof adicionarItemInventario === 'function') {
+        const success = await adicionarItemInventario(itemData);
+        if (success) {
+          showToast('✅ Item adicionado ao inventário!', 'success');
+          setStatus(desktopStatus, 'Item adicionado ao inventário!', 'success');
+          setStatus(mobileStatus,  'Item adicionado ao inventário!', 'success');
+          return;
+        }
+      }
+      throw new Error('Erro ao adicionar item ao inventário');
+    }
+    
+    // MODO NORMAL: Guardar na tabela diária
+    const tipo = 'recepcao';;
     
     const response = await fetch(SAVE_URL, {
       method: 'POST',
