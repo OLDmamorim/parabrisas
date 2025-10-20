@@ -4,7 +4,6 @@
 
 [functions]
   node_bundler = "esbuild"
-  included_files = ["netlify/functions/eurocode-mapping.mjs"]
   external_node_modules = ["@google-cloud/vision","@anthropic-ai/sdk","busboy","sharp","jsqr","@neondatabase/serverless","bcryptjs","jsonwebtoken"]
 
 # Rotas limpas para as funções (usando /api/...)
