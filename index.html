@@ -1304,7 +1304,7 @@ table {
     </div>
 
     <div class="inventario-acoes">
-      <button id="btnAdicionarItem" class="btn-adicionar-item" onclick="document.getElementById('modernBtnCapture')?.click()">
+      <button id="btnAdicionarItem" class="btn-adicionar-item" onclick="var btn = document.getElementById('modernBtnCapture'); if(btn) btn.click();">
         📷 Adicionar Item (OCR)
       </button>
       <button id="btnFecharInventario" class="btn-fechar-inventario">
@@ -1685,9 +1685,12 @@ function initInventario() {
   console.log('📊 Inicializando sistema de inventário...');
   
   // Event listeners
-  document.getElementById('btnNovoInventario')?.addEventListener('click', criarNovoInventario);
-  document.getElementById('btnVoltarLista')?.addEventListener('click', voltarParaLista);
-  document.getElementById('btnFecharInventario')?.addEventListener('click', fecharInventario);
+  const btnNovoInventario = document.getElementById('btnNovoInventario');
+  if (btnNovoInventario) btnNovoInventario.addEventListener('click', criarNovoInventario);
+  const btnVoltarLista = document.getElementById('btnVoltarLista');
+  if (btnVoltarLista) btnVoltarLista.addEventListener('click', voltarParaLista);
+  const btnFecharInventario = document.getElementById('btnFecharInventario');
+  if (btnFecharInventario) btnFecharInventario.addEventListener('click', fecharInventario);
   
   // Carregar inventários
   carregarInventarios();
@@ -1726,7 +1729,8 @@ async function criarNovoInventario() {
       mostrarInventarioDetalhes(data.inventario);
       
       // Esconder menu mobile se estiver visível
-      document.getElementById('mobileMenuInicial')?.classList.remove('active');
+      const mobileMenuInicial = document.getElementById('mobileMenuInicial');
+      if (mobileMenuInicial) mobileMenuInicial.classList.remove('active');
     } else {
       showToast('❌ Erro ao criar inventário: ' + data.error, 'error');
     }
@@ -2000,9 +2004,12 @@ function voltarParaLista() {
 // Mostrar vista de inventários
 function mostrarVistaInventarios() {
   // Esconder outras vistas
-  document.getElementById('desktopView')?.style.display = 'none';
-  document.querySelector('.modern-mobile')?.style.display = 'none';
-  document.getElementById('inventarioDetalhes')?.style.display = 'none';
+  const desktopView = document.getElementById('desktopView');
+  if (desktopView) desktopView.style.display = 'none';
+  const modernMobile = document.querySelector('.modern-mobile');
+  if (modernMobile) modernMobile.style.display = 'none';
+  const inventarioDetalhes = document.getElementById('inventarioDetalhes');
+  if (inventarioDetalhes) inventarioDetalhes.style.display = 'none';
   
   // Mostrar vista de inventários
   const inventarioView = document.getElementById('inventarioView');
@@ -2448,7 +2455,7 @@ window.adicionarItemInventario = adicionarItemInventario;
     }
 
     function pickEuro(row){
-      const c = (row?.eurocode || '').trim();
+      const c = (row && row.eurocode ? row.eurocode : '').trim();
       return c || null;
     }
 
@@ -2459,7 +2466,7 @@ window.adicionarItemInventario = adicionarItemInventario;
       const out = [];
       for (const tr of rows){
         const td = tr.querySelector('td:nth-child(4)');
-        const raw = (td?.innerText || td?.textContent || '').trim();
+        const raw = (td ? (td.innerText || td.textContent || '') : '').trim();
         const code = raw.split(/\s+/)[0];
         if (code) out.push(code);
         if (out.length >= limit) break;
@@ -2512,8 +2519,8 @@ window.adicionarItemInventario = adicionarItemInventario;
 
     document.addEventListener('click', (e) => {
       const t = e.target;
-      const txt = (t?.textContent || '').toLowerCase();
-      const isValidate = txt.includes('valid') || t?.dataset?.action === 'validate';
+      const txt = (t && t.textContent ? t.textContent : '').toLowerCase();
+      const isValidate = txt.includes('valid') || (t && t.dataset && t.dataset.action === 'validate');
       if (isValidate) setTimeout(refresh, 500);
     });
 
@@ -2559,17 +2566,17 @@ window.addEventListener('load', () => {
   const btnExport = document.getElementById('btnExport');
   const btnClear  = document.getElementById('btnClear');
 
-  btnUpload?.addEventListener('click', () => fileInput?.click());
-  fileInput?.addEventListener('change', (e) => {
-    const f = e.target.files?.[0];
+  if (btnUpload) btnUpload.addEventListener('click', function() { if (fileInput) fileInput.click(); });
+  if (fileInput) fileInput.addEventListener('change', function(e) {
+    const f = e.target.files && e.target.files[0] ? e.target.files[0] : null;
     if (f && window.processImage) window.processImage(f);
   });
 
-  btnExport?.addEventListener('click', () => {
+  if (btnExport) btnExport.addEventListener('click', function() {
     if (window.exportCSV) window.exportCSV();
   });
 
-  btnClear?.addEventListener('click', () => {
+  if (btnClear) btnClear.addEventListener('click', function() {
     if (window.clearTable) window.clearTable();
   });
 });
