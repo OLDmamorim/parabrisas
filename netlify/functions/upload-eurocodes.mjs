@@ -39,7 +39,7 @@ export const handler = async (event) => {
     await sql`
       CREATE TABLE IF NOT EXISTS eurocodes (
         id SERIAL PRIMARY KEY,
-        prefix VARCHAR(4) UNIQUE NOT NULL,
+        prefix VARCHAR(20) UNIQUE NOT NULL,
         marca VARCHAR(100) NOT NULL,
         modelo VARCHAR(100),
         created_at TIMESTAMPTZ DEFAULT NOW(),
