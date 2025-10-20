@@ -248,8 +248,8 @@ async function handleEurocodesFile(file) {
       const marca = String(row[1] || '').trim();
       const modelo = String(row[2] || '').trim();
       
-      // Validar prefixo (4 dígitos)
-      if (!/^\d{4}$/.test(prefix)) continue;
+      // Validar prefixo (não vazio, até 20 caracteres)
+      if (!prefix || prefix.length > 20) continue;
       
       // Ignorar se não tiver marca
       if (!marca) continue;
