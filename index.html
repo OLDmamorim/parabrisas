@@ -1774,7 +1774,7 @@ function renderizarListaInventarios(inventarios) {
   }
   
   lista.innerHTML = inventarios.map(inv => `
-    <div class="inventario-card" onclick="abrirInventario(${inv.id})">
+    <div class="inventario-card">
       <div class="inventario-card-header">
         <h3>📊 Inventário ${new Date(inv.data_inventario).toLocaleDateString('pt-PT')}</h3>
         <span class="inventario-card-status ${inv.status}">${inv.status}</span>
@@ -1786,6 +1786,14 @@ function renderizarListaInventarios(inventarios) {
       </div>
       <div class="inventario-card-data">
         ${new Date(inv.data_inventario).toLocaleString('pt-PT')}
+      </div>
+      <div class="inventario-card-acoes">
+        <button class="btn-editar-inventario" onclick="event.stopPropagation(); abrirInventario(${inv.id});" title="Editar/Continuar">
+          ✏️ Editar
+        </button>
+        <button class="btn-eliminar-inventario" onclick="event.stopPropagation(); eliminarInventario(${inv.id});" title="Eliminar">
+          🗑️ Eliminar
+        </button>
       </div>
     </div>
   `).join('');
@@ -1983,6 +1991,37 @@ async function fecharInventario() {
   }
 }
 
+// Eliminar inventário
+async function eliminarInventario(inventarioId) {
+  if (!confirm('⚠️ Tem a certeza que deseja eliminar este inventário?\n\nEsta ação não pode ser revertida.')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch(`/.netlify/functions/inventario-api/${inventarioId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.ok) {
+      showToast('✅ Inventário eliminado com sucesso!', 'success');
+      // Recarregar lista
+      carregarInventarios();
+    } else {
+      showToast('❌ Erro ao eliminar inventário: ' + data.error, 'error');
+    }
+  } catch (error) {
+    console.error('Erro ao eliminar inventário:', error);
+    showToast('❌ Erro ao eliminar inventário', 'error');
+  }
+}
+
 // Voltar para lista
 function voltarParaLista() {
   // Esconder detalhes
@@ -2001,8 +2040,33 @@ function voltarParaLista() {
   carregarInventarios();
 }
 
+// Detectar se é mobile
+function isMobile() {
+  return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 // Mostrar vista de inventários
 function mostrarVistaInventarios() {
+  // Verificar se é mobile
+  if (isMobile()) {
+    // Mobile: Mostrar diálogo para criar novo ou continuar existente
+    const resposta = confirm('📦 Criar novo inventário?\n\nSIM = Criar novo inventário\nNÃO = Ver inventários existentes');
+    
+    if (resposta) {
+      // Criar novo inventário diretamente
+      criarNovoInventario();
+    } else {
+      // Mostrar lista de inventários
+      mostrarListaInventarios();
+    }
+  } else {
+    // Desktop: Mostrar lista de inventários diretamente
+    mostrarListaInventarios();
+  }
+}
+
+// Função auxiliar para mostrar a lista de inventários
+function mostrarListaInventarios() {
   // Esconder outras vistas
   const desktopView = document.getElementById('desktopView');
   if (desktopView) desktopView.style.display = 'none';

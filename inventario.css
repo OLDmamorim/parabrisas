@@ -303,3 +303,63 @@
   background: #764ba2;
 }
 
+
+
+/* Ações dos cards de inventário */
+.inventario-card-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-editar-inventario,
+.btn-eliminar-inventario {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-editar-inventario {
+  background: #4299e1;
+  color: white;
+}
+
+.btn-editar-inventario:hover {
+  background: #3182ce;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(66, 153, 225, 0.3);
+}
+
+.btn-eliminar-inventario {
+  background: #fc8181;
+  color: white;
+}
+
+.btn-eliminar-inventario:hover {
+  background: #f56565;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(245, 101, 101, 0.3);
+}
+
+/* Remover cursor pointer do card quando tem botões */
+.inventario-card {
+  cursor: default;
+}
+
+.inventario-card-data {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #a0aec0;
+}
+

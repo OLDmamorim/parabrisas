@@ -91,6 +91,28 @@ export const handler = async (event) => {
       return { statusCode: 200, headers: jsonHeaders, body: JSON.stringify({ ok: true, item }) };
     }
 
+    // DELETE /inventario/:id - Eliminar inventário
+    if (method === 'DELETE' && path.match(/^\/\d+$/)) {
+      const id = parseInt(path.substring(1));
+      
+      // Eliminar items do inventário primeiro
+      await sql`
+        DELETE FROM inventario_items WHERE inventario_id = ${id}
+      `;
+      
+      // Eliminar o inventário
+      const [inventario] = await sql`
+        DELETE FROM inventarios WHERE id = ${id}
+        RETURNING *
+      `;
+
+      if (!inventario) {
+        return { statusCode: 404, headers: jsonHeaders, body: JSON.stringify({ ok: false, error: 'Inventário não encontrado' }) };
+      }
+
+      return { statusCode: 200, headers: jsonHeaders, body: JSON.stringify({ ok: true, message: 'Inventário eliminado com sucesso' }) };
+    }
+
     // POST /inventario/:id/close - Fechar inventário
     if (method === 'POST' && path.match(/^\/\d+\/close$/)) {
       const id = parseInt(path.split('/')[1]);
