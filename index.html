@@ -1276,7 +1276,12 @@ table {
   <!-- VISTA DE INVENTÁRIOS -->
   <div id="inventarioView" class="inventario-view">
     <div class="inventario-header">
-      <h2>📊 Inventários</h2>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button onclick="mostrarVistaRecepcao()" class="btn-voltar" style="background: #e2e8f0; color: #2d3748; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease;" onmouseover="this.style.background='#cbd5e0'" onmouseout="this.style.background='#e2e8f0'">
+          📋 Entradas/Saídas
+        </button>
+        <h2 style="margin: 0;">📊 Inventários</h2>
+      </div>
       <button id="btnNovoInventario" class="btn-novo-inventario">
         ➕ Novo Inventário
       </button>
@@ -2043,6 +2048,24 @@ function voltarParaLista() {
 // Detectar se é mobile
 function isMobile() {
   return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// Mostrar vista de recepção (Entradas/Saídas)
+function mostrarVistaRecepcao() {
+  // Esconder vista de inventários
+  const inventarioView = document.getElementById('inventarioView');
+  if (inventarioView) inventarioView.style.display = 'none';
+  const inventarioDetalhes = document.getElementById('inventarioDetalhes');
+  if (inventarioDetalhes) inventarioDetalhes.style.display = 'none';
+  
+  // Mostrar vista desktop
+  const desktopView = document.getElementById('desktopView');
+  if (desktopView) desktopView.style.display = 'block';
+  
+  // Recarregar dados se necessário
+  if (typeof loadData === 'function') {
+    loadData();
+  }
 }
 
 // Mostrar vista de inventários
