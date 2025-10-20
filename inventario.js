@@ -1,4 +1,4 @@
-// ===== INVENTÁRIO JS =====
+// ===== SISTEMA DE INVENTÁRIO =====
 // Sistema de inventário separado do registo diário
 
 let currentInventarioId = null;
@@ -24,7 +24,7 @@ async function criarNovoInventario() {
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     
-    const response = await fetch('/.netlify/functions/create-inventario', {
+    const response = await fetch('/.netlify/functions/inventario-api', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,14 +43,15 @@ async function criarNovoInventario() {
       inventarioAtual = data.inventario;
       modoInventario = true;
       
+      // Ativar modo inventário globalmente
+      window.modoInventario = true;
+      window.currentInventarioId = data.inventario.id;
+      
       // Mostrar vista detalhada
       mostrarInventarioDetalhes(data.inventario);
       
       // Esconder menu mobile se estiver visível
       document.getElementById('mobileMenuInicial')?.classList.remove('active');
-      
-      // Mostrar interface OCR
-      document.getElementById('app')?.classList.remove('hidden');
     } else {
       showToast('❌ Erro ao criar inventário: ' + data.error, 'error');
     }
@@ -65,7 +66,7 @@ async function carregarInventarios() {
   try {
     const token = localStorage.getItem('token');
     
-    const response = await fetch('/.netlify/functions/list-inventarios', {
+    const response = await fetch('/.netlify/functions/inventario-api', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -89,52 +90,34 @@ function renderizarListaInventarios(inventarios) {
   if (!lista) return;
   
   if (inventarios.length === 0) {
-    lista.innerHTML = `
-      <div class="inventario-vazio">
-        <div class="inventario-vazio-icon">📊</div>
-        <h3>Nenhum inventário criado</h3>
-        <p>Clique em "Novo Inventário" para começar</p>
-      </div>
-    `;
+    lista.innerHTML = '<p class="inventario-vazio">Nenhum inventário criado ainda.</p>';
     return;
   }
   
-  lista.innerHTML = inventarios.map(inv => {
-    const data = new Date(inv.data_inventario);
-    const dataFormatada = data.toLocaleDateString('pt-PT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
-    return `
-      <div class="inventario-card" onclick="abrirInventario(${inv.id})">
-        <div class="inventario-card-header">
-          <div class="inventario-card-title">
-            📊 Inventário ${dataFormatada}
-          </div>
-          <div class="inventario-card-status ${inv.status}">
-            ${inv.status}
-          </div>
-        </div>
-        <div class="inventario-card-info">
-          <span>📦 ${inv.total_items || 0} items</span>
-          <span>🏪 ${inv.loja || 'N/A'}</span>
-          <span>👤 ${inv.user_email || 'N/A'}</span>
-        </div>
+  lista.innerHTML = inventarios.map(inv => `
+    <div class="inventario-card" onclick="abrirInventario(${inv.id})">
+      <div class="inventario-card-header">
+        <h3>📊 Inventário ${new Date(inv.data_inventario).toLocaleDateString('pt-PT')}</h3>
+        <span class="inventario-card-status ${inv.status}">${inv.status}</span>
       </div>
-    `;
-  }).join('');
+      <div class="inventario-card-info">
+        <span>📦 ${inv.total_items} items</span>
+        <span>🏪 ${inv.loja}</span>
+        <span>👤 ${inv.user_email}</span>
+      </div>
+      <div class="inventario-card-data">
+        ${new Date(inv.data_inventario).toLocaleString('pt-PT')}
+      </div>
+    </div>
+  `).join('');
 }
 
-// Abrir inventário específico
+// Abrir inventário
 async function abrirInventario(inventarioId) {
   try {
     const token = localStorage.getItem('token');
     
-    const response = await fetch(`/.netlify/functions/get-inventario?id=${inventarioId}`, {
+    const response = await fetch(`/.netlify/functions/inventario-api/${inventarioId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -145,10 +128,15 @@ async function abrirInventario(inventarioId) {
     if (data.ok) {
       currentInventarioId = inventarioId;
       inventarioAtual = data.inventario;
-      modoInventario = true;
+      modoInventario = data.inventario.status === 'aberto';
+      
+      // Ativar modo inventário globalmente se estiver aberto
+      window.modoInventario = modoInventario;
+      window.currentInventarioId = inventarioId;
+      
       mostrarInventarioDetalhes(data.inventario);
     } else {
-      showToast('❌ Erro ao abrir inventário', 'error');
+      showToast('❌ Erro ao carregar inventário', 'error');
     }
   } catch (error) {
     console.error('Erro ao abrir inventário:', error);
@@ -156,43 +144,39 @@ async function abrirInventario(inventarioId) {
   }
 }
 
-// Mostrar detalhes do inventário
+// Mostrar vista detalhada do inventário
 function mostrarInventarioDetalhes(inventario) {
   // Esconder lista
-  document.getElementById('inventarioView')?.classList.remove('active');
+  document.getElementById('inventarioView').style.display = 'none';
   
   // Mostrar detalhes
   const detalhes = document.getElementById('inventarioDetalhes');
-  if (detalhes) {
-    detalhes.classList.add('active');
-    
-    // Atualizar header
-    const data = new Date(inventario.data_inventario);
-    const dataFormatada = data.toLocaleDateString('pt-PT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
-    document.getElementById('inventarioTitulo').textContent = `Inventário ${dataFormatada}`;
-    document.getElementById('inventarioStatus').textContent = inventario.status;
-    document.getElementById('inventarioStatus').className = `inventario-card-status ${inventario.status}`;
-    document.getElementById('inventarioTotalItems').textContent = `📦 ${inventario.total_items || 0} items`;
-    document.getElementById('inventarioLoja').textContent = `🏪 ${inventario.loja || 'N/A'}`;
-    
-    // Desabilitar botões se fechado
-    const isFechado = inventario.status === 'fechado';
-    document.getElementById('btnAdicionarItem').disabled = isFechado;
-    document.getElementById('btnFecharInventario').disabled = isFechado;
-    
-    // Carregar items
-    carregarInventarioItems(inventario.id);
+  detalhes.style.display = 'block';
+  
+  // Atualizar header
+  document.getElementById('inventarioTitulo').textContent = 
+    `Inventário ${new Date(inventario.data_inventario).toLocaleDateString('pt-PT')}`;
+  document.getElementById('inventarioStatus').textContent = inventario.status;
+  document.getElementById('inventarioStatus').className = `inventario-card-status ${inventario.status}`;
+  document.getElementById('inventarioTotalItems').textContent = `📦 ${inventario.total_items} items`;
+  document.getElementById('inventarioLoja').textContent = `🏪 ${inventario.loja}`;
+  
+  // Desabilitar botões se fechado
+  const btnAdicionar = document.getElementById('btnAdicionarItem');
+  const btnFechar = document.getElementById('btnFecharInventario');
+  
+  if (inventario.status === 'fechado') {
+    btnAdicionar.disabled = true;
+    btnAdicionar.textContent = '🔒 Inventário Fechado';
+    btnFechar.disabled = true;
+  } else {
+    btnAdicionar.disabled = false;
+    btnAdicionar.textContent = '📷 Adicionar Item (OCR)';
+    btnFechar.disabled = false;
   }
   
-  // Mostrar app (OCR)
-  document.getElementById('app')?.classList.remove('hidden');
+  // Carregar items
+  carregarInventarioItems(inventario.id);
 }
 
 // Carregar items do inventário
@@ -200,7 +184,7 @@ async function carregarInventarioItems(inventarioId) {
   try {
     const token = localStorage.getItem('token');
     
-    const response = await fetch(`/.netlify/functions/get-inventario-items?inventario_id=${inventarioId}`, {
+    const response = await fetch(`/.netlify/functions/inventario-api/${inventarioId}/items`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -209,61 +193,77 @@ async function carregarInventarioItems(inventarioId) {
     const data = await response.json();
     
     if (data.ok) {
-      renderizarInventarioItems(data.items);
+      renderizarTabelaItems(data.items);
+    } else {
+      console.error('Erro ao carregar items:', data.error);
     }
   } catch (error) {
     console.error('Erro ao carregar items:', error);
   }
 }
 
-// Renderizar items do inventário
-function renderizarInventarioItems(items) {
+// Renderizar tabela de items
+function renderizarTabelaItems(items) {
   const tbody = document.querySelector('#inventarioItemsTable tbody');
   if (!tbody) return;
   
   if (items.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="8" style="text-align: center; padding: 40px; color: #a0aec0;">
-          Nenhum item registado neste inventário
-        </td>
-      </tr>
-    `;
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Nenhum item registado</td></tr>';
     return;
   }
   
   tbody.innerHTML = items.map(item => `
     <tr>
-      <td>${item.hora || ''}</td>
-      <td>${item.tipo || ''}</td>
-      <td>${item.veiculo || ''}</td>
-      <td>${item.eurocode || ''}</td>
-      <td>${item.marca || ''}</td>
-      <td>${item.matricula || ''}</td>
-      <td>${item.sm_loja || ''}</td>
-      <td>${item.obs || ''}</td>
+      <td>${item.hora}</td>
+      <td>${item.tipo}</td>
+      <td>${item.veiculo}</td>
+      <td>${item.eurocode}</td>
+      <td>${item.marca}</td>
+      <td>${item.matricula}</td>
+      <td>${item.sm_loja}</td>
+      <td>${item.obs}</td>
     </tr>
   `).join('');
 }
 
-// Voltar para lista
-function voltarParaLista() {
-  // Esconder detalhes
-  document.getElementById('inventarioDetalhes')?.classList.remove('active');
+// Adicionar item ao inventário
+async function adicionarItemInventario(itemData) {
+  if (!currentInventarioId) {
+    console.error('Nenhum inventário ativo');
+    return false;
+  }
   
-  // Mostrar lista
-  document.getElementById('inventarioView')?.classList.add('active');
-  
-  // Esconder app
-  document.getElementById('app')?.classList.add('hidden');
-  
-  // Reset modo
-  modoInventario = false;
-  currentInventarioId = null;
-  inventarioAtual = null;
-  
-  // Recarregar lista
-  carregarInventarios();
+  try {
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch(`/.netlify/functions/inventario-api/${currentInventarioId}/items`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(itemData)
+    });
+    
+    const data = await response.json();
+    
+    if (data.ok) {
+      // Recarregar items
+      carregarInventarioItems(currentInventarioId);
+      // Atualizar contador
+      if (inventarioAtual) {
+        inventarioAtual.total_items++;
+        document.getElementById('inventarioTotalItems').textContent = `📦 ${inventarioAtual.total_items} items`;
+      }
+      return true;
+    } else {
+      console.error('Erro ao adicionar item:', data.error);
+      return false;
+    }
+  } catch (error) {
+    console.error('Erro ao adicionar item:', error);
+    return false;
+  }
 }
 
 // Fechar inventário
@@ -277,24 +277,26 @@ async function fecharInventario() {
   try {
     const token = localStorage.getItem('token');
     
-    const response = await fetch('/.netlify/functions/close-inventario', {
+    const response = await fetch(`/.netlify/functions/inventario-api/${currentInventarioId}/close`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        inventario_id: currentInventarioId
-      })
+      }
     });
     
     const data = await response.json();
     
     if (data.ok) {
       showToast('✅ Inventário fechado com sucesso!', 'success');
-      voltarParaLista();
+      modoInventario = false;
+      window.modoInventario = false;
+      
+      // Atualizar vista
+      inventarioAtual = data.inventario;
+      mostrarInventarioDetalhes(data.inventario);
     } else {
-      showToast('❌ Erro ao fechar inventário', 'error');
+      showToast('❌ Erro ao fechar inventário: ' + data.error, 'error');
     }
   } catch (error) {
     console.error('Erro ao fechar inventário:', error);
@@ -302,85 +304,48 @@ async function fecharInventario() {
   }
 }
 
-// Adicionar item ao inventário (chamado após OCR ou entrada manual)
-async function adicionarItemInventario(itemData) {
-  if (!currentInventarioId || !modoInventario) {
-    console.error('Não está em modo inventário');
-    return false;
-  }
+// Voltar para lista
+function voltarParaLista() {
+  // Esconder detalhes
+  document.getElementById('inventarioDetalhes').style.display = 'none';
   
-  try {
-    const token = localStorage.getItem('token');
-    
-    const response = await fetch('/.netlify/functions/add-inventario-item', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        inventario_id: currentInventarioId,
-        ...itemData
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.ok) {
-      // Recarregar items
-      carregarInventarioItems(currentInventarioId);
-      
-      // Atualizar contador
-      if (inventarioAtual) {
-        inventarioAtual.total_items = (inventarioAtual.total_items || 0) + 1;
-        document.getElementById('inventarioTotalItems').textContent = `📦 ${inventarioAtual.total_items} items`;
-      }
-      
-      return true;
-    } else {
-      console.error('Erro ao adicionar item:', data.error);
-      return false;
-    }
-  } catch (error) {
-    console.error('Erro ao adicionar item:', error);
-    return false;
-  }
+  // Mostrar lista
+  document.getElementById('inventarioView').style.display = 'block';
+  
+  // Desativar modo inventário
+  modoInventario = false;
+  window.modoInventario = false;
+  currentInventarioId = null;
+  inventarioAtual = null;
+  
+  // Recarregar lista
+  carregarInventarios();
 }
 
 // Mostrar vista de inventários
 function mostrarVistaInventarios() {
-  // Esconder app principal
-  document.getElementById('app')?.classList.add('hidden');
+  // Esconder outras vistas
+  document.getElementById('desktopView')?.style.display = 'none';
+  document.querySelector('.modern-mobile')?.style.display = 'none';
+  document.getElementById('inventarioDetalhes')?.style.display = 'none';
   
-  // Esconder detalhes
-  document.getElementById('inventarioDetalhes')?.classList.remove('active');
-  
-  // Mostrar lista
-  document.getElementById('inventarioView')?.classList.add('active');
-  
-  // Carregar inventários
-  carregarInventarios();
+  // Mostrar vista de inventários
+  const inventarioView = document.getElementById('inventarioView');
+  if (inventarioView) {
+    inventarioView.style.display = 'block';
+    carregarInventarios();
+  }
 }
 
-// Mostrar vista diária (normal)
-function mostrarVistaDiaria() {
-  // Mostrar app principal
-  document.getElementById('app')?.classList.remove('hidden');
-  
-  // Esconder inventários
-  document.getElementById('inventarioView')?.classList.remove('active');
-  document.getElementById('inventarioDetalhes')?.classList.remove('active');
-  
-  // Reset modo
-  modoInventario = false;
-  currentInventarioId = null;
-  inventarioAtual = null;
-}
-
-// Inicializar quando o DOM estiver pronto
+// Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initInventario);
 } else {
   initInventario();
 }
+
+// Expor funções globalmente
+window.mostrarVistaInventarios = mostrarVistaInventarios;
+window.abrirInventario = abrirInventario;
+window.adicionarItemInventario = adicionarItemInventario;
 
