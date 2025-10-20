@@ -1917,8 +1917,8 @@ function filterByDateRange(rows, startDate, endDate){
   });
 }
 
-// ===== Modal de INVENTÁRIO (exporta apenas stock disponível) =====
-function openInventarioModal(){
+// ===== Modal de EXPORTAÇÃO DE STOCK (antigo modal de inventário) =====
+function openExportStockModal(){
   console.log('Modal de exportação - versão com filtros rápidos carregada');
   const modal = document.getElementById('exportModal');
   if (!modal) { exportExcel(); return; }
@@ -2026,11 +2026,13 @@ function openInventarioModal(){
   // Definir período padrão como "hoje" DEPOIS de adicionar os listeners
   setPeriod('today');
 }
-window.openInventarioModal = openInventarioModal;
+window.openExportStockModal = openExportStockModal;
+// Manter compatibilidade com código antigo que ainda não foi atualizado
+// window.openInventarioModal = openExportStockModal;
 
 // Compat: chamadas antigas
-window.exportCSV = function(){ if (typeof openInventarioModal==='function') openInventarioModal(); else if (typeof exportExcel==='function') exportExcel(); };
-window.openExportModal = openInventarioModal; // Redirecionar para openInventarioModal
+window.exportCSV = function(){ if (typeof openExportStockModal==='function') openExportStockModal(); else if (typeof exportExcel==='function') exportExcel(); };
+window.openExportModal = openExportStockModal; // Redirecionar para openExportStockModal
 
 // ===== Modal de Edição de Registo =====
 let currentEditingRowIndex = null;
