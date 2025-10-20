@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicializar Tabela Eurocodes - ExpressGlass</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      color: #1e3a8a;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .warning-box {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    
+    .warning-box h3 {
+      color: #92400e;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .warning-box p {
+      color: #78350f;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    
+    .info-box h3 {
+      color: #1e40af;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .info-box p, .info-box ul {
+      color: #475569;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    
+    .info-box ul {
+      margin-top: 10px;
+      margin-left: 20px;
+    }
+    
+    .info-box li {
+      margin-bottom: 5px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 15px;
+    }
+    
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    button:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .result.success {
+      background: #dcfce7;
+      border: 2px solid #22c55e;
+      color: #166534;
+      display: block;
+    }
+    
+    .result.error {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      color: #991b1b;
+      display: block;
+    }
+    
+    .result h4 {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .loading.show {
+      display: block;
+    }
+    
+    .spinner {
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #3b82f6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Inicializar Tabela de Eurocodes</h1>
+    <p class="subtitle">Passo 1: Criar estrutura da base de dados</p>
+    
+    <div class="warning-box">
+      <h3>⚠️ Atenção:</h3>
+      <p>Esta página deve ser executada <strong>apenas uma vez</strong> para criar a tabela de eurocodes na base de dados. Após a execução bem-sucedida, pode apagar esta página e a função <code>init-eurocodes-table.mjs</code>.</p>
+    </div>
+    
+    <div class="info-box">
+      <h3>📋 O que será criado:</h3>
+      <ul>
+        <li>Tabela <code>eurocodes</code> com campos: id, prefix, marca, modelo, created_at, updated_at</li>
+        <li>Índice por prefixo (pesquisas rápidas)</li>
+        <li>Índice por marca (consultas por fabricante)</li>
+      </ul>
+    </div>
+    
+    <button id="initBtn">
+      🚀 Criar Tabela de Eurocodes
+    </button>
+    
+    <button onclick="window.location.href='index.html'" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
+      ← Voltar ao Sistema
+    </button>
+    
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>A criar tabela...</p>
+    </div>
+    
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    const initBtn = document.getElementById('initBtn');
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('result');
+    
+    initBtn.addEventListener('click', async () => {
+      initBtn.disabled = true;
+      loading.classList.add('show');
+      result.style.display = 'none';
+      result.className = 'result';
+      
+      try {
+        const token = localStorage.getItem('authToken');
+        
+        if (!token) {
+          throw new Error('Não autenticado. Por favor, faça login primeiro.');
+        }
+        
+        const response = await fetch('/.netlify/functions/init-eurocodes-table', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        loading.classList.remove('show');
+        
+        if (response.ok && data.ok) {
+          result.className = 'result success';
+          result.innerHTML = `
+            <h4>✅ Tabela criada com sucesso!</h4>
+            <p>${data.message}</p>
+            <p style="margin-top: 10px;"><strong>Registos existentes:</strong> ${data.total_records}</p>
+            <p style="margin-top: 10px;"><strong>Próximo passo:</strong> Execute o script de migração de dados (<code>migrate-eurocodes-data.mjs</code>) para importar os 676 eurocodes existentes.</p>
+          `;
+        } else {
+          throw new Error(data.error || 'Erro desconhecido');
+        }
+        
+      } catch (error) {
+        loading.classList.remove('show');
+        result.className = 'result error';
+        result.innerHTML = `
+          <h4>❌ Erro ao criar tabela</h4>
+          <p>${error.message}</p>
+        `;
+      } finally {
+        initBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+
