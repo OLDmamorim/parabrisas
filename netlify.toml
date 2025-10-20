@@ -13,6 +13,19 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Páginas HTML específicas não devem ser redirecionadas
+[[redirects]]
+  from = "/init-eurocodes-table.html"
+  to = "/init-eurocodes-table.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/upload-eurocodes.html"
+  to = "/upload-eurocodes.html"
+  status = 200
+  force = true
+
 # Qualquer outro caminho cai no index.html (SPA fallback)
 [[redirects]]
   from = "/*"
