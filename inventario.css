@@ -5,12 +5,12 @@
 .inventario-view {
   display: none;
   position: fixed;
-  top: 0;
+  top: 160px;           /* Começa abaixo do header */
   left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% - 160px);  /* Altura menos o header */
   padding: 20px;
-  z-index: 1000;
+  z-index: 100;         /* Abaixo do header mas acima do conteúdo */
   background: #f7fafc;
   overflow-y: auto;
 }
