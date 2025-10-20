@@ -379,8 +379,8 @@
 /* Responsivo Mobile */
 @media (max-width: 768px) {
   .inventario-view {
-    top: 380px;  /* Espaço suficiente para não tapar o título RECEPÇÃO MATERIAL */
-    height: calc(100% - 380px);
+    top: 480px;  /* Espaço para header + título + seletor de utilizadores */
+    height: calc(100% - 480px);
     padding: 10px;
   }
   
