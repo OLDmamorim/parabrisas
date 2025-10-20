@@ -3,7 +3,7 @@
 // VERSÃO CORRIGIDA: Usa base de dados PostgreSQL em vez de ficheiro estático
 
 import { jsonHeaders, sql } from './db.mjs';
-import { requireAuth } from '../../auth-utils.mjs';
+import { requireAuth } from './auth-utils.mjs';
 
 const cors = (status, body = {}) => ({
   statusCode: status,
