@@ -1,9 +1,9 @@
 // /.netlify/functions/upload-eurocodes.mjs
 // Função para processar upload de Excel e atualizar base de dados de eurocodes
-import { jsonHeaders } from './db.mjs';
+// VERSÃO CORRIGIDA: Usa base de dados PostgreSQL em vez de ficheiro estático
+
+import { jsonHeaders, sql } from './db.mjs';
 import { requireAuth } from '../../auth-utils.mjs';
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
 
 const cors = (status, body = {}) => ({
   statusCode: status,
@@ -35,112 +35,79 @@ export const handler = async (event) => {
 
     console.log(`📊 Recebidos ${eurocodes.length} eurocodes para processar`);
 
-    // Ler ficheiro atual
-    const mappingPath = join(process.cwd(), 'eurocode-mapping.mjs');
-    let currentContent = '';
-    
-    try {
-      currentContent = await readFile(mappingPath, 'utf-8');
-    } catch (e) {
-      console.log('⚠️ Ficheiro não existe, será criado');
-    }
+    // Verificar se a tabela existe, se não criar
+    await sql`
+      CREATE TABLE IF NOT EXISTS eurocodes (
+        id SERIAL PRIMARY KEY,
+        prefix VARCHAR(4) UNIQUE NOT NULL,
+        marca VARCHAR(100) NOT NULL,
+        modelo VARCHAR(100),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
 
-    // Extrair eurocodes existentes
-    const existingPrefixes = new Set();
-    const prefixRegex = /'(\d{4})':/g;
-    let match;
-    
-    while ((match = prefixRegex.exec(currentContent)) !== null) {
-      existingPrefixes.add(match[1]);
-    }
+    // Criar índice se não existir
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_eurocodes_prefix ON eurocodes(prefix)
+    `;
 
-    console.log(`📋 Eurocodes existentes: ${existingPrefixes.size}`);
+    // Obter eurocodes existentes
+    const existingPrefixes = await sql`
+      SELECT prefix FROM eurocodes
+    `;
+    const existingSet = new Set(existingPrefixes.map(e => e.prefix));
+
+    console.log(`📋 Eurocodes existentes: ${existingSet.size}`);
 
     // Filtrar apenas novos eurocodes
-    const newEurocodes = eurocodes.filter(e => !existingPrefixes.has(e.prefix));
+    const newEurocodes = eurocodes.filter(e => !existingSet.has(e.prefix));
     
     console.log(`✨ Novos eurocodes a adicionar: ${newEurocodes.length}`);
 
     if (newEurocodes.length === 0) {
+      // Obter total atual
+      const totalResult = await sql`SELECT COUNT(*) as count FROM eurocodes`;
+      const totalPrefixes = parseInt(totalResult[0].count);
+
       return cors(200, {
         ok: true,
         message: 'Nenhum eurocode novo para adicionar',
         total_received: eurocodes.length,
         already_exists: eurocodes.length,
-        added: 0
+        added: 0,
+        total_prefixes: totalPrefixes
       });
     }
 
-    // Gerar novas entradas
-    const newEntries = newEurocodes.map(e => {
-      const modeloStr = e.modelo ? `'${e.modelo}'` : 'null';
-      return `  '${e.prefix}': { marca: '${e.marca}', modelo: ${modeloStr} },`;
-    }).join('\n');
-
-    // Atualizar ficheiro
-    let updatedContent;
+    // Inserir novos eurocodes usando transação
+    let addedCount = 0;
     
-    if (currentContent.includes('export const EUROCODE_PREFIX_MAP = {')) {
-      // Adicionar antes do último }
-      const lastBraceIndex = currentContent.lastIndexOf('};');
-      updatedContent = 
-        currentContent.substring(0, lastBraceIndex) +
-        newEntries + '\n' +
-        currentContent.substring(lastBraceIndex);
-    } else {
-      // Criar ficheiro novo
-      updatedContent = `// Base de dados de Eurocodes
-// Atualizado automaticamente via upload
-// Total: ${newEurocodes.length} prefixos
-// Última atualização: ${new Date().toISOString()}
-
-export const EUROCODE_PREFIX_MAP = {
-${newEntries}
-};
-
-export function getVehicleFromEurocode(eurocode) {
-  if (!eurocode) return null;
-  
-  const prefix = eurocode.replace(/[#*]/g, '').substring(0, 4);
-  const info = EUROCODE_PREFIX_MAP[prefix];
-  
-  if (!info) return null;
-  
-  if (info.marca && info.modelo) {
-    return \`\${info.marca} \${info.modelo}\`;
-  }
-  
-  if (info.marca) {
-    return info.marca;
-  }
-  
-  return null;
-}
-`;
+    for (const eurocode of newEurocodes) {
+      try {
+        await sql`
+          INSERT INTO eurocodes (prefix, marca, modelo)
+          VALUES (${eurocode.prefix}, ${eurocode.marca}, ${eurocode.modelo || null})
+          ON CONFLICT (prefix) DO NOTHING
+        `;
+        addedCount++;
+      } catch (err) {
+        console.error(`❌ Erro ao inserir eurocode ${eurocode.prefix}:`, err.message);
+      }
     }
 
-    // Atualizar comentário do cabeçalho com novo total
-    const totalPrefixes = existingPrefixes.size + newEurocodes.length;
-    updatedContent = updatedContent.replace(
-      /\/\/ Total: \d+ prefixos/,
-      `// Total: ${totalPrefixes} prefixos`
-    );
-    updatedContent = updatedContent.replace(
-      /\/\/ Última atualização: .*/,
-      `// Última atualização: ${new Date().toISOString()}`
-    );
+    console.log(`✅ ${addedCount} eurocodes adicionados com sucesso`);
 
-    // Guardar ficheiro
-    await writeFile(mappingPath, updatedContent, 'utf-8');
-
-    console.log('✅ Ficheiro eurocode-mapping.mjs atualizado com sucesso');
+    // Obter total atualizado
+    const totalResult = await sql`SELECT COUNT(*) as count FROM eurocodes`;
+    const totalPrefixes = parseInt(totalResult[0].count);
 
     return cors(200, {
       ok: true,
       message: 'Eurocodes atualizados com sucesso',
       total_received: eurocodes.length,
-      already_exists: eurocodes.length - newEurocodes.length,
-      added: newEurocodes.length,
+      already_exists: eurocodes.length - addedCount,
+      added: addedCount,
       total_prefixes: totalPrefixes
     });
 
