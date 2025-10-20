@@ -4,7 +4,18 @@
 /* Vista de inventários */
 .inventario-view {
   display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   padding: 20px;
+  z-index: 1000;
+  background: #f7fafc;
+  overflow-y: auto;
+}
+
+.inventario-view > * {
   max-width: 1400px;
   margin: 0 auto;
 }
