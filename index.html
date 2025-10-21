@@ -1324,6 +1324,12 @@ table {
       <button id="btnAdicionarItem" class="btn-adicionar-item" onclick="var btn = document.getElementById('modernBtnCapture'); if(btn) btn.click();">
         📷 Adicionar Item (OCR)
       </button>
+      <button id="btnImprimirInventario" class="btn-imprimir-inventario">
+        🖨️ Imprimir
+      </button>
+      <button id="btnExportarInventario" class="btn-exportar-inventario">
+        📄 Exportar
+      </button>
       <button id="btnFecharInventario" class="btn-fechar-inventario">
         🔒 Fechar Inventário
       </button>
@@ -1714,6 +1720,10 @@ function initInventario() {
   });
   const btnFecharInventario = document.getElementById('btnFecharInventario');
   if (btnFecharInventario) btnFecharInventario.addEventListener('click', fecharInventario);
+  const btnImprimirInventario = document.getElementById('btnImprimirInventario');
+  if (btnImprimirInventario) btnImprimirInventario.addEventListener('click', imprimirInventario);
+  const btnExportarInventario = document.getElementById('btnExportarInventario');
+  if (btnExportarInventario) btnExportarInventario.addEventListener('click', exportarInventario);
   
   // Carregar inventários
   carregarInventarios();
@@ -2168,6 +2178,229 @@ function mostrarListaInventarios() {
     inventarioView.style.display = 'block';
     carregarInventarios();
   }
+}
+
+// Imprimir inventário
+function imprimirInventario() {
+  if (!inventarioAtual) {
+    showToast('❌ Nenhum inventário selecionado', 'error');
+    return;
+  }
+  
+  // Obter dados da tabela
+  const tbody = document.querySelector('#inventarioItemsTable tbody');
+  if (!tbody) return;
+  
+  const rows = tbody.querySelectorAll('tr');
+  if (rows.length === 0 || (rows.length === 1 && rows[0].cells.length === 1)) {
+    showToast('❌ Nenhum item para imprimir', 'error');
+    return;
+  }
+  
+  // Criar HTML para impressão
+  const dataInventario = new Date(inventarioAtual.data_inventario).toLocaleDateString('pt-PT');
+  const horaInventario = new Date(inventarioAtual.data_inventario).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'});
+  
+  let htmlItems = '';
+  rows.forEach(row => {
+    if (row.cells.length > 1) {
+      htmlItems += '<tr>';
+      for (let i = 0; i < row.cells.length; i++) {
+        htmlItems += `<td>${row.cells[i].textContent}</td>`;
+      }
+      htmlItems += '</tr>';
+    }
+  });
+  
+  const printHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Inventário ${dataInventario}</title>
+      <style>
+        @page {
+          size: A4 landscape;
+          margin: 15mm;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 3px solid #667eea;
+          padding-bottom: 15px;
+        }
+        .header h1 {
+          margin: 0;
+          color: #2d3748;
+          font-size: 28px;
+        }
+        .header .info {
+          margin-top: 10px;
+          color: #4a5568;
+          font-size: 14px;
+        }
+        .header .info span {
+          margin: 0 15px;
+          font-weight: 600;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+        }
+        th {
+          background: #667eea;
+          color: white;
+          padding: 12px 8px;
+          text-align: left;
+          font-weight: 600;
+          font-size: 12px;
+          border: 1px solid #5a67d8;
+        }
+        td {
+          padding: 10px 8px;
+          border: 1px solid #e2e8f0;
+          font-size: 11px;
+          color: #2d3748;
+        }
+        tr:nth-child(even) {
+          background: #f7fafc;
+        }
+        .footer {
+          margin-top: 30px;
+          text-align: center;
+          color: #a0aec0;
+          font-size: 11px;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 15px;
+        }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>📦 INVENTÁRIO - EXPRESSGLASS</h1>
+        <div class="info">
+          <span>📅 Data: ${dataInventario}</span>
+          <span>🕒 Hora: ${horaInventario}</span>
+          <span>🏪 Loja: ${inventarioAtual.loja}</span>
+          <span>📦 Total Items: ${inventarioAtual.total_items}</span>
+          <span class="status-${inventarioAtual.status}">📊 Status: ${inventarioAtual.status.toUpperCase()}</span>
+        </div>
+      </div>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>HORA</th>
+            <th>TIPO</th>
+            <th>VEÍCULO</th>
+            <th>EUROCODE</th>
+            <th>MARCA</th>
+            <th>MATRÍCULA</th>
+            <th>LOJA</th>
+            <th>OBSERVAÇÕES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${htmlItems}
+        </tbody>
+      </table>
+      
+      <div class="footer">
+        <p>ExpressGlass - Vidros para Viaturas | Impresso em ${new Date().toLocaleDateString('pt-PT')} às ${new Date().toLocaleTimeString('pt-PT')}</p>
+      </div>
+      
+      <script>
+        window.onload = function() {
+          window.print();
+          window.onafterprint = function() {
+            window.close();
+          };
+        };
+      </script>
+    </body>
+    </html>
+  `;
+  
+  // Abrir janela de impressão
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printHTML);
+  printWindow.document.close();
+}
+
+// Exportar inventário para CSV
+function exportarInventario() {
+  if (!inventarioAtual) {
+    showToast('❌ Nenhum inventário selecionado', 'error');
+    return;
+  }
+  
+  // Obter dados da tabela
+  const tbody = document.querySelector('#inventarioItemsTable tbody');
+  if (!tbody) return;
+  
+  const rows = tbody.querySelectorAll('tr');
+  if (rows.length === 0 || (rows.length === 1 && rows[0].cells.length === 1)) {
+    showToast('❌ Nenhum item para exportar', 'error');
+    return;
+  }
+  
+  // Criar CSV
+  const dataInventario = new Date(inventarioAtual.data_inventario).toLocaleDateString('pt-PT');
+  const horaInventario = new Date(inventarioAtual.data_inventario).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'});
+  
+  // Cabeçalho do CSV com informações do inventário
+  let csv = `INVENTÁRIO EXPRESSGLASS\n`;
+  csv += `Data:,${dataInventario}\n`;
+  csv += `Hora:,${horaInventario}\n`;
+  csv += `Loja:,${inventarioAtual.loja}\n`;
+  csv += `Total Items:,${inventarioAtual.total_items}\n`;
+  csv += `Status:,${inventarioAtual.status}\n`;
+  csv += `\n`;
+  
+  // Cabeçalhos das colunas
+  csv += 'HORA,TIPO,VEÍCULO,EUROCODE,MARCA,MATRÍCULA,LOJA,OBSERVAÇÕES\n';
+  
+  // Dados
+  rows.forEach(row => {
+    if (row.cells.length > 1) {
+      const rowData = [];
+      for (let i = 0; i < row.cells.length; i++) {
+        let cellText = row.cells[i].textContent.trim();
+        // Escapar vírgulas e aspas
+        if (cellText.includes(',') || cellText.includes('"') || cellText.includes('\n')) {
+          cellText = '"' + cellText.replace(/"/g, '""') + '"';
+        }
+        rowData.push(cellText);
+      }
+      csv += rowData.join(',') + '\n';
+    }
+  });
+  
+  // Criar blob e download
+  const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  const nomeArquivo = `inventario_${dataInventario.replace(/\//g, '-')}_${horaInventario.replace(/:/g, '-')}.csv`;
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', nomeArquivo);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  showToast('✅ Inventário exportado com sucesso!', 'success');
 }
 
 // Inicializar quando DOM estiver pronto

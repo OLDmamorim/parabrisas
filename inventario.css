@@ -201,6 +201,42 @@
   background: #38a169;
 }
 
+.btn-imprimir-inventario {
+  background: #4299e1;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-imprimir-inventario:hover {
+  background: #3182ce;
+}
+
+.btn-exportar-inventario {
+  background: #9f7aea;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-exportar-inventario:hover {
+  background: #805ad5;
+}
+
 .btn-fechar-inventario {
   background: #ed8936;
   color: white;
