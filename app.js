@@ -323,6 +323,7 @@ async function darSaidaVidro(text, eurocode, filename, source, vehicle) {
 // =========================
 // Guardar na Base de Dados (brand + vehicle)
 async function saveToDatabase(text, eurocode, filename, source, vehicle) {
+  console.log('🔴 saveToDatabase CHAMADO! text=', text.substring(0, 50), 'eurocode=', eurocode);
   try {
     setStatus(desktopStatus, 'A guardar na base de dados...');
     setStatus(mobileStatus,  'A guardar na base de dados...');
