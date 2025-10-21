@@ -124,6 +124,17 @@
 /* Vista detalhada de inventário */
 .inventario-detalhes {
   display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  background: #f7fafc;
+  min-height: 100vh;
+  width: 100%;
+  z-index: 10000;
+  overflow-y: auto;
 }
 
 .inventario-detalhes.active {
@@ -480,5 +491,17 @@
 
 .inventario-banner-btn:active {
   transform: translateY(0);
+}
+
+
+
+/* Esconder desktopView quando inventário detalhes está ativo */
+body.inventario-detalhes-ativo #desktopView {
+  display: none !important;
+}
+
+/* Esconder inventarioView quando inventário detalhes está ativo */
+body.inventario-detalhes-ativo #inventarioView {
+  display: none !important;
 }
 

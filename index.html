@@ -1881,6 +1881,9 @@ async function abrirInventario(inventarioId) {
 
 // Mostrar vista detalhada do inventário
 function mostrarInventarioDetalhes(inventario) {
+  // Adicionar classe ao body para controlar visibilidade via CSS
+  document.body.classList.add('inventario-detalhes-ativo');
+  
   // Esconder lista
   document.getElementById('inventarioView').style.display = 'none';
   
@@ -2080,6 +2083,9 @@ async function eliminarInventario(inventarioId) {
 
 // Voltar para lista
 function voltarParaLista() {
+  // Remover classe do body
+  document.body.classList.remove('inventario-detalhes-ativo');
+  
   // Esconder detalhes
   document.getElementById('inventarioDetalhes').style.display = 'none';
   
@@ -2145,6 +2151,9 @@ function mostrarVistaInventarios() {
 
 // Função auxiliar para mostrar a lista de inventários
 function mostrarListaInventarios() {
+  // Remover classe do body
+  document.body.classList.remove('inventario-detalhes-ativo');
+  
   // Esconder outras vistas
   const desktopView = document.getElementById('desktopView');
   if (desktopView) desktopView.style.display = 'none';
