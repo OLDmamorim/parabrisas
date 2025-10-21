@@ -1315,7 +1315,6 @@ table {
         <div class="inventario-detalhes-info">
           <span id="inventarioStatus" class="inventario-card-status aberto">aberto</span>
           <span id="inventarioTotalItems">📦 0 items</span>
-          <span id="inventarioLoja">🏪 N/A</span>
         </div>
       </div>
     </div>
@@ -1911,7 +1910,6 @@ function mostrarInventarioDetalhes(inventario) {
   document.getElementById('inventarioStatus').textContent = inventario.status;
   document.getElementById('inventarioStatus').className = `inventario-card-status ${inventario.status}`;
   document.getElementById('inventarioTotalItems').textContent = `📦 ${inventario.total_items} items`;
-  document.getElementById('inventarioLoja').textContent = `🏪 ${inventario.loja}`;
   
   // Desabilitar botões se fechado
   const btnAdicionar = document.getElementById('btnAdicionarItem');
@@ -2291,7 +2289,6 @@ function imprimirInventario() {
         <div class="info">
           <span>📅 Data: ${dataInventario}</span>
           <span>🕒 Hora: ${horaInventario}</span>
-          <span>🏪 Loja: ${inventarioAtual.loja}</span>
           <span>📦 Total Items: ${inventarioAtual.total_items}</span>
           <span class="status-${inventarioAtual.status}">📊 Status: ${inventarioAtual.status.toUpperCase()}</span>
         </div>
@@ -2362,7 +2359,6 @@ function exportarInventario() {
   let csv = `INVENTÁRIO EXPRESSGLASS\n`;
   csv += `Data:,${dataInventario}\n`;
   csv += `Hora:,${horaInventario}\n`;
-  csv += `Loja:,${inventarioAtual.loja}\n`;
   csv += `Total Items:,${inventarioAtual.total_items}\n`;
   csv += `Status:,${inventarioAtual.status}\n`;
   csv += `\n`;
