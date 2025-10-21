@@ -323,7 +323,6 @@ async function darSaidaVidro(text, eurocode, filename, source, vehicle) {
 // =========================
 // Guardar na Base de Dados (brand + vehicle)
 async function saveToDatabase(text, eurocode, filename, source, vehicle) {
-  alert('🔴 saveToDatabase CHAMADO! eurocode=' + eurocode);
   console.log('🔴 saveToDatabase CHAMADO! text=', text.substring(0, 50), 'eurocode=', eurocode);
   try {
     setStatus(desktopStatus, 'A guardar na base de dados...');
@@ -2184,6 +2183,42 @@ async function saveManualEntry() {
   try {
     // Adicionar prefixo ao eurocode conforme o tipo
     let finalEurocode = eurocode;
+    
+    // MODO INVENTÁRIO: Adicionar item ao inventário em vez de tabela diária
+    console.log('📦 DEBUG (manual): modoInventario=', window.modoInventario, 'currentInventarioId=', window.currentInventarioId);
+    if (window.modoInventario && window.currentInventarioId) {
+      console.log('📦 MODO INVENTÁRIO ATIVO (manual)! Adicionando ao inventário...');
+      
+      // Adicionar prefixo ao eurocode
+      if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
+        finalEurocode = '#' + eurocode;
+      } else if (window.tipoVidroSelecionado === 'oem' && eurocode && !eurocode.startsWith('*')) {
+        finalEurocode = '*' + eurocode;
+      }
+      
+      const itemData = {
+        hora: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        tipo: window.tipoVidroSelecionado || 'PB',
+        veiculo: carBrand,
+        eurocode: finalEurocode,
+        marca: '',
+        matricula: '',
+        sm_loja: '',
+        obs: 'Entrada manual'
+      };
+      
+      if (typeof adicionarItemInventario === 'function') {
+        const success = await adicionarItemInventario(itemData);
+        if (success) {
+          showToast('✅ Item adicionado ao inventário!', 'success');
+          closeManualEntryModal();
+          return;
+        }
+      }
+      throw new Error('Erro ao adicionar item ao inventário');
+    }
+    
+    // MODO NORMAL: Guardar na tabela diária
     if (window.tipoVidroSelecionado === 'complementar' && eurocode && !eurocode.startsWith('#')) {
       finalEurocode = '#' + eurocode;
     } else if (window.tipoVidroSelecionado === 'oem' && eurocode && !eurocode.startsWith('*')) {
