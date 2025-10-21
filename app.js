@@ -338,7 +338,9 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
     }
     
     // MODO INVENTÁRIO: Adicionar item ao inventário em vez de tabela diária
+    console.log('📦 DEBUG: modoInventario=', window.modoInventario, 'currentInventarioId=', window.currentInventarioId);
     if (window.modoInventario && window.currentInventarioId) {
+      console.log('📦 MODO INVENTÁRIO ATIVO! Adicionando ao inventário...');
       const itemData = {
         hora: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
         tipo: window.tipoVidroSelecionado || 'PB',
@@ -350,8 +352,11 @@ async function saveToDatabase(text, eurocode, filename, source, vehicle) {
         obs: text
       };
       
+      console.log('📦 Verificando função adicionarItemInventario:', typeof adicionarItemInventario);
       if (typeof adicionarItemInventario === 'function') {
+        console.log('📦 Chamando adicionarItemInventario com:', itemData);
         const success = await adicionarItemInventario(itemData);
+        console.log('📦 Resultado:', success);
         if (success) {
           showToast('✅ Item adicionado ao inventário!', 'success');
           setStatus(desktopStatus, 'Item adicionado ao inventário!', 'success');
