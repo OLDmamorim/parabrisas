@@ -1304,6 +1304,25 @@ table {
     </div>
   </div>
 
+  <!-- MODAL DE ESCOLHA DE INVENTÁRIO (MOBILE) -->
+  <div id="modalEscolhaInventario" class="modal-escolha-inventario" style="display: none;">
+    <div class="modal-escolha-content">
+      <h3>📦 Inventário</h3>
+      <p>O que pretende fazer?</p>
+      <div class="modal-escolha-botoes">
+        <button id="btnModalNovoInventario" class="btn-modal-novo">
+          ➕ Criar Novo Inventário
+        </button>
+        <button id="btnModalInventarioExistente" class="btn-modal-existente">
+          📂 Continuar Inventário Existente
+        </button>
+        <button id="btnModalCancelar" class="btn-modal-cancelar">
+          ❌ Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- VISTA DETALHADA DE INVENTÁRIO -->
   <div id="inventarioDetalhes" class="inventario-detalhes">
     <div class="inventario-detalhes-header">
@@ -1724,6 +1743,19 @@ function initInventario() {
   const btnExportarInventario = document.getElementById('btnExportarInventario');
   if (btnExportarInventario) btnExportarInventario.addEventListener('click', exportarInventario);
   
+  // Event listeners do modal de escolha
+  const btnModalNovoInventario = document.getElementById('btnModalNovoInventario');
+  if (btnModalNovoInventario) btnModalNovoInventario.addEventListener('click', function() {
+    fecharModalEscolhaInventario();
+    criarNovoInventario();
+  });
+  
+  const btnModalInventarioExistente = document.getElementById('btnModalInventarioExistente');
+  if (btnModalInventarioExistente) btnModalInventarioExistente.addEventListener('click', mostrarInventariosAbertos);
+  
+  const btnModalCancelar = document.getElementById('btnModalCancelar');
+  if (btnModalCancelar) btnModalCancelar.addEventListener('click', fecharModalEscolhaInventario);
+  
   // Carregar inventários
   carregarInventarios();
 }
@@ -2141,19 +2173,61 @@ function mostrarVistaRecepcao() {
 function mostrarVistaInventarios() {
   // Verificar se é mobile
   if (isMobile()) {
-    // Mobile: Mostrar diálogo para criar novo ou continuar existente
-    const resposta = confirm('📦 Criar novo inventário?\n\nSIM = Criar novo inventário\nNÃO = Ver inventários existentes');
-    
-    if (resposta) {
-      // Criar novo inventário diretamente
-      criarNovoInventario();
-    } else {
-      // Mostrar lista de inventários
-      mostrarListaInventarios();
-    }
+    // Mobile: Mostrar modal de escolha
+    mostrarModalEscolhaInventario();
   } else {
     // Desktop: Mostrar lista de inventários diretamente
     mostrarListaInventarios();
+  }
+}
+
+// Mostrar modal de escolha (mobile)
+function mostrarModalEscolhaInventario() {
+  const modal = document.getElementById('modalEscolhaInventario');
+  if (modal) modal.style.display = 'flex';
+}
+
+// Fechar modal de escolha
+function fecharModalEscolhaInventario() {
+  const modal = document.getElementById('modalEscolhaInventario');
+  if (modal) modal.style.display = 'none';
+}
+
+// Mostrar apenas inventários abertos
+async function mostrarInventariosAbertos() {
+  try {
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch('/.netlify/functions/inventario-api', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.ok) {
+      // Filtrar apenas inventários abertos
+      const inventariosAbertos = data.inventarios.filter(inv => inv.status === 'aberto');
+      
+      if (inventariosAbertos.length === 0) {
+        showToast('⚠️ Não há inventários abertos. Crie um novo!', 'info');
+        fecharModalEscolhaInventario();
+        criarNovoInventario();
+        return;
+      }
+      
+      // Mostrar lista filtrada
+      fecharModalEscolhaInventario();
+      mostrarListaInventarios();
+      renderizarListaInventarios(inventariosAbertos);
+    } else {
+      console.error('Erro ao carregar inventários:', data.error);
+      showToast('❌ Erro ao carregar inventários', 'error');
+    }
+  } catch (error) {
+    console.error('Erro ao carregar inventários:', error);
+    showToast('❌ Erro ao carregar inventários', 'error');
   }
 }
 
