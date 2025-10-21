@@ -1789,6 +1789,14 @@ async function criarNovoInventario() {
       window.modoInventario = true;
       window.currentInventarioId = data.inventario.id;
       
+      // Limpar capturas antigas e criar novo array vazio para este inventário
+      localStorage.setItem(`inventario_captures_${data.inventario.id}`, JSON.stringify([]));
+      
+      // Atualizar vista de capturas
+      if (window.renderModernCaptures) {
+        window.renderModernCaptures();
+      }
+      
       // Verificar se é mobile
       if (isMobile()) {
         // Mobile: Voltar à interface de captura
@@ -1959,6 +1967,11 @@ function mostrarInventarioDetalhes(inventario) {
   
   // Carregar items
   carregarInventarioItems(inventario.id);
+  
+  // Atualizar vista de capturas para mostrar apenas as deste inventário
+  if (window.renderModernCaptures) {
+    window.renderModernCaptures();
+  }
 }
 
 // Carregar items do inventário
@@ -2037,6 +2050,23 @@ async function adicionarItemInventario(itemData) {
         inventarioAtual.total_items++;
         document.getElementById('inventarioTotalItems').textContent = `📦 ${inventarioAtual.total_items} items`;
       }
+      
+      // Guardar captura no localStorage do inventário
+      if (modoInventario && currentInventarioId) {
+        const inventarioCaptures = JSON.parse(localStorage.getItem(`inventario_captures_${currentInventarioId}`) || '[]');
+        inventarioCaptures.unshift({
+          vehicle: itemData.veiculo || '',
+          eurocode: itemData.eurocode,
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem(`inventario_captures_${currentInventarioId}`, JSON.stringify(inventarioCaptures));
+        
+        // Atualizar vista de capturas
+        if (window.renderModernCaptures) {
+          window.renderModernCaptures();
+        }
+      }
+      
       return true;
     } else {
       console.error('Erro ao adicionar item:', data.error);
@@ -2625,7 +2655,36 @@ window.adicionarItemInventario = adicionarItemInventario;
     function renderModernCaptures() {
       if (!modernCapturesList) return;
       
-      // Get real data from the original system
+      // Se estiver em modo inventário, mostrar apenas capturas do inventário atual
+      if (window.modoInventario && window.currentInventarioId) {
+        const inventarioCaptures = JSON.parse(localStorage.getItem(`inventario_captures_${window.currentInventarioId}`) || '[]');
+        
+        if (inventarioCaptures.length === 0) {
+          modernCapturesList.innerHTML = `
+            <div class="modern-empty-state">
+              <div class="modern-empty-icon">📷</div>
+              <div class="modern-empty-text">Ainda não há capturas neste inventário</div>
+            </div>
+          `;
+          return;
+        }
+        
+        modernCapturesList.innerHTML = inventarioCaptures.slice(0, 5).map(capture => {
+          const hasVehicle = capture.vehicle && capture.vehicle !== '';
+          return `
+            <div class="modern-capture-item">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                ${hasVehicle ? `<span style="font-weight: 700; color: #1e293b; font-size: 16px;">🚗 ${capture.vehicle}</span>` : ''}
+                <span class="modern-capture-code" style="font-weight: 800; color: #2563eb; font-size: ${hasVehicle ? '14px' : '16px'}; letter-spacing: 0.8px; font-family: 'Courier New', monospace;">🔢 ${capture.eurocode}</span>
+              </div>
+              <span class="modern-capture-check">✓</span>
+            </div>
+          `;
+        }).join('');
+        return;
+      }
+      
+      // Modo normal: Get real data from the original system
       const tbody = document.getElementById('resultsBody');
       if (!tbody) {
         modernCapturesList.innerHTML = `
@@ -2683,6 +2742,9 @@ window.adicionarItemInventario = adicionarItemInventario;
       }).join('');
     }
 
+    // Expor função globalmente
+    window.renderModernCaptures = renderModernCaptures;
+    
     // Modern camera button click
     if (modernCameraButton) {
       modernCameraButton.addEventListener('click', () => {
