@@ -1213,6 +1213,18 @@ table {
 
   <!-- NOVA MOBILE VIEW MODERNA -->
   <main class="modern-mobile mobile-only">
+    <!-- Banner Modo Inventário -->
+    <div id="inventarioBanner" class="inventario-banner" style="display: none;">
+      <div class="inventario-banner-content">
+        <span class="inventario-banner-icon">📦</span>
+        <div class="inventario-banner-info">
+          <strong>Modo Inventário Ativo</strong>
+          <small id="inventarioBannerNome">Inventário em andamento</small>
+        </div>
+        <button id="btnVerInventario" class="inventario-banner-btn">📊 Ver</button>
+      </div>
+    </div>
+    
     <!-- Status Message -->
     <div id="modernStatus" class="modern-status"></div>
 
@@ -1694,6 +1706,12 @@ function initInventario() {
   if (btnNovoInventario) btnNovoInventario.addEventListener('click', criarNovoInventario);
   const btnVoltarLista = document.getElementById('btnVoltarLista');
   if (btnVoltarLista) btnVoltarLista.addEventListener('click', voltarParaLista);
+  const btnVerInventario = document.getElementById('btnVerInventario');
+  if (btnVerInventario) btnVerInventario.addEventListener('click', function() {
+    if (currentInventarioId) {
+      abrirInventario(currentInventarioId);
+    }
+  });
   const btnFecharInventario = document.getElementById('btnFecharInventario');
   if (btnFecharInventario) btnFecharInventario.addEventListener('click', fecharInventario);
   
@@ -1730,12 +1748,37 @@ async function criarNovoInventario() {
       window.modoInventario = true;
       window.currentInventarioId = data.inventario.id;
       
-      // Mostrar vista detalhada
-      mostrarInventarioDetalhes(data.inventario);
-      
-      // Esconder menu mobile se estiver visível
-      const mobileMenuInicial = document.getElementById('mobileMenuInicial');
-      if (mobileMenuInicial) mobileMenuInicial.classList.remove('active');
+      // Verificar se é mobile
+      if (isMobile()) {
+        // Mobile: Voltar à interface de captura
+        const mobileMenuInicial = document.getElementById('mobileMenuInicial');
+        if (mobileMenuInicial) mobileMenuInicial.classList.remove('show');
+        
+        // Mostrar interface de captura
+        const modernMobile = document.querySelector('.modern-mobile');
+        if (modernMobile) modernMobile.style.display = 'flex';
+        
+        // Mostrar banner de modo inventário
+        const inventarioBanner = document.getElementById('inventarioBanner');
+        if (inventarioBanner) {
+          inventarioBanner.style.display = 'block';
+          const bannerNome = document.getElementById('inventarioBannerNome');
+          if (bannerNome) {
+            const dataInv = new Date(data.inventario.data_inventario).toLocaleDateString('pt-PT');
+            bannerNome.textContent = `Inventário ${dataInv} - ${data.inventario.total_items} items`;
+          }
+        }
+        
+        // Mostrar indicador de modo inventário
+        showToast('📦 Modo Inventário Ativo! Capture items para adicionar ao inventário.', 'success');
+      } else {
+        // Desktop: Mostrar vista detalhada
+        mostrarInventarioDetalhes(data.inventario);
+        
+        // Esconder menu mobile se estiver visível
+        const mobileMenuInicial = document.getElementById('mobileMenuInicial');
+        if (mobileMenuInicial) mobileMenuInicial.classList.remove('active');
+      }
     } else {
       showToast('❌ Erro ao criar inventário: ' + data.error, 'error');
     }
@@ -1988,6 +2031,10 @@ async function fecharInventario() {
       modoInventario = false;
       window.modoInventario = false;
       
+      // Esconder banner mobile
+      const inventarioBanner = document.getElementById('inventarioBanner');
+      if (inventarioBanner) inventarioBanner.style.display = 'none';
+      
       // Atualizar vista
       inventarioAtual = data.inventario;
       mostrarInventarioDetalhes(data.inventario);
@@ -2044,6 +2091,10 @@ function voltarParaLista() {
   window.modoInventario = false;
   currentInventarioId = null;
   inventarioAtual = null;
+  
+  // Esconder banner mobile
+  const inventarioBanner = document.getElementById('inventarioBanner');
+  if (inventarioBanner) inventarioBanner.style.display = 'none';
   
   // Recarregar lista
   carregarInventarios();
