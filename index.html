@@ -3,11 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>EXPRESSGLASS • Receção material</title>
   <link rel="stylesheet" href="style.css?v=fix-col3-14dx" />
   <link rel="stylesheet" href="menu-inicial.css" />
   <link rel="stylesheet" href="modal-saida.css" />
-  <link rel="stylesheet" href="inventario.css" />
+  <link rel="stylesheet" href="inventario.css?v=20251021-capturas-fix" />
   <style>
 <style>
 /* ===== EXPANDIR TABELA PARA LARGURA COMPLETA ===== */
@@ -1724,6 +1727,20 @@ let modoInventario = false;
 // Inicializar sistema de inventário
 function initInventario() {
   console.log('📊 Inicializando sistema de inventário...');
+  
+  // Limpar capturas antigas se não estiver em modo inventário
+  if (!modoInventario || !currentInventarioId) {
+    // Limpar todas as chaves de capturas antigas
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('inventario_captures_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log('🧹 Limpeza de capturas antigas concluída');
+  }
   
   // Event listeners
   const btnNovoInventario = document.getElementById('btnNovoInventario');
